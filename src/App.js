@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import farmDataJson from './data.json';
 import Home from './components/Home';
 import './App.css';
