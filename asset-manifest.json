@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/play-farm/static/css/main.d8f41e7e.css",
+    "main.js": "/play-farm/static/js/main.711d31a5.js",
+    "index.html": "/play-farm/index.html",
+    "main.d8f41e7e.css.map": "/play-farm/static/css/main.d8f41e7e.css.map",
+    "main.711d31a5.js.map": "/play-farm/static/js/main.711d31a5.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.d8f41e7e.css",
+    "static/js/main.711d31a5.js"
+  ]
+}
