@@ -21,9 +21,12 @@ try {
     console.log('ℹ️  커밋할 변경사항이 없습니다.');
   }
   
+  // 현재 브랜치 가져오기
+  const currentBranch = execSync('git branch --show-current', { encoding: 'utf-8' }).trim();
+  
   // GitHub에 푸시
   console.log('⬆️  GitHub에 푸시 중...');
-  execSync('git push origin master', { stdio: 'inherit' });
+  execSync(`git push origin ${currentBranch}`, { stdio: 'inherit' });
   console.log('✅ 배포 완료!');
   
 } catch (error) {
