@@ -33,19 +33,17 @@ const Home = ({ farmData }) => {
     const filteredData = data.filter(item => {
       // district 필터
       if (district) {
-        const addr1 = item.RDNMADR?.split(' ')[0];
-        const addr2 = item.REFINE_LOTNO_ADDR?.split(' ')[0];
-        const addr3 = item.REFINE_ROADNM_ADDR?.split(' ')[0];
-        if (addr1 !== district && addr2 !== district && addr3 !== district) {
+        const addr1 = item.REFINE_LOTNO_ADDR?.split(' ')[0];
+        const addr2 = item.REFINE_ROADNM_ADDR?.split(' ')[0];
+        if (addr1 !== district && addr2 !== district) {
           return false;
         }
       }
       // sigungu 필터
       if (sigungu) {
-        const addr1 = item.RDNMADR?.split(' ')[1];
-        const addr2 = item.REFINE_LOTNO_ADDR?.split(' ')[1];
-        const addr3 = item.REFINE_ROADNM_ADDR?.split(' ')[1];
-        if (addr1 !== sigungu && addr2 !== sigungu && addr3 !== sigungu) {
+        const addr1 = item.REFINE_LOTNO_ADDR?.split(' ')[1];
+        const addr2 = item.REFINE_ROADNM_ADDR?.split(' ')[1];
+        if (addr1 !== sigungu && addr2 !== sigungu) {
           return false;
         }
       }
@@ -78,8 +76,6 @@ const Home = ({ farmData }) => {
   const siguNm = (address) => address && address.split(' ').slice(0, 2).join(' ');
   data.forEach(item => {
     if (
-      (Object.keys(item).includes('RDNMADR') && item.RDNMADR)
-      ||
       (Object.keys(item).includes('REFINE_LOTNO_ADDR') && item.REFINE_LOTNO_ADDR)
       ||
       (Object.keys(item).includes('REFINE_ROADNM_ADDR') && item.REFINE_ROADNM_ADDR)
@@ -87,11 +83,10 @@ const Home = ({ farmData }) => {
       if (
         addressList.length &&
         addressList.includes(
-          siguNm(item.RDNMADR)
-          || siguNm(item.REFINE_LOTNO_ADDR)
+          siguNm(item.REFINE_LOTNO_ADDR)
           || siguNm(item.REFINE_ROADNM_ADDR)
         )) return;
-      addressList.push(siguNm(item.RDNMADR) || siguNm(item.REFINE_LOTNO_ADDR) || siguNm(item.REFINE_ROADNM_ADDR));
+      addressList.push(siguNm(item.REFINE_LOTNO_ADDR) || siguNm(item.REFINE_ROADNM_ADDR));
     }
   });
   // console.log("addressList:", addressList);
@@ -108,6 +103,31 @@ const Home = ({ farmData }) => {
   });
   // console.log("experienceList:", experienceList);
 
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const searchValue = e.target.search.value;
+    if (searchValue) {
+
+      const nowData = [];
+      allData.forEach(v => nowData.push(...v));
+      console.log("🔍 ~ handleSearch ~ nowData:", nowData);
+      const filteredData = nowData.filter(item => {
+        const { PROGRAM_NM, PROGRAM_TYPE, PROGRAM_CONTENT } = item;
+        if (
+          (PROGRAM_NM && PROGRAM_NM.includes(searchValue)) ||
+          (PROGRAM_TYPE && PROGRAM_TYPE.includes(searchValue)) ||
+          (PROGRAM_CONTENT && PROGRAM_CONTENT.includes(searchValue))
+        ) {
+          return true;
+        }
+        return false;
+      });
+      console.log("🔍 ~ handleSearch ~ filteredData:", filteredData);
+      splitData(filteredData);
+      setCurrentPage(1);
+      setStartPage(1);
+    }
+  }
 
   return (
     <div>
@@ -135,6 +155,10 @@ const Home = ({ farmData }) => {
             return <option key={i + 1} value={experience}>{experience}</option>
           })}
         </select>
+        <form action="" onSubmit={handleSearch}>
+          <input type="text" placeholder="검색" name="search" id="search" />
+          <button type="submit">검색</button>
+        </form>
       </div>
       <ul className="farm-data-list">
         {allData[currentPage - 1]?.map((item, i) => (
