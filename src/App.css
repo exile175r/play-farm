@@ -1,3 +1,28 @@
+.category-container {
+  padding: 20px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+}
+
+.category-container label {
+  margin-right: 10px;
+}
+
+.category-container select {
+  margin-right: 80px;
+  font-size: 18px;
+}
+
+.category-container select:last-child {
+  margin-right: 0;
+}
+
+.farm-data-list {
+  padding: 10px;
+}
+
 .farm-data-list li {
   display: flex;
   gap: 10px;
@@ -6,6 +31,7 @@
 
 .farm-data-list li .imgBox {
   flex: 1;
+  align-self: center;
 }
 
 .farm-data-list li .imgBox img {
@@ -40,7 +66,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  width: 1050px;
+  max-width: 1050px;
   overflow-x: hidden;
 }
 
