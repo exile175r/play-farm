@@ -1,0 +1,81 @@
+.category-container {
+  padding: 20px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 18px;
+}
+
+.category-container label {
+  margin-right: 10px;
+}
+
+.category-container select {
+  margin-right: 80px;
+  font-size: 18px;
+}
+
+.category-container select:last-child {
+  margin-right: 0;
+}
+
+.farm-data-list {
+  padding: 10px;
+}
+
+.farm-data-list li {
+  display: flex;
+  gap: 10px;
+  height: 300px;
+}
+
+.farm-data-list li .imgBox {
+  flex: 1;
+  align-self: center;
+}
+
+.farm-data-list li .imgBox img {
+  width: 100%;
+}
+
+.farm-data-list li .infoBox {
+  display: flex;
+  flex-flow: column wrap;
+  flex: 5;
+  gap: 10px;
+  width: 100%;
+  overflow: scroll hidden;
+}
+
+.page-container {
+  margin: auto;
+  padding-bottom: 80px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: fit-content;
+  min-height: 50px;
+}
+
+.page-container>button {
+  padding: 10px;
+  height: min-content;
+}
+
+.page-container .page-list {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 1050px;
+  overflow-x: hidden;
+}
+
+.page-container .page-list li.active button {
+  background-color: hotpink;
+  color: #fff;
+}
+
+.page-container .page-list li button {
+  width: 30px;
+  height: 30px;
+}

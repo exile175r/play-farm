@@ -1,0 +1,66 @@
+/* 헤더 전체 */
+:root {
+  --color-bg: #ffffff;
+  --color-border: #eeeeee;
+  --color-text: #222222;
+  --color-text-sub: #555555;
+  --color-btn-border: #cccccc;
+  --color-btn-hover: #f7f7f7;
+  --color-btn-border-hover: #bbbbbb;
+}
+
+/* 헤더 */
+.pf-header {
+  width: 100%;
+  height: 70px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* 내부 컨테이너 */
+.pf-inner {
+  width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: "Pretendard", "Noto Sans KR", system-ui, -apple-system, sans-serif;
+}
+
+/* 네비게이션 메뉴 */
+.pf-nav {
+  display: flex;
+  gap: 32px;
+}
+
+.pf-nav a {
+  font-size: 15px;
+  text-decoration: none;
+  color: var(--color-text-sub);
+  transition: color 0.2s ease;
+}
+
+.pf-nav a:hover {
+  color: var(--color-text);
+}
+
+/* 로그인 버튼 */
+.pf-utils .pf-login-btn {
+  padding: 6px 14px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid var(--color-btn-border);
+  background: var(--color-bg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pf-utils .pf-login-btn:hover {
+  background: var(--color-btn-hover);
+  border-color: var(--color-btn-border-hover);
+}

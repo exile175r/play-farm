@@ -1,0 +1,116 @@
+/* 색상 변수 */
+:root {
+  --color-bg: #ffffff;
+  --color-shadow-mid: rgba(0, 0, 0, 0.25);
+  --color-shadow-strong: rgba(0, 0, 0, 0.3);
+  --color-arrow: #222222;
+  --color-card-bg: #eaeaea;
+}
+
+/* 메인 전체 */
+.main-wrap {
+  padding-top: 40px;
+  width: 100%;
+}
+
+/* 슬라이더 */
+.slider-area {
+  width: 100%;
+  position: relative;
+  margin-top: 40px;
+  text-align: center;
+}
+
+/* 화살표 */
+.arrow {
+  background: transparent;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  z-index: 30;
+  color: var(--color-arrow);
+}
+
+.arrow.left {
+  left: 250px;
+}
+
+.arrow.right {
+  right: 250px;
+}
+
+/* 카드 배치 영역 */
+.slide-track {
+  position: relative;
+  width: 100%;
+  height: 360px;
+}
+
+/* 카드 */
+.slide-item {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 520px;
+  height: 330px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--color-card-bg);
+  box-shadow: 0 24px 40px var(--color-shadow-mid);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+.slide-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 중간 카드 */
+.slide-item.pos-center {
+  transform: translate(-50%, -60%) scale(1);
+  opacity: 1;
+  z-index: 50;
+  box-shadow: 0 35px 70px var(--color-shadow-strong);
+  pointer-events: auto;
+}
+
+/* 좌우 카드 */
+.slide-item.pos-left1 {
+  transform: translate(-100%, -50%) scale(0.9);
+  opacity: 1;
+  z-index: 40;
+}
+
+.slide-item.pos-left2 {
+  transform: translate(-135%, -48%) scale(0.8);
+  opacity: 0.7;
+  z-index: 30;
+}
+
+.slide-item.pos-right1 {
+  transform: translate(0%, -50%) scale(0.9);
+  opacity: 1;
+  z-index: 40;
+}
+
+.slide-item.pos-right2 {
+  transform: translate(35%, -48%) scale(0.8);
+  opacity: 0.7;
+  z-index: 30;
+}
+
+/* 숨김 */
+.slide-item.pos-hidden {
+  opacity: 0;
+  z-index: 0;
+}
