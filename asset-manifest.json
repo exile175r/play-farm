@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/play-farm/static/css/main.82de5aab.css",
-    "main.js": "/play-farm/static/js/main.9a8eab56.js",
+    "main.css": "/play-farm/static/css/main.8a193a8a.css",
+    "main.js": "/play-farm/static/js/main.cf68c7ac.js",
     "index.html": "/play-farm/index.html",
-    "main.82de5aab.css.map": "/play-farm/static/css/main.82de5aab.css.map",
-    "main.9a8eab56.js.map": "/play-farm/static/js/main.9a8eab56.js.map"
+    "main.8a193a8a.css.map": "/play-farm/static/css/main.8a193a8a.css.map",
+    "main.cf68c7ac.js.map": "/play-farm/static/js/main.cf68c7ac.js.map"
   },
   "entrypoints": [
-    "static/css/main.82de5aab.css",
-    "static/js/main.9a8eab56.js"
+    "static/css/main.8a193a8a.css",
+    "static/js/main.cf68c7ac.js"
   ]
 }
