@@ -1,10 +1,7 @@
 .event-section {
   width: 100%;
-  max-width: 1920px;
   margin: 60px auto 0;
   padding: 0 240px;
-  font-family: "Pretendard", sans-serif;
-  box-sizing: border-box;
 }
 
 .event-header {
@@ -30,7 +27,8 @@
 .more-btn {
   margin-left: auto;
   border: none;
-  background: var(--color-primary); /* root 에 있는 색상 하나만 사용 */
+  background: var(--color-primary);
+  /* root 에 있는 색상 하나만 사용 */
   color: #171d2f;
   padding: 8px 14px;
   border-radius: 6px;
@@ -60,7 +58,8 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--color-primary);
-  background: rgba(243, 194, 0, 0.18); /* 같은 색 + 투명도 */
+  background: rgba(243, 194, 0, 0.18);
+  /* 같은 색 + 투명도 */
   padding: 4px 10px;
   border-radius: 999px;
 }
@@ -101,3 +100,17 @@
   font-weight: 700;
   color: #222;
 }
+
+/*
+@media (max-width: 1056px) {
+  .event-list {
+      grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 726px) {
+  .event-list {
+      grid-template-columns: repeat(1, 1fr);
+  }
+}
+*/

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Home.css';
+import { getImagePath } from '../utils/imagePath';
 
 const Home = ({ farmData }) => {
 
@@ -60,7 +61,7 @@ const Home = ({ farmData }) => {
     splitData(filteredData);
   }, [data, district, sigungu, experience]);
 
-  console.log("allData:", allData);
+  console.log('allData:', allData);
 
   // 중복 제거
   const uniqueList = (list) => {
@@ -111,7 +112,7 @@ const Home = ({ farmData }) => {
 
       const nowData = [];
       allData.forEach(v => nowData.push(...v));
-      console.log("🔍 ~ handleSearch ~ nowData:", nowData);
+      console.log('🔍 ~ handleSearch ~ nowData:', nowData);
       const filteredData = nowData.filter(item => {
         const { PROGRAM_NM, PROGRAM_TYPE, PROGRAM_CONTENT } = item;
         if (
@@ -123,7 +124,7 @@ const Home = ({ farmData }) => {
         }
         return false;
       });
-      console.log("🔍 ~ handleSearch ~ filteredData:", filteredData);
+      console.log('🔍 ~ handleSearch ~ filteredData:', filteredData);
       splitData(filteredData);
       setCurrentPage(1);
       setStartPage(1);
@@ -132,17 +133,17 @@ const Home = ({ farmData }) => {
 
   return (
     <div>
-      <div className="category-container">
-        <label htmlFor="district">지역</label>
-        <select name="district" id="district" onChange={(e) => setDistrict(e.target.value)}>
-          <option value="">전체</option>
+      <div className='category-container'>
+        <label htmlFor='district'>지역</label>
+        <select name='district' id='district' onChange={(e) => setDistrict(e.target.value)}>
+          <option value=''>전체</option>
           {uniqueList(addressList.map(v => v.split(' ')[0])).map((address, i) => {
             return <option key={i + 1} value={address}>{address}</option>
           })}
         </select>
-        <label htmlFor="sigungu">도시</label>
-        <select name="" id="" onChange={(e) => setSigungu(e.target.value)}>
-          <option value="">전체</option>
+        <label htmlFor='sigungu'>도시</label>
+        <select name='' id='' onChange={(e) => setSigungu(e.target.value)}>
+          <option value=''>전체</option>
           {uniqueList(addressList.map(v => district ? v.split(' ')[0] === district && v.split(' ')[1] : v.split(' ')[1]))
             .filter(v => v)
             .map((address, i) => {
@@ -150,29 +151,29 @@ const Home = ({ farmData }) => {
             })}
         </select>
         <label>체험</label>
-        <select name="experience" id="experience" onChange={(e) => setExperience(e.target.value)}>
-          <option value="">전체</option>
+        <select name='experience' id='experience' onChange={(e) => setExperience(e.target.value)}>
+          <option value=''>전체</option>
           {uniqueList(experienceList).map((experience, i) => {
             return <option key={i + 1} value={experience}>{experience}</option>
           })}
         </select>
-        <form action="" onSubmit={handleSearch}>
-          <input type="text" placeholder="검색" name="search" id="search" />
-          <button type="submit">검색</button>
+        <form action='' onSubmit={handleSearch}>
+          <input type='text' placeholder='검색' name='search' id='search' />
+          <button type='submit'>검색</button>
         </form>
       </div>
-      <ul className="farm-data-list">
+      <ul className='farm-data-list'>
         {allData[currentPage - 1]?.map((item, i) => (
           <li key={i}>
-            <div className="imgBox">
-              <img src={item.VILLAGE_PHOTO ? item.VILLAGE_PHOTO : `${process.env.PUBLIC_URL || ''}/images/temp.png`} alt="village" />
+            <div className='imgBox'>
+              <img src={item.VILLAGE_PHOTO ? item.VILLAGE_PHOTO : getImagePath('/images/temp.png')} alt='village' />
             </div>
-            <div className="infoBox">
-              {Object.keys(item).filter(key => key !== "VILLAGE_PHOTO").map(key => (
+            <div className='infoBox'>
+              {Object.keys(item).filter(key => key !== 'VILLAGE_PHOTO').map(key => (
                 <p key={key}>
                   <strong>{Object.keys(des).find(k => k === key) ? des[key] : key}</strong>
-                  {key === "HMPG_ADDR" ?
-                    <a href={item[key]} target="_blank" rel="noopener noreferrer">{item[key]}</a>
+                  {key === 'HMPG_ADDR' ?
+                    <a href={item[key]} target='_blank' rel='noopener noreferrer'>{item[key]}</a>
                     :
                     <span>{item[key]}</span>}
                 </p>
@@ -181,7 +182,7 @@ const Home = ({ farmData }) => {
           </li>
         ))}
       </ul>
-      <div className="page-container">
+      <div className='page-container'>
         <button
           onClick={() => {
             if (currentPage > 1) {
@@ -196,11 +197,11 @@ const Home = ({ farmData }) => {
         >
           Prev
         </button>
-        <ul className="page-list">
+        <ul className='page-list'>
           {allData?.slice(startPage - 1, Math.min(startPage + 29, allData.length)).map((_, i) => {
             const pageNum = startPage + i;
             return (
-              <li key={pageNum - 1} className={currentPage === pageNum ? "active" : ""}>
+              <li key={pageNum - 1} className={currentPage === pageNum ? 'active' : ''}>
                 <button onClick={() => {
                   setCurrentPage(pageNum);
                   // 현재 페이지가 표시 범위 밖이면 범위 조정
