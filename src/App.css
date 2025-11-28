@@ -1,4 +1,20 @@
+:root {
+   --color-header-bg: #3a8e87;
+   --color-border: #eeeeee;
+   --color-text: #ffffff;
+   --color-text-sub: #f3c200;
+   --color-btn-border: #cccccc;
+   --color-btn-hover: #f7f7f7;
+   --color-btn-border-hover: #bbbbbb;
+   /* ======================= */
+   --color-bg: #ffffff;
+   --color-shadow-mid: rgba(0, 0, 0, 0.25);
+   --color-shadow-strong: rgba(0, 0, 0, 0.3);
+   --color-arrow: #222222;
+   --color-card-bg: #eaeaea;
+}
+
 .App {
-  margin: 0 auto;
-  max-width: 1920px;
+   margin: 0 auto;
+   max-width: 1920px;
 }
