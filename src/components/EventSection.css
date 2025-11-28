@@ -28,7 +28,6 @@
    margin-left: auto;
    border: none;
    background: var(--color-primary);
-   /* root 에 있는 색상 하나만 사용 */
    color: #171d2f;
    padding: 8px 14px;
    border-radius: 6px;
