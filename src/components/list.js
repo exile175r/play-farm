@@ -1,5 +1,5 @@
 import React from "react";
-import "./List.css";
+import "./list.css";
 
 function List() {
   const products = [

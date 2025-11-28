@@ -6,7 +6,7 @@ import Home from "./components/Home";
 import Header from "./components/layout/Header";
 import Main from "./components/Main.js";
 import SearchBar from "./components/layout/SearchBar";
-import List from "./components/List.js";
+import List from "./components/list";
 import "./App.css";
 
 function App() {
