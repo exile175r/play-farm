@@ -1,4 +1,3 @@
-// src/components/layout/EventSection.js
 import React from 'react';
 import './EventSection.css';
 import { getImagePath } from '../utils/imagePath';
