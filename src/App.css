@@ -1,65 +1,65 @@
 :root {
-   --color-header-bg: #3a8e87;
-   --color-border: #e8e2d0;
-   --color-text: #ffffff;
-   --color-text-sub: #f3c200;
-   --color-btn-border: #cccccc;
-   --color-btn-hover: #f7f7f7;
-   --color-btn-border-hover: #bbbbbb;
-   /* ======================= */
-   --color-bg: #ffffff;
-   --color-shadow-mid: rgba(0, 0, 0, 0.25);
-   --color-shadow-strong: rgba(0, 0, 0, 0.3);
-   --color-arrow: #222222;
-   --color-card-bg: #eaeaea;
+  --color-header-bg: #3a8e87;
+  --color-border: #e8e2d0;
+  --color-text: #ffffff;
+  --color-text-sub: #f3c200;
+  --color-btn-border: #cccccc;
+  --color-btn-hover: #f7f7f7;
+  --color-btn-border-hover: #bbbbbb;
+  /* ======================= */
+  --color-bg: #ffffff;
+  --color-shadow-mid: rgba(0, 0, 0, 0.25);
+  --color-shadow-strong: rgba(0, 0, 0, 0.3);
+  --color-arrow: #222222;
+  --color-card-bg: #eaeaea;
 }
 
 .App {
-   margin: 0 auto;
-   max-width: 1920px;
+  margin: 0 auto;
+  max-width: 1920px;
 }
 
 /* === 컬러 정리 === */
 /* 로고 및 메인컬러 */
 .trpcal-1-hex {
-   color: #f3c200;
+  color: #f3c200;
 }
 /* #f3c200 sub 컬러 */
 .trpcal-2-hex {
-   color: #f8a201;
+  color: #f8a201;
 }
 /* 포인트 (취소, 경고, 주의 등) */
 .trpcal-3-hex {
-   color: #d64550;
+  color: #d64550;
 }
 /* 배너 메인컬러 */
 .trpcal-4-hex {
-   color: #3a8e87;
+  color: #3a8e87;
 }
 /* 서브 메인컬러 */
 .trpcal-5-hex {
-   color: #00464a;
+  color: #00464a;
 }
 /* 전체 boder */
 .trpcal-6-hex {
-   color: #e8e2d0;
+  color: #e8e2d0;
 }
 .trpcal-7-hex {
-   color: #b9d8c2;
+  color: #b9d8c2;
 }
 /* 텍스트 1 */
 .trpcal-8-hex {
-   color: #ffffff;
+  color: #ffffff;
 }
 /* 텍스트 2 */
 .trpcal-9-hex {
-   color: #2a2a2a;
+  color: #2a2a2a;
 }
 /* 그림자 */
 .trpcal-10-hex {
-   color: #808080;
+  color: #808080;
 }
 /* 버튼 호버 */
 .trpcal-11-hex {
-   color: #f4f4f4;
+  color: #f4f4f4;
 }
