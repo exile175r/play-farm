@@ -9,7 +9,7 @@ const events = [
       tag: 'Event',
       title: '딸기 수확 체험 오픈 기념',
       subTitle: '선착순 50명 1+1',
-      image: getImagePath('/images/temp.png'),
+      image: getImagePath('/images/strbr.jpg'),
       items: [
          { name: '딸기 따기 체험권 (성인)', price: '18,000원' },
          { name: '딸기 따기 체험권 (어린이)', price: '12,000원' },
@@ -20,7 +20,7 @@ const events = [
       tag: 'Event',
       title: '가족과 함께하는 주말 농장투어',
       subTitle: '3가지 프로그램 패키지',
-      image: getImagePath('/images/event-farmtour.png'),
+      image: getImagePath('/images/farm.jpg'),
       items: [
          { name: '트랙터 투어', price: '15,000원' },
          { name: '동물 먹이주기', price: '10,000원' },
@@ -31,11 +31,11 @@ const events = [
       id: 3,
       tag: 'Event',
       title: '겨울맞이 고구마 농장 체험',
-      subTitle: '전원 2+1',
-      image: getImagePath('/images/temp.png'),
+      subTitle: '전원 2+2',
+      image: getImagePath('/images/swtpott.jpg'),
       items: [
-         { name: '튤립 화분 만들기', price: '22,000원' },
-         { name: '꽃다발 만들기', price: '28,000원' },
+         { name: '고구마 무스 키링 만들기', price: '22,000원' },
+         { name: '고구마 모형 케이크 만들기', price: '28,000원' },
       ],
    },
 ];
