@@ -15,7 +15,10 @@
 
 /* 슬라이더 */
 .slider-area {
-   width: 100%;
+   /* border: 1px solid rebeccapurple; */
+   margin: 0 auto;
+   /* width: 100%; */
+   width: max-content;
    position: relative;
    margin-top: 40px;
    text-align: center;
@@ -38,17 +41,20 @@
 }
 
 .arrow.left {
-   left: 250px;
+   /* left: 250px; */
+   left: -60px;
 }
 
 .arrow.right {
-   right: 250px;
+   /* right: 250px; */
+   right: -60px;
 }
 
 /* 카드 배치 영역 */
 .slide-track {
    position: relative;
-   width: 100%;
+   /* width: 100%; */
+   width: 1340px;
    height: 360px;
 }
 
