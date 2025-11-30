@@ -5,84 +5,80 @@ function List() {
   const products = [
     {
       id: 1,
-      title: "딸기 따기 체험",
-      subtitle: "가족 체험 추천",
+      title: "딸기 수확 체험",
+      subtitle: "봄 제철 딸기 따기",
       date: "신청마감 2025-03-10",
-      image: "/images/benner1.png",
+      image: "/images/img.png",
     },
     {
       id: 2,
-      title: "고구마 수확 체험",
-      subtitle: "초등학생 인기",
+      title: "고구마 캐기 체험",
+      subtitle: "직접 캐서 가져가는 고구마",
       date: "신청마감 2025-04-02",
-      image: "/images/benner2.png",
+      image: "/images/img.png",
     },
     {
       id: 3,
-      title: "감귤 따기 체험",
-      subtitle: "제주도 농장",
+      title: "감귤 수확 체험",
+      subtitle: "제주 감귤밭에서 따기",
       date: "신청마감 2025-05-11",
-      image: "/images/benner3.png",
+      image: "/images/img.png",
     },
     {
       id: 4,
-      title: "사과 농장 체험",
-      subtitle: "포토존 인기",
+      title: "사과 수확 체험",
+      subtitle: "사과밭 포토존 & 수확",
       date: "신청마감 2025-04-28",
-      image: "/images/benner4.png",
+      image: "/images/img.png",
     },
     {
       id: 5,
-      title: "방울토마토 수확",
-      subtitle: "아이들 체험",
+      title: "방울토마토 수확 체험",
+      subtitle: "아이들이 좋아하는 토마토 따기",
       date: "신청마감 2025-04-15",
-      image: "/images/benner5.png",
+      image: "/images/img.png",
     },
     {
       id: 6,
-      title: "수제 화분 만들기",
-      subtitle: "실내 체험",
+      title: "허브 화분 만들기 체험",
+      subtitle: "직접 심고 가져가는 허브",
       date: "신청마감 2025-03-25",
-      image: "/images/swtpott.jpg",
+      image: "/images/img.png",
     },
     {
       id: 7,
-      title: "봄맞이 꽃 체험",
-      subtitle: "꽃다발 만들기",
+      title: "봄꽃 수확 & 꽃다발 체험",
+      subtitle: "농장에서 꽃 따서 만들기",
       date: "신청마감 2025-04-20",
-      image: "/images/farm.jpg",
+      image: "/images/img.png",
     },
     {
       id: 8,
-      title: "농장 투어",
-      subtitle: "1시간 투어",
+      title: "농장 수확 투어 체험",
+      subtitle: "여러 작물 수확 체험 코스",
       date: "신청마감 2025-06-01",
-      image: "/images/strbr.jpg",
+      image: "/images/img.png",
     },
   ];
 
   return (
-    <main className="pf-list">
-      <div className="pf-list-inner">
-        <section className="pf-card-grid">
+    <main className="list-wrap">
+      <div className="list-inner">
+        <section className="list-grid">
           {products.map((item) => (
-            <article key={item.id} className="pf-card">
-              <div className="pf-card-image-wrap">
+            <article key={item.id} className="list-card">
+              <div className="list-card-img">
                 <img src={item.image} alt={item.title} />
               </div>
 
-              <div className="pf-card-body">
-                <p className="pf-card-title">{item.title}</p>
-                <p className="pf-card-sub">{item.subtitle}</p>
-                <p className="pf-card-date">{item.date}</p>
+              <div className="list-card-body">
+                <p className="list-title">{item.title}</p>
+                <p className="list-sub">{item.subtitle}</p>
+                <p className="list-date">{item.date}</p>
 
-                <div className="pf-card-buttons">
-                  <button type="button" className="pf-card-btn pf-btn-outline">
-                    상세보기
-                  </button>
-                  <button type="button" className="pf-card-btn pf-btn-primary">
-                    예약하기
-                  </button>
+                <div className="list-btn-wrap">
+                  <button className="list-btn outline">상세보기</button>
+                  <button className="list-btn primary">예약하기</button>
                 </div>
               </div>
             </article>

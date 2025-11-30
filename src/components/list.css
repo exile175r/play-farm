@@ -1,42 +1,43 @@
-.pf-list {
+.list-wrap {
   width: 100%;
   background: #f5f5f5;
   padding: 40px 0 80px;
   font-family: "Pretendard", "Noto Sans KR", system-ui, -apple-system, sans-serif;
 }
 
-.pf-list-inner {
+.list-inner {
   width: 1200px;
   margin: 0 auto;
 }
 
 /* 카드 4열 */
-.pf-card-grid {
+.list-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 32px 32px;
+  gap: 32px;
   justify-items: center;
 }
 
 /* 카드 */
-.pf-card {
+.list-card {
   width: 260px;
   background: #f3f3f3;
   border-radius: 12px;
-  padding: 16px 16px 18px;
+  padding: 16px;
   box-sizing: border-box;
 }
 
 /* 이미지 */
-.pf-card-image-wrap {
+.list-card-img {
   width: 100%;
+  height: 150px;
   border-radius: 12px;
   overflow: hidden;
-  background: #ffffff;
+  background: #fff;
   margin-bottom: 14px;
 }
 
-.pf-card-image-wrap img {
+.list-card-img img {
   width: 100%;
   height: 150px;
   object-fit: cover;
@@ -44,58 +45,60 @@
 }
 
 /* 텍스트 */
-.pf-card-body {
+.list-card-body {
   text-align: center;
 }
 
-.pf-card-title {
+.list-title {
   font-size: 14px;
   font-weight: 700;
-  color: #333333;
+  color: #333;
   margin-bottom: 4px;
 }
 
-.pf-card-sub,
-.pf-card-date {
+.list-sub,
+.list-date {
   font-size: 13px;
-  color: #555555;
+  color: #555;
   margin: 2px 0;
 }
 
-/* 버튼 영역 */
-.pf-card-buttons {
+/* 버튼 */
+.list-btn-wrap {
   display: flex;
   justify-content: center;
   gap: 8px;
   margin-top: 14px;
 }
 
-.pf-card-btn {
+.list-btn {
   min-width: 80px;
   height: 32px;
   padding: 0 12px;
   border-radius: 999px;
-  border: none;
   font-size: 13px;
   cursor: pointer;
+  border: none;
 }
 
-/* 회색 버튼 */
-.pf-btn-outline {
+/* outline */
+.list-btn.outline {
   background: #ffffff;
   border: 1px solid #cccccc;
 }
 
-.pf-btn-outline:hover {
+.list-btn.outline:hover {
   background: #f3f3f3;
 }
 
-/* 주황 예약 버튼 */
-.pf-btn-primary {
+/* primary */
+.list-btn.primary {
   background: #ff9f1c;
-  color: #ffffff;
+  color: #fff;
 }
 
-.pf-btn-primary:hover {
+.list-btn.primary:hover {
   background: #f18f0c;
 }
+
+/* 지붸 가궈싶돠 이미 지뷔지만 격하게 쥐베 가궈싶똬 */
