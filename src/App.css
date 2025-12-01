@@ -12,6 +12,18 @@
   --color-shadow-strong: rgba(0, 0, 0, 0.3);
   --color-arrow: #222222;
   --color-card-bg: #eaeaea;
+
+  /* list */
+  --color-list-bg: #f5f5f5;
+  --color-list-card-bg: #f3f3f3;
+  --color-list-title: #333333;
+  --color-list-sub: #555555;
+  --color-list-btn-outline-bg: #ffffff;
+  --color-list-btn-outline-border: #cccccc;
+  --color-list-btn-outline-hover-bg: #f3f3f3;
+  --color-list-btn-primary-bg: #ff9f1c;
+  --color-list-btn-primary-hover-bg: #f18f0c;
+  --color-list-btn-primary-text: #ffffff;
 }
 
 .App {
