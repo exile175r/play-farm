@@ -78,7 +78,6 @@ function List() {
 
                 <div className="list-btn-wrap">
                   <button className="list-btn outline">상세보기</button>
-                  <button className="list-btn primary">예약하기</button>
                 </div>
               </div>
             </article>
