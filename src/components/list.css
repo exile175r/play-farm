@@ -1,102 +1,102 @@
 .list-wrap {
-  width: 100%;
-  background: var(--color-list-bg);
-  padding: 40px 0 80px;
-  font-family: "Pretendard", "Noto Sans KR", system-ui, -apple-system, sans-serif;
+   width: 100%;
+   background: var(--color-list-bg);
+   padding: 40px 0 80px;
+   font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
 }
 
 .list-inner {
-  width: 1200px;
-  margin: 0 auto;
+   width: 1200px;
+   margin: 0 auto;
 }
 
 /* 카드 4열 */
 .list-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 32px;
-  justify-items: center;
+   display: grid;
+   grid-template-columns: repeat(4, 1fr);
+   gap: 32px;
+   justify-items: center;
 }
 
 /* 카드 */
 .list-card {
-  width: 260px;
-  background: var(--color-list-card-bg);
-  border-radius: 12px;
-  padding: 16px;
-  box-sizing: border-box;
+   width: 260px;
+   background: var(--color-list-card-bg);
+   border-radius: 12px;
+   padding: 16px;
+   box-sizing: border-box;
 }
 
 /* 이미지 */
 .list-card-img {
-  width: 100%;
-  height: 150px;
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--color-bg);
-  margin-bottom: 14px;
+   width: 100%;
+   height: 150px;
+   border-radius: 12px;
+   overflow: hidden;
+   background: var(--color-bg);
+   margin-bottom: 14px;
 }
 
 .list-card-img img {
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
-  display: block;
+   width: 100%;
+   height: 150px;
+   object-fit: cover;
+   display: block;
 }
 
 /* 텍스트 */
 .list-card-body {
-  text-align: center;
+   text-align: center;
 }
 
 .list-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--color-list-title);
-  margin-bottom: 4px;
+   font-size: 14px;
+   font-weight: 700;
+   color: var(--color-list-title);
+   margin-bottom: 4px;
 }
 
 .list-sub,
 .list-date {
-  font-size: 13px;
-  color: var(--color-list-sub);
-  margin: 2px 0;
+   font-size: 13px;
+   color: var(--color-list-sub);
+   margin: 2px 0;
 }
 
 /* 버튼 */
 .list-btn-wrap {
-  display: flex;
-  justify-content: end;
-  gap: 8px;
-  margin-top: 14px;
+   display: flex;
+   justify-content: end;
+   gap: 8px;
+   margin-top: 14px;
 }
 
 .list-btn {
-  min-width: 80px;
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 999px;
-  font-size: 13px;
-  cursor: pointer;
-  border: none;
+   min-width: 80px;
+   height: 32px;
+   padding: 0 12px;
+   border-radius: 999px;
+   font-size: 13px;
+   cursor: pointer;
+   border: none;
 }
 
 /* outline */
 .list-btn.outline {
-  background: var(--color-list-btn-outline-bg);
-  border: 1px solid var(--color-list-btn-outline-border);
+   background: var(--color-list-btn-outline-bg);
+   border: 1px solid var(--color-list-btn-outline-border);
 }
 
 .list-btn.outline:hover {
-  background: var(--color-list-btn-outline-hover-bg);
+   background: var(--color-list-btn-outline-hover-bg);
 }
 
 /* primary */
 .list-btn.primary {
-  background: var(--color-list-btn-primary-bg);
-  color: var(--color-list-btn-primary-text);
+   background: var(--color-list-btn-primary-bg);
+   color: var(--color-list-btn-primary-text);
 }
 
 .list-btn.primary:hover {
-  background: var(--color-list-btn-primary-hover-bg);
+   background: var(--color-list-btn-primary-hover-bg);
 }
