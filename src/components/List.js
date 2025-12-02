@@ -13,18 +13,24 @@ function List() {
             <div className="list-grid">
                {products.map((item) => (
                   <div className="list-card" key={item.id}>
+                     {/* 이미지 영역 */}
                      <div className="list-card-img">
                         <img src={item.src || item.image} alt={item.title} />
                      </div>
 
+                     {/* 텍스트 영역 */}
                      <div className="list-card-body">
                         <h3 className="list-title">{item.title}</h3>
                         <p className="list-sub">{item.subtitle}</p>
                         <p className="list-date">{item.date}</p>
+
+                        {/* 버튼 영역 */}
                         <div className="list-btn-wrap">
-                           <Link to={`/list/${item.id}`} className="list-btn outline">
-                              상세보기
-                           </Link>
+                           <button>
+                              <Link to={`/list/${item.id}`} className="list-btn outline">
+                                 상세보기
+                              </Link>
+                           </button>
                         </div>
                      </div>
                   </div>

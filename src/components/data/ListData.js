@@ -1,4 +1,5 @@
 import { getImagePath } from '../../utils/imagePath';
+
 export const products = [
    {
       id: 1,
@@ -54,6 +55,62 @@ export const products = [
       title: '농장 수확 투어 체험',
       subtitle: '여러 작물 수확 체험 코스',
       date: '신청마감 2025-06-01',
+      image: '/images/img.png',
+   },
+   {
+      id: 9,
+      title: '옥수수 따기 체험',
+      subtitle: '달콤한 옥수수 직접 수확',
+      date: '신청마감 2025-07-02',
+      image: '/images/img.png',
+   },
+   {
+      id: 10,
+      title: '블루베리 따기 체험',
+      subtitle: '여름 베리 수확',
+      date: '신청마감 2025-06-20',
+      image: '/images/img.png',
+   },
+   {
+      id: 11,
+      title: '단호박 수확 체험',
+      subtitle: '가을 호박 캐기',
+      date: '신청마감 2025-09-15',
+      image: '/images/img.png',
+   },
+   {
+      id: 12,
+      title: '라벤더 향초 만들기',
+      subtitle: '농장 라벤더로 만드는 핸드메이드 향초',
+      date: '신청마감 2025-05-15',
+      image: '/images/img.png',
+   },
+   {
+      id: 13,
+      title: '밀 수확 체험',
+      subtitle: '밀밭 체험 & 제분 시연',
+      date: '신청마감 2025-06-11',
+      image: '/images/img.png',
+   },
+   {
+      id: 14,
+      title: '버섯 키우기 체험',
+      subtitle: '직접 키우는 새송이버섯',
+      date: '신청마감 2025-03-30',
+      image: '/images/img.png',
+   },
+   {
+      id: 15,
+      title: '양상추 수확 체험',
+      subtitle: '비닐하우스에서 신선한 채소 따기',
+      date: '신청마감 2025-04-08',
+      image: '/images/img.png',
+   },
+   {
+      id: 16,
+      title: '딸기잼 만들기 클래스',
+      subtitle: '수확한 딸기로 만드는 잼',
+      date: '신청마감 2025-03-18',
       image: '/images/img.png',
    },
 ];
