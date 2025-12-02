@@ -5,11 +5,11 @@ import EventSection from './EventSection';
 import { getImagePath } from '../utils/imagePath';
 
 const slides = [
-   { id: 1, src: getImagePath('/images/benner1.png'), alt: '슬라이드 1' },
-   { id: 2, src: getImagePath('/images/benner2.png'), alt: '슬라이드 2' },
-   { id: 3, src: getImagePath('/images/benner3.png'), alt: '슬라이드 3' },
-   { id: 5, src: getImagePath('/images/benner4.png'), alt: '슬라이드 5' },
-   { id: 4, src: getImagePath('/images/benner5.png'), alt: '슬라이드 4' },
+   { id: 1, src: getImagePath('/benner/benner1.png'), alt: '슬라이드 1' },
+   { id: 2, src: getImagePath('/benner/benner2.png'), alt: '슬라이드 2' },
+   { id: 3, src: getImagePath('/benner/benner3.png'), alt: '슬라이드 3' },
+   { id: 5, src: getImagePath('/benner/benner4.png'), alt: '슬라이드 5' },
+   { id: 4, src: getImagePath('/benner/benner5.png'), alt: '슬라이드 4' },
 ];
 
 function getPositionClass(index, activeIndex, length) {

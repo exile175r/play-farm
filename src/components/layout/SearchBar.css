@@ -1,99 +1,90 @@
-:root {
-  --color-primary: #f3c200;
-  --color-orange: #f8a201;
-  --color-green-light: #007c60;
-  --color-green-dark: #00464a;
-  --color-navy-deep: #171d2f;
-}
-
-/* 검색 영역 전체 */
 .pf-search-section {
-  padding: 22px 0 32px;
-  background: #ffffff;
+   padding: 22px 0 32px;
+   background: #ffffff;
 }
 
 /* 검색 바 */
 .pf-search-bar {
-  max-width: 960px;
-  margin: 0 auto;
-  height: 56px;
-  border-radius: 999px;
-  border: 2px solid var(--color-navy-deep);
-  background: #fff;
-  display: flex;
-  align-items: center;
-  padding: 0 22px;
-  gap: 16px;
-  box-sizing: border-box;
+   max-width: 960px;
+   margin: 0 auto;
+   height: 56px;
+   border-radius: 999px;
+   border: 2px solid var(--color-navy-deep);
+   background: #fff;
+   display: flex;
+   align-items: center;
+   padding: 0 22px;
+   gap: 16px;
+   box-sizing: border-box;
 }
 
 /* 드롭다운 영역 */
 .pf-search-category {
-  display: flex;
-  align-items: center;
-  margin-right: 16px;
-  border-right: 1px solid #dddddd;
-  padding-right: 16px;
+   display: flex;
+   align-items: center;
+   margin-right: 16px;
+   border-right: 1px solid #dddddd;
+   padding-right: 16px;
 }
 
 /* select */
 .pf-search-category select {
-  border: none;
-  background: transparent;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-navy-deep);
-  cursor: pointer;
+   border: none;
+   background: transparent;
+   font-size: 14px;
+   font-weight: 500;
+   color: var(--color-navy-deep);
+   cursor: pointer;
 
-  /* 기본 브라우저 화살표 제거 */
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
+   /* 기본 브라우저 화살표 제거 */
+   appearance: none;
+   -webkit-appearance: none;
+   -moz-appearance: none;
 }
 
 /* 검색 인풋 */
 .pf-search-input {
-  flex: 1;
-  border: none;
-  outline: none;
-  font-size: 14px;
-  color: var(--color-navy-deep);
-  background: transparent;
+   flex: 1;
+   border: none;
+   outline: none;
+   font-size: 14px;
+   color: var(--color-navy-deep);
+   background: transparent;
 }
 
 .pf-search-input::placeholder {
-  color: #888;
+   color: #888;
 }
 
 /* 검색 버튼 */
 .pf-search-btn {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
+   border: none;
+   background: transparent;
+   cursor: pointer;
+   padding: 6px;
+   border-radius: 50%;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   width: 42px;
+   height: 42px;
 }
 
 .pf-search-btn img {
-  width: 100%;
+   width: 100%;
 }
 
 /* 돋보기 아이콘 */
 .pf-search-icon {
-  width: 20px;
-  height: 20px;
-  stroke: var(--color-navy-deep);
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  fill: none;
+   width: 20px;
+   height: 20px;
+   stroke: var(--color-navy-deep);
+   stroke-linecap: round;
+   stroke-linejoin: round;
+   fill: none;
 }
 
 /* 버튼 hover */
 .pf-search-btn:hover .pf-search-icon {
-  stroke: var(--color-primary);
+   stroke: var(--color-primary);
 }
