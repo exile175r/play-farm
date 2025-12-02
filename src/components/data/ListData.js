@@ -1,5 +1,4 @@
 import { getImagePath } from '../../utils/imagePath';
-
 export const products = [
    {
       id: 1,
@@ -45,7 +44,7 @@ export const products = [
    },
    {
       id: 7,
-      title: '봄꽃 수확 & 꽃다발 체험',
+      title: '봄꽃 수확 & 꽃다발 만들기',
       subtitle: '농장에서 꽃 따서 만들기',
       date: '신청마감 2025-04-20',
       image: '/images/img.png',

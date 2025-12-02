@@ -6,23 +6,28 @@ import { products } from './data/ListData';
 
 function List() {
    return (
-      <section className="list">
+      <section className="list-wrap">
          <div className="list-inner">
             <h2 className="list-title">전체 체험 목록</h2>
 
             <div className="list-grid">
                {products.map((item) => (
-                  <Link to={`/list/${item.id}`} className="list-card" key={item.id}>
-                     <div className="list-thumb">
+                  <div className="list-card" key={item.id}>
+                     <div className="list-card-img">
                         <img src={item.src || item.image} alt={item.title} />
                      </div>
 
-                     <div className="list-info">
-                        <h3 className="list-name">{item.title}</h3>
+                     <div className="list-card-body">
+                        <h3 className="list-title">{item.title}</h3>
                         <p className="list-sub">{item.subtitle}</p>
-                        <span className="list-date">{item.date}</span>
+                        <p className="list-date">{item.date}</p>
+                        <div className="list-btn-wrap">
+                           <Link to={`/list/${item.id}`} className="list-btn outline">
+                              상세보기
+                           </Link>
+                        </div>
                      </div>
-                  </Link>
+                  </div>
                ))}
             </div>
          </div>

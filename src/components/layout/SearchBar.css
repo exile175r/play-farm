@@ -9,7 +9,7 @@
    margin: 0 auto;
    height: 56px;
    border-radius: 999px;
-   border: 2px solid var(--color-navy-deep);
+   border: 3px solid var(--color-green-light);
    background: #fff;
    display: flex;
    align-items: center;
@@ -33,7 +33,7 @@
    background: transparent;
    font-size: 14px;
    font-weight: 500;
-   color: var(--color-navy-deep);
+   color: var(--color-green-dark);
    cursor: pointer;
 
    /* 기본 브라우저 화살표 제거 */
