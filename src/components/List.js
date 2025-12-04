@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import './List.css';
 import { products } from './data/ListData';
 
-function List() {
+function List({ farmData }) {
+   console.log(farmData);
    return (
       <section className="list-wrap">
          <div className="list-inner">
