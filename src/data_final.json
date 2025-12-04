@@ -2751,53 +2751,6 @@
     {
       "DATA": "한국농어촌공사_농어촌체험휴양마을",
       "PROGRAM_NM": [
-        "대봉감따기체험",
-        "방울토마토수확체험"
-      ],
-      "PROGRAM_TYPE": [
-        "농작물경작체험",
-        "만들기체험",
-        "기타"
-      ],
-      "REFINE_ZIPNO": null,
-      "REFINE_LOTNO_ADDR": null,
-      "REFINE_ROADNM_ADDR": "경상남도 의령군 화정면 화정로 687",
-      "CHRGE": "15000원",
-      "CN": null,
-      "REQST_BGNDE": "20261208",
-      "REQST_ENDDE": "20261231",
-      "HMPG_ADDR": "https://www.fnnews.com/news/202301271438149822",
-      "MAX_PERSONNEL": "2",
-      "MIN_PERSONNEL": "1",
-      "REPRSNTV_NM": "이홍우",
-      "TELNO": "055-572-8786",
-      "REFRNC": "체험 문의: 055-572-8786",
-      "ATPN": "체험 중 안전사고에 주의해주세요.",
-      "REFINE_WGS84_LAT": 35.260653,
-      "REFINE_WGS84_LOGT": 128.242635,
-      "VILLAGE_NM": "나루마을",
-      "FARM_DESCRIPTION": "사계절 내내 신선한 친환경 재배 방식으로 재배된 신선한 농산물을 직접 체험할 수 있습니다.",
-      "FARM_ENVIRONMENT_DESC": "최신 시설에서 재배된",
-      "SLOGAN": "신선한 농산물과 함께하는 하루",
-      "ACTIVITY_CONTENT": "전문가의 설명과 함께 체험할 수 있습니다",
-      "PROGRAM_SCHEDULE": "01. 인사 및 프로그램 안내 (10분) → 02. 체험 활동 (90분) → 03. 정리 및 마무리 (20분)",
-      "GROUP_DISCOUNT_INFO": "10명 이상 단체 예약 시 10~30% 할인",
-      "SIDE_ACTIVITIES": "농산물 요리 체험",
-      "SOUVENIR_INFO": "체험 사진 액자, 농장 로고 스티커",
-      "CRAFT_INFO": "자수 공예 체험",
-      "FACILITY_DESCRIPTION": "야외 체험장 및 실내 전시관",
-      "SURROUNDING_INFO": "도심에서 가까운 접근성 좋은 위치",
-      "CANCELLATION_POLICY": "체험 2일 전까지 취소 시 100% 환불, 당일 취소 불가",
-      "PREPARATION_ITEMS": "썬크림, 모기 기피제, 개인 수건",
-      "OPERATING_HOURS": "매일 09:00-18:00 (연중 무휴)",
-      "RES_DATE": null,
-      "RES_DATE_TIME": null,
-      "USE_TIME": "4시간",
-      "IMAGES": []
-    },
-    {
-      "DATA": "한국농어촌공사_농어촌체험휴양마을",
-      "PROGRAM_NM": [
         "감따기체험",
         "벼심기체험"
       ],

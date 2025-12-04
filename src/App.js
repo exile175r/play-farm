@@ -9,6 +9,8 @@ import SearchBar from './components/layout/SearchBar';
 import List from './components/List.js';
 import './App.css';
 import ListData from './components/ListDetail.js';
+import Login from './components/login/Login';
+import Signup from './components/login/Signup';
 
 function App() {
   console.log(farmDataJson);
@@ -21,6 +23,8 @@ function App() {
         <Route path="/" element={<Main />} />
         <Route path="/list" element={<List />} />
         <Route path="/list/:id" element={<ListData />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="/data" element={<DataCheck farmData={farmDataJson} />} />
       </Routes>
       {/* 임시 버튼(데이터 체크 페이지로 이동) 추후 삭제 */}
