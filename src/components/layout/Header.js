@@ -16,7 +16,7 @@ function Header() {
         <nav className="pf-nav">
           <Link to="/">홈</Link>
           <Link to="/list">체험</Link>
-          <Link to="/">이벤트</Link>
+          <Link to="/events">이벤트·공지</Link>
           <Link to="/">고객지원</Link>
         </nav>
 

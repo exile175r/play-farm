@@ -1,0 +1,114 @@
+.pf-event-page {
+   background: var(--color-bg);
+   padding: 40px 0 80px;
+}
+
+.pf-event-inner {
+   width: 1200px;
+   margin: 0 auto;
+}
+
+.pf-event-group + .pf-event-group {
+   margin-top: 40px;
+}
+
+.pf-event-section-title {
+   font-size: 20px;
+   font-weight: 700;
+   margin: 0 0 20px;
+   color: var(--color-list-title);
+}
+
+.pf-event-row {
+   display: grid;
+   grid-template-columns: repeat(3, minmax(0, 1fr));
+   gap: 32px 24px;
+}
+
+.pf-event-card {
+   background: var(--color-list-card-bg);
+   border-radius: 20px;
+   padding: 18px 18px 16px;
+   box-shadow: 0 12px 30px var(--color-shadow-mid);
+   display: flex;
+   flex-direction: column;
+   cursor: pointer;
+   transition: transform 0.18s ease-out, box-shadow 0.18s ease-out;
+}
+
+.pf-event-card:hover {
+   transform: translateY(-4px);
+   box-shadow: 0 18px 40px var(--color-shadow-strong);
+}
+
+.pf-event-card-top {
+   margin-bottom: 12px;
+}
+
+.pf-event-title {
+   margin: 0 0 4px;
+   font-size: 16px;
+   font-weight: 700;
+   color: var(--color-list-title);
+   line-height: 1.4;
+}
+
+.pf-event-title span {
+   display: block;
+}
+
+.pf-event-subtitle {
+   margin: 0;
+   font-size: 12px;
+   color: var(--color-list-sub);
+   line-height: 1.4;
+}
+
+.pf-event-thumb {
+   width: 100%;
+   margin-top: 8px;
+   margin-bottom: 10px;
+   border-radius: 12px;
+   overflow: hidden;
+   background: var(--color-list-bg);
+}
+
+.pf-event-image {
+   width: 100%;
+   height: 160px;
+   object-fit: cover;
+   display: block;
+}
+
+.pf-event-bottom {
+   display: flex;
+   align-items: flex-end;
+   justify-content: space-between;
+   margin-top: 6px;
+}
+
+.pf-event-bottom-left {
+   display: flex;
+   flex-direction: column;
+   gap: 2px;
+}
+
+.pf-event-tag {
+   font-size: 11px;
+   color: var(--color-list-sub);
+}
+
+.pf-event-unit-text {
+   font-size: 12px;
+   color: var(--color-list-sub);
+}
+
+.pf-event-bottom-right {
+   text-align: right;
+}
+
+.pf-event-price {
+   font-size: 14px;
+   font-weight: 700;
+   color: var(--color-list-title);
+}
