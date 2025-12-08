@@ -1,76 +1,205 @@
+/* src/components/auth/Login.css */
+
 .login-container {
-  margin: 0 auto;
-  padding-top: 100px;
-  max-width: 500px;
+  min-height: calc(100vh - 70px); /* 헤더 높이만큼 빼고 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  background: var(--color-list-bg);
+  font-family: "Pretendard", "Noto Sans KR", system-ui, -apple-system, sans-serif;
 }
 
 .login-container h2 {
-  padding: 30px 0;
-  text-align: center;
-  font-size: 29px;
+  margin: 0 0 24px;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-list-title);
 }
 
-.login-container form {
+/* 폼 박스 */
+.login-form {
+  width: 100%;
+  max-width: 360px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 24px 22px 20px;
+  box-shadow: 0 10px 30px var(--color-shadow-mid);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
+  box-sizing: border-box;
 }
 
-.login-container form>* {
-  height: 60px;
-  border-radius: 60px;
-}
-
-.login-container form input {
-  padding: 0 20px;
-  box-shadow: 0 0 3px 1px rgb(12 12 12 / 50%);
-  font-size: 16px;
-  outline: 0;
-  border: 0;
-}
-
-.login-container form button {
-  background-color: var(--color-green-light);
-  font-size: 25px;
-  color: #fff;
-  font-weight: 700;
-}
-
-.login-container .login-find-btns {
-  padding: 10px 0;
-  display: flex;
-  justify-content: right;
-  gap: 7px;
-}
-
-.login-container .login-find-btns button {
-  font-size: 16px;
-}
-
-.login-container h3 {
-  font-size: 20px;
-}
-
-.login-container .login-async-btns {
-  margin-bottom: 140px;
-  padding: 30px 60px;
-  display: flex;
-  gap: 60px;
-}
-
-.login-container .login-async-btns img {
+.login-form input {
   width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  padding: 10px 12px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.login-container .login-signup>* {
-  display: inline-block;
+.login-form input:focus {
+  border-color: var(--color-header-bg);
+  box-shadow: 0 0 0 3px rgba(58, 142, 135, 0.15);
 }
 
-.login-container .login-signup p {
-  margin-right: 15px;
+.login-form button[type="submit"] {
+  margin-top: 4px;
+  width: 100%;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-header-bg);
+  color: var(--color-text);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.1s ease;
 }
 
-.login-container .login-signup button {
-  font-size: 1rem;
-  font-weight: 500;
+.login-form button[type="submit"]:hover {
+  opacity: 0.95;
+  box-shadow: 0 6px 12px var(--color-shadow-mid);
+  transform: translateY(-1px);
+}
+
+.login-form button[type="submit"]:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* 아이디/비번 찾기 */
+.login-find-btns {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--color-list-sub);
+}
+
+.login-find-btns button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.login-find-btns button a {
+  text-decoration: none;
+  color: var(--color-list-sub);
+}
+
+.login-find-btns button a:hover {
+  text-decoration: underline;
+}
+
+/* 간편 로그인 타이틀 */
+.login-container h3 {
+  margin: 24px 0 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-list-title);
+}
+
+/* 간편 로그인 버튼 묶음 */
+.login-async-btns {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.login-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+
+.login-btn img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.login-btn:hover {
+  background: var(--color-btn-hover);
+  box-shadow: 0 4px 8px var(--color-shadow-mid);
+  transform: translateY(-1px);
+}
+
+.login-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* 회원가입 영역 */
+.login-signup {
+  text-align: center;
+  font-size: 14px;
+  color: var(--color-list-sub);
+}
+
+.login-signup p {
+  margin: 0 0 8px;
+}
+
+.signup-btn {
+  border-radius: 999px;
+  border: 1px solid var(--color-header-bg);
+  background: #ffffff;
+  padding: 8px 18px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+
+.signup-btn a {
+  text-decoration: none;
+  color: var(--color-header-bg);
+}
+
+.signup-btn:hover {
+  background: var(--color-header-bg);
+  box-shadow: 0 4px 10px var(--color-shadow-mid);
+  transform: translateY(-1px);
+}
+
+.signup-btn:hover a {
+  color: var(--color-text);
+}
+
+.signup-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* 반응형 */
+@media (max-width: 480px) {
+  .login-form {
+    padding: 20px 16px 16px;
+    border-radius: 12px;
+  }
+
+  .login-container h2 {
+    font-size: 22px;
+  }
+
+  .login-async-btns {
+    gap: 10px;
+  }
 }
