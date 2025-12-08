@@ -285,7 +285,6 @@ const Signup = () => {
   return (
     <div className="signup-container">
       <h2>회원가입</h2>
-      <p>한 번의 회원가입으로 모든 서비스 이용 할 수있습니다.</p>
       <form className="signup-form" onSubmit={handleSubmit}>
         <div className="input-container">
           <div>

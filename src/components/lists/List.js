@@ -2,7 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import "./List.css";
-import { getImagePath } from "../utils/imagePath";
+import { getImagePath } from "../../utils/imagePath";
 
 function List({ farmData }) {
   // 전체 데이터 중 앞에서 10개만 잘라오기

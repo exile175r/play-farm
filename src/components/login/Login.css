@@ -1,43 +1,39 @@
-/* src/components/auth/Login.css */
-
 .login-container {
-  min-height: calc(100vh - 70px); /* 헤더 높이만큼 빼고 */
+  min-height: calc(100vh - 70px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 40px 16px;
   background: var(--color-list-bg);
-  font-family: "Pretendard", "Noto Sans KR", system-ui, -apple-system, sans-serif;
 }
 
 .login-container h2 {
-  margin: 0 0 24px;
-  font-size: 26px;
+  margin: 0 0 28px;
+  font-size: 30px;
   font-weight: 700;
   color: var(--color-list-title);
 }
 
-/* 폼 박스 */
 .login-form {
   width: 100%;
-  max-width: 360px;
+  max-width: 480px;
   background: #ffffff;
-  border-radius: 16px;
-  padding: 24px 22px 20px;
-  box-shadow: 0 10px 30px var(--color-shadow-mid);
+  border-radius: 20px;
+  padding: 36px 30px 30px;
+  box-shadow: 0 12px 36px var(--color-shadow-mid);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 18px;
   box-sizing: border-box;
 }
 
 .login-form input {
   width: 100%;
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid var(--color-border);
-  padding: 10px 12px;
-  font-size: 14px;
+  padding: 14px 16px;
+  font-size: 15px;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -48,13 +44,13 @@
 }
 
 .login-form button[type="submit"] {
-  margin-top: 4px;
+  margin-top: 6px;
   width: 100%;
   border: none;
   border-radius: 999px;
-  padding: 10px 14px;
-  font-size: 15px;
-  font-weight: 600;
+  padding: 14px 18px;
+  font-size: 17px;
+  font-weight: 700;
   cursor: pointer;
   background: var(--color-header-bg);
   color: var(--color-text);
@@ -63,7 +59,7 @@
 
 .login-form button[type="submit"]:hover {
   opacity: 0.95;
-  box-shadow: 0 6px 12px var(--color-shadow-mid);
+  box-shadow: 0 8px 16px var(--color-shadow-mid);
   transform: translateY(-1px);
 }
 
@@ -72,14 +68,13 @@
   box-shadow: none;
 }
 
-/* 아이디/비번 찾기 */
 .login-find-btns {
-  margin-top: 10px;
+  margin-top: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 14px;
   color: var(--color-list-sub);
 }
 
@@ -99,25 +94,23 @@
   text-decoration: underline;
 }
 
-/* 간편 로그인 타이틀 */
 .login-container h3 {
-  margin: 24px 0 10px;
-  font-size: 15px;
+  margin: 32px 0 16px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--color-list-title);
 }
 
-/* 간편 로그인 버튼 묶음 */
 .login-async-btns {
   display: flex;
   justify-content: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 16px;
+  margin-bottom: 26px;
 }
 
 .login-btn {
-  width: 44px;
-  height: 44px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   border: 1px solid var(--color-border);
   background: #ffffff;
@@ -130,40 +123,34 @@
 }
 
 .login-btn img {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
 }
 
 .login-btn:hover {
   background: var(--color-btn-hover);
-  box-shadow: 0 4px 8px var(--color-shadow-mid);
+  box-shadow: 0 4px 10px var(--color-shadow-mid);
   transform: translateY(-1px);
 }
 
-.login-btn:active {
-  transform: translateY(0);
-  box-shadow: none;
-}
-
-/* 회원가입 영역 */
 .login-signup {
   text-align: center;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--color-list-sub);
 }
 
 .login-signup p {
-  margin: 0 0 8px;
+  margin: 0 0 10px;
 }
 
 .signup-btn {
   border-radius: 999px;
   border: 1px solid var(--color-header-bg);
   background: #ffffff;
-  padding: 8px 18px;
+  padding: 10px 22px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   transition: background 0.15s, color 0.15s, box-shadow 0.15s, transform 0.1s;
 }
@@ -175,7 +162,7 @@
 
 .signup-btn:hover {
   background: var(--color-header-bg);
-  box-shadow: 0 4px 10px var(--color-shadow-mid);
+  box-shadow: 0 4px 12px var(--color-shadow-mid);
   transform: translateY(-1px);
 }
 
@@ -183,23 +170,17 @@
   color: var(--color-text);
 }
 
-.signup-btn:active {
-  transform: translateY(0);
-  box-shadow: none;
-}
-
-/* 반응형 */
 @media (max-width: 480px) {
   .login-form {
-    padding: 20px 16px 16px;
-    border-radius: 12px;
+    padding: 26px 20px 22px;
+    max-width: 90%;
   }
 
   .login-container h2 {
-    font-size: 22px;
+    font-size: 24px;
   }
 
   .login-async-btns {
-    gap: 10px;
+    gap: 12px;
   }
 }
