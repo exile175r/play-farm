@@ -1,62 +1,67 @@
 .pf-header {
-   width: 100%;
-   height: 70px;
-   border-bottom: 1px solid var(--color-border);
-   background: var(--color-header-bg);
-   display: flex;
-   align-items: center;
-   position: sticky;
-   top: 0;
-   z-index: 100;
+  width: 100%;
+  height: 70px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-header-bg);
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 /* 내부 컨테이너 */
 .pf-inner {
-   width: 1200px;
-   margin: 0 auto;
-   display: flex;
-   align-items: center;
-   justify-content: space-between;
+  width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 /* 로고 */
 .pf-logo img {
-   width: 240px;
-   height: auto;
-   display: block;
+  width: 240px;
+  height: auto;
+  display: block;
 }
 
 /* 네비게이션 */
 .pf-nav {
-   display: flex;
-   gap: 32px;
+  display: flex;
+  gap: 32px;
 }
 
 .pf-nav a {
-   font-size: 15px;
-   text-decoration: none;
-   color: var(--color-text);
-   transition: color 0.2s ease;
+  font-size: 15px;
+  text-decoration: none;
+  color: var(--color-text);
+  transition: color 0.2s ease;
 }
 
 .pf-nav a:hover {
-   color: var(--color-text-sub);
+  color: var(--color-text-sub);
 }
 
 /* 로그인 */
 .pf-utils .pf-login-btn {
-   padding: 6px 14px;
-   font-size: 14px;
-   border-radius: 15px;
-   border: 1px solid var(--color-btn-border);
-   background: var(--color-header-bg);
-   cursor: pointer;
-   color: var(--color-text);
-   transition: all 0.2s ease;
+  /* padding: 6px 14px; */
+  font-size: 14px;
+  border-radius: 15px;
+  border: 1px solid var(--color-btn-border);
+  background: var(--color-header-bg);
+  cursor: pointer;
+  color: var(--color-text);
+  transition: all 0.2s ease;
 }
 
 .pf-utils .pf-login-btn:hover {
-   background: var(--color-btn-hover);
-   border-color: var(--color-btn-border-hover);
-   color: var(--color-text-sub);
+  background: var(--color-btn-hover);
+  border-color: var(--color-btn-border-hover);
+  color: var(--color-text-sub);
+}
+
+.pf-utils .pf-login-btn a {
+  padding: 6px 14px;
+  display: inline-block;
 }

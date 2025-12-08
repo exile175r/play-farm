@@ -21,8 +21,8 @@ function Header() {
         </nav>
 
         <div className="pf-utils">
-          <button className="pf-login-btn"><Link to="/login">login</Link></button>
-          <button className="pf-login-btn"><Link to="/signup">signup</Link></button>
+          <button className="pf-login-btn"><Link to="/user/login">login</Link></button>
+          <button className="pf-login-btn"><Link to="/user/signup">signup</Link></button>
         </div>
       </div>
     </header>

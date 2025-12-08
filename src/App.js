@@ -1,7 +1,7 @@
 // src/App.js
 import React from 'react';
 import farmDataJson from './data_final.json';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import DataCheck from './components/DataCheck';
 import Header from './components/layout/Header';
 import Main from './components/Main.js';
@@ -16,16 +16,18 @@ import EventPage from './components/EventPage';
 function App() {
   console.log(farmDataJson);
   const navigate = useNavigate();
+  const location = useLocation();
+  const showDetailNav = location.pathname.startsWith('/user/');
   return (
     <div className="App">
       <Header />
-      <SearchBar />
+      {!showDetailNav && <SearchBar />}
       <Routes>
         <Route path="/" element={<Main />} />
         <Route path="/list" element={<List farmData={farmDataJson} />} />
         <Route path="/list/:id" element={<ListData farmData={farmDataJson} />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+        <Route path="/user/login" element={<Login />} />
+        <Route path="/user/signup" element={<Signup />} />
         <Route path="/events" element={<EventPage />} />
         <Route path="/data" element={<DataCheck farmData={farmDataJson} />} />
       </Routes>
