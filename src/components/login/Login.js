@@ -1,16 +1,58 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import "./Login.css";
 import { getImagePath } from "../../utils/imagePath";
+import { getApiBaseUrl } from "../../utils/apiConfig";
 
-const Login = () => {
+const Login = ({ setIsLoggedIn }) => {
+  const [formData, setFormData] = useState({
+    user_id: "",
+    password: "",
+  });
+  const [isInput, setIsInput] = useState(true);
+
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    const inputVal = {};
+    inputVal[name] = value;
+    Object.values(inputVal).every(val => val.trim() !== "") ?
+      setIsInput(false) : setIsInput(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/users/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data.message || '로그인 실패');
+        return;
+      }
+      alert(data.message || '로그인 성공');
+      localStorage.setItem('token', data.data.token);
+      setIsLoggedIn(true);
+      navigate('/');
+    } catch (error) {
+      console.error('로그인 실패:', error);
+      alert('로그인 중 오류가 발생했습니다.');
+    }
+  };
+
   return (
     <div className="login-container">
       <h2>로그인</h2>
-      <form className="login-form">
-        <input type="text" placeholder="ID" />
-        <input type="password" placeholder="Password" />
-        <button type="submit">로그인</button>
+      <form className="login-form" onSubmit={handleSubmit}>
+        <input type="text" placeholder="ID" name="user_id" value={formData.user_id} onChange={handleChange} />
+        <input type="password" placeholder="Password" name="password" value={formData.password} onChange={handleChange} />
+        <button type="submit" disabled={isInput}>로그인</button>
       </form>
 
       <div className="login-find-btns">

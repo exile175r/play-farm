@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { getApiBaseUrl } from "../../utils/apiConfig";
 import "./Signup.css";
 
 const Signup = () => {
@@ -253,28 +254,36 @@ const Signup = () => {
     if (!validate()) return;
 
     try {
-      // 회원가입 API 호출 (예시)
+      // 회원가입 API 호출 - 백엔드 필드명에 맞춰 데이터 변환
       const signupData = {
         name: formData.name,
         email: formData.email,
-        id: formData.id,
+        user_id: formData.id,
         password: formData.password,
         phone: formData.phone,
-        region: formData.region,
-        marketingAgree: agreements.marketing,
+        region: formData.region || null, // 지역 선택, 없으면 null
+        marketing_agree: agreements.marketing ? 1 : 0, // 마케팅 동의 여부, 동의하면 1, 동의하지 않으면 0
       };
 
-      // 실제 API 호출 부분
-      // const response = await fetch('/api/signup', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(signupData)
-      // });
+      // API 호출
+      const response = await fetch(`${getApiBaseUrl()}/users/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(signupData)
+      });
 
-      console.log("회원가입 데이터:", signupData);
+      // 응답 데이터 파싱
+      const data = await response.json();
+
+      // 응답 상태 확인
+      if (!response.ok) {
+        // 서버에서 보낸 에러 메시지 표시
+        setErrors({ submit: data.message || "회원가입 중 오류가 발생했습니다." });
+        return;
+      }
 
       // 성공 시 로그인 페이지로 이동
-      alert("회원가입이 완료되었습니다!");
+      alert(data.message || "회원가입이 완료되었습니다!");
       navigate("/user/login");
     } catch (error) {
       console.error("회원가입 실패:", error);

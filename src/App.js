@@ -1,5 +1,5 @@
 // src/App.js
-import React from "react";
+import React, { useState } from "react";
 import farmDataJson from "./data_final.json";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import DataCheck from "./components/DataCheck";
@@ -16,19 +16,31 @@ import EventDetail from "./components/events/EventDetail.js";
 import SupportPage from "./components/SupportPage";
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    // 페이지 로드 시 토큰 확인
+    return !!localStorage.getItem('token');
+  });
+
+  // 로그아웃 함수
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setIsLoggedIn(false);
+    // 로그인 페이지로 이동 (선택사항)
+    // navigate('/user/login');
+  };
   console.log(farmDataJson);
   const navigate = useNavigate();
   const location = useLocation();
   const showDetailNav = location.pathname.startsWith("/user/");
   return (
     <div className="App">
-      <Header />
+      <Header isLoggedIn={isLoggedIn} onLogout={handleLogout} />
       {!showDetailNav && <SearchBar />}
       <Routes>
         <Route path="/" element={<Main />} />
         <Route path="/list" element={<List farmData={farmDataJson} />} />
         <Route path="/list/:id" element={<ListData farmData={farmDataJson} />} />
-        <Route path="/user/login" element={<Login />} />
+        <Route path="/user/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
         <Route path="/user/signup" element={<Signup />} />
         <Route path="/events" element={<EventPage />} />
         <Route path="/event/:id" element={<EventDetail />} />
@@ -52,7 +64,7 @@ function App() {
           top: "99px",
           right: "20px",
         }}
-        onClick={() => navigate("/data")}
+        onClick={() => navigate("/data?page=1&limit=20")}
       >
         Data Check
       </button>

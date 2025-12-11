@@ -3,7 +3,13 @@ import "./Header.css";
 import { getImagePath } from "../../utils/imagePath";
 import { Link } from "react-router-dom";
 
-function Header() {
+function Header({ isLoggedIn, onLogout }) {
+  const handleLogoutClick = (e) => {
+    e.preventDefault();
+    if (window.confirm('로그아웃 하시겠습니까?')) {
+      onLogout();
+    }
+  };
   return (
     <header className="pf-header">
       <div className="pf-inner">
@@ -22,10 +28,10 @@ function Header() {
 
         <div className="pf-utils">
           <button className="pf-login-btn">
-            <Link to="/user/login">login</Link>
+            {!isLoggedIn ? <Link to="/user/login">login</Link> : <Link to="/" onClick={handleLogoutClick}>logout</Link>}
           </button>
           <button className="pf-login-btn">
-            <Link to="/user/signup">signup</Link>
+            {!isLoggedIn ? <Link to="/user/signup">signup</Link> : <Link to="">My Page</Link>}
           </button>
         </div>
       </div>

@@ -57,6 +57,11 @@
   transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.1s ease;
 }
 
+.login-form button[type="submit"]:disabled {
+  filter: grayscale(100%) opacity(0.5);
+  pointer-events: none;
+}
+
 .login-form button[type="submit"]:hover {
   opacity: 0.95;
   box-shadow: 0 8px 16px var(--color-shadow-mid);
