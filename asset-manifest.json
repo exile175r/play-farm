@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/play-farm/static/css/main.a0140c28.css",
-    "main.js": "/play-farm/static/js/main.a1897cdc.js",
+    "main.css": "/play-farm/static/css/main.929de387.css",
+    "main.js": "/play-farm/static/js/main.9d7c7fca.js",
     "static/media/Pretendard-Black.woff": "/play-farm/static/media/Pretendard-Black.c51355ddc1caec596031.woff",
     "static/media/Pretendard-ExtraBold.woff": "/play-farm/static/media/Pretendard-ExtraBold.f6491e200d1fb5c5917b.woff",
     "static/media/Pretendard-Bold.woff": "/play-farm/static/media/Pretendard-Bold.1f1dbbbf311ffffcc770.woff",
@@ -24,11 +24,11 @@
     "static/media/NPSfont_extrabold.woff": "/play-farm/static/media/NPSfont_extrabold.2124f9b9244a9a4f6270.woff",
     "static/media/NPSfont_regular.woff": "/play-farm/static/media/NPSfont_regular.5bceb3464b101df3beb8.woff",
     "index.html": "/play-farm/index.html",
-    "main.a0140c28.css.map": "/play-farm/static/css/main.a0140c28.css.map",
-    "main.a1897cdc.js.map": "/play-farm/static/js/main.a1897cdc.js.map"
+    "main.929de387.css.map": "/play-farm/static/css/main.929de387.css.map",
+    "main.9d7c7fca.js.map": "/play-farm/static/js/main.9d7c7fca.js.map"
   },
   "entrypoints": [
-    "static/css/main.a0140c28.css",
-    "static/js/main.a1897cdc.js"
+    "static/css/main.929de387.css",
+    "static/js/main.9d7c7fca.js"
   ]
 }
