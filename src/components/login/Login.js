@@ -81,7 +81,7 @@ const Login = ({ setIsLoggedIn }) => {
       <div className="login-signup">
         <p>아직 회원이 아니신가요?</p>
         <button type="button" className="signup-btn">
-          <Link to="/signup">회원가입</Link>
+          <Link to="/user/signup">회원가입</Link>
         </button>
       </div>
     </div>

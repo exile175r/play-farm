@@ -1,57 +1,73 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { products } from "../data/ListData";
+// import { products } from "../data/ListData";
+import { getProgramById } from '../../services/programApi';
 import "./ListDetail.css";
 import { getImagePath } from "../../utils/imagePath";
+import dayjs from "dayjs";
 
-function ListDetail({ farmData }) {
-  const { id: paramsId } = useParams();
-  const id = Number(paramsId);
+function ListDetail() {
+  const [data, setData] = useState(null);
+  const { id } = useParams();
 
   const [activeTab, setActiveTab] = useState("schedule");
 
-  const item = products.find((p) => p.id === id);
-  if (!farmData || !farmData.DATA) return null;
+  // const item = products.find((p) => p.id === id);
+  // if (!farmData || !farmData.DATA) return null;
 
-  const data = farmData.DATA[id - 1];
-  if (!item || !data) return null;
+  // const data = farmData.DATA[id - 1];
+  // if (!item || !data) return null;
+
+  const fetchProgramDetail = async (id) => {
+    try {
+      const result = await getProgramById(id);
+      if (result.success) {
+        console.log("🔍 ~ ListDetail ~ play-farm/src/components/lists/ListDetail.js:22 ~ result:", result.data);
+        setData(result.data || null);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    if (id) fetchProgramDetail(id);
+  }, [id]);
 
   return (
     <section className="detail-wrap">
       <div className="detail-inner">
-        <div className="detail-top">
-          <div className="detail-img">
-            {data.IMAGES && data.IMAGES.length > 0 && <img src={getImagePath(data.IMAGES[0])} alt={item.title} />}
-          </div>
+        {data && (
+          <>
+            <div className="detail-top">
+              <div className="detail-img">
+                {data.images && data.images.length > 0 && <img src={getImagePath(data.images[0])} alt={data.program_nm} />}
+              </div>
 
-          <div className="detail-info">
-            <p className="detail-label">{data.SIDE_ACTIVITIES}</p>
+              <div className="detail-info">
+                <p className="detail-label">{data.village_nm}</p>
 
-            <h1 className="detail-title">{data.PROGRAM_NM}</h1>
+                <h1 className="detail-title">{data.program_nm}</h1>
 
-            <div className="detail-main-text">
-              <p>프로그램 구분 : {data.PROGRAM_SE || "정보 없음"}</p>
-              <p>인원 : {data.PERSON_LIMIT || "정보 없음"}</p>
+                <div className="detail-main-text">
+                  <p>프로그램 구분 : {data.PROGRAM_SE || "정보 없음"}</p>
+                  <p>인원 : {data.max_personnel || "정보 없음"}</p>
+                  <p>신청 기간 : {data.reqst_bgnde || "?"} ~ {data.reqst_endde || "?"}</p>
+                  <p>주소 : {data.address || "주소 정보 없음"}</p>
+                  <p>소요시간 : {data.use_time || "정보 없음"}</p>
+                  <p>이용 요금 : {data.chrge ? `${data.chrge}원` : "정보 없음"}</p>
+                </div>
 
-              <p>
-                신청 기간 : {data.RCEPT_BGNDE || "?"} ~ {data.RCEPT_ENDDE || data.REQST_ENDDE || "?"}
-              </p>
-
-              <p>주소 : {data.ADDR || data.RDNMADR || "주소 정보 없음"}</p>
-
-              <p>소요시간 : {data.USE_TIME || "정보 없음"}</p>
-
-              <p>이용 요금 : {data.USE_CHARGE ? `${data.USE_CHARGE}원` : "정보 없음"}</p>
+                <div className="detail-btns">
+                  <Link to="/" className="detail-btn outline">
+                    돌아가기
+                  </Link>
+                  <button className="detail-btn primary">예약하기</button>
+                </div>
+              </div>
             </div>
-
-            <div className="detail-btns">
-              <Link to="/" className="detail-btn outline">
-                돌아가기
-              </Link>
-              <button className="detail-btn primary">예약하기</button>
-            </div>
-          </div>
-        </div>
+          </>
+        )}
 
         <div className="detail-tabs">
           <button className={activeTab === "schedule" ? "tab active" : "tab"} onClick={() => setActiveTab("schedule")}>
@@ -85,14 +101,14 @@ function ListDetail({ farmData }) {
 
           {activeTab === "location" && (
             <div className="detail-panel">
-              <p>{data.ADDR || data.RDNMADR || "주소 없음"}</p>
-              {data.LAT && data.LNG && (
+              <p>{data.address || "주소 없음"}</p>
+              {data.refine_wgs84_lat && data.refine_wgs84_logt && (
                 <p>
-                  위도·경도: {data.LAT}, {data.LNG}
+                  위도·경도: {data.refine_wgs84_lat}, {data.refine_wgs84_logt}
                 </p>
               )}
-              {data.HMPG_ADDR && (
-                <a href={data.HMPG_ADDR} target="_blank" rel="noreferrer">
+              {data.address && (
+                <a href={`https://map.kakao.com/link/to/${data.refine_wgs84_lat},${data.refine_wgs84_logt}`} target="_blank" rel="noreferrer">
                   지도보기
                 </a>
               )}
@@ -102,11 +118,11 @@ function ListDetail({ farmData }) {
           {activeTab === "info" && (
             <div className="detail-panel info-grid">
               {Object.keys(data)
-                .filter((key) => !["IMAGES", "DATA", "CN", "HMPG_ADDR"].includes(key))
+                .filter((key) => !["images", "data_source", "cn", "address", "column_comments", "id", "created_at", "updated_at"].includes(key))
                 .map((key) => (
                   <div key={key} className="info-row">
-                    <strong>{farmData.DESCRIPTION[key] || key}</strong>
-                    <span>{data[key]}</span>
+                    <strong>{data.column_comments[key] || key} : </strong>
+                    <span>{key !== "reqst_bgnde" && key !== "reqst_endde" ? data[key] : dayjs(data[key]).format('YYYY.MM.DD')}</span>
                   </div>
                 ))}
             </div>

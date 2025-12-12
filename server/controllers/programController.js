@@ -58,6 +58,14 @@ exports.getAllPrograms = async (req, res) => {
 exports.getProgramById = async (req, res) => {
   try {
     const { id } = req.params;
+    const programId = parseInt(id);
+
+    // id가 유효한 숫자인지 확인
+    if (isNaN(programId)) {
+      return res.status(400).json({ success: false, error: '유효하지 않은 프로그램 ID입니다.' });
+    }
+
+    console.log('프로그램 상세 조회 요청:', programId);
 
     const [programs] = await db.execute(
       `SELECT p.*, 
@@ -70,17 +78,41 @@ exports.getProgramById = async (req, res) => {
        LEFT JOIN program_types pt ON ppt.program_type_id = pt.id
        WHERE p.id = ?
        GROUP BY p.id`,
-      [id]
+      [programId]
     );
+
+    console.log('조회된 프로그램 개수:', programs.length);
 
     if (programs.length === 0) {
       return res.status(404).json({ success: false, error: '프로그램을 찾을 수 없습니다.' });
     }
 
+    // 컬럼 COMMENT 조회
+    const [columnComments] = await db.execute(
+      `SELECT COLUMN_NAME, COLUMN_COMMENT 
+       FROM INFORMATION_SCHEMA.COLUMNS 
+       WHERE TABLE_SCHEMA = DATABASE() 
+       AND TABLE_NAME = 'programs'`,
+      []
+    );
+
+    // COMMENT를 객체로 변환
+    const comments = {};
+    columnComments.forEach(col => {
+      if (col.COLUMN_NAME !== "id" &&
+        col.COLUMN_NAME !== "created_at" &&
+        col.COLUMN_NAME !== "updated_at")
+        comments[col.COLUMN_NAME] = col.COLUMN_COMMENT;
+    });
+
+    if (!Object.keys(comments).includes("program_types"))
+      comments.program_types = programs[0].program_types;
+
     const program = {
       ...programs[0],
       program_types: programs[0].program_types ? programs[0].program_types.split(',') : [],
-      images: programs[0].images ? programs[0].images.split(',') : []
+      images: programs[0].images ? programs[0].images.split(',') : [],
+      column_comments: comments  // 컬럼 COMMENT 추가
     };
 
     res.json({ success: true, data: program });

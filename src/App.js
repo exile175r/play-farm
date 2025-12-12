@@ -1,6 +1,6 @@
 // src/App.js
 import React, { useState } from "react";
-import farmDataJson from "./data_final.json";
+// import farmDataJson from "./data_final.json";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import DataCheck from "./components/DataCheck";
 import "./App.css";
@@ -28,7 +28,7 @@ function App() {
     // 로그인 페이지로 이동 (선택사항)
     // navigate('/user/login');
   };
-  console.log(farmDataJson);
+  // console.log(farmDataJson);
   const navigate = useNavigate();
   const location = useLocation();
   const showDetailNav = location.pathname.startsWith("/user/");
@@ -38,15 +38,15 @@ function App() {
       {!showDetailNav && <SearchBar />}
       <Routes>
         <Route path="/" element={<Main />} />
-        <Route path="/list" element={<List farmData={farmDataJson} />} />
-        <Route path="/list/:id" element={<ListData farmData={farmDataJson} />} />
+        <Route path="/list" element={<List />} />
+        <Route path="/list/:id" element={<ListData />} />
         <Route path="/user/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
         <Route path="/user/signup" element={<Signup />} />
         <Route path="/events" element={<EventPage />} />
         <Route path="/event/:id" element={<EventDetail />} />
         <Route path="/support" element={<SupportPage />} />
 
-        <Route path="/data" element={<DataCheck farmData={farmDataJson} />} />
+        <Route path="/data" element={<DataCheck />} />
       </Routes>
       {/* 임시 버튼(데이터 체크 페이지로 이동) 추후 삭제 */}
       <button

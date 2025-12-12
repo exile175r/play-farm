@@ -1,113 +1,128 @@
 .list-wrap {
-   width: 100%;
-   background: white;
-   padding: 40px 0 80px;
+  width: 100%;
+  background: white;
+  padding: 40px 0 80px;
 }
 
 .list-inner {
-   width: 1540px;
-   margin: 0 auto;
+  width: 1540px;
+  margin: 0 auto;
 }
 
 /* 타이틀 */
 .list-title {
-   font-size: 20px;
-   font-weight: 700;
-   margin-bottom: 24px;
-   color: var(--color-list-title);
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: var(--color-list-title);
 }
 
 /* 카드 4열 */
 .list-grid {
-   display: grid;
-   grid-template-columns: repeat(4, 1fr);
-   gap: 32px;
-   justify-items: center;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+  justify-items: center;
+  /* GPU 가속을 위한 최적화 */
+  will-change: contents;
+
 }
 
 /* 카드 박스 */
 .list-card {
-   width: 360px;
-   background: var(--color-list-card-bg);
-   border-radius: 12px;
-   padding: 16px;
-   box-sizing: border-box;
-   border: 1px solid #3a8e87;
-   transition: 0.2s ease;
+  width: 360px;
+  background: var(--color-list-card-bg);
+  border-radius: 12px;
+  padding: 16px;
+  box-sizing: border-box;
+  border: 1px solid #3a8e87;
+  /* transition: 0.2s ease; */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  /* GPU 가속 활성화 */
+  transform: translateZ(0);
+  will-change: transform;
+  /* 레이아웃 재계산 방지 */
+  backface-visibility: hidden;
 }
 
 .list-card:hover {
-   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
-   transform: translateY(-4px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+  transform: translateY(-4px) translateZ(0);
 }
 
 /* 이미지 영역 */
 .list-card-img {
-   width: 100%;
-   height: 150px;
-   border-radius: 12px;
-   overflow: hidden;
-   background: var(--color-bg);
-   margin-bottom: 14px;
+  width: 100%;
+  height: 150px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-bg);
+  margin-bottom: 14px;
+  /* 이미지 영역도 GPU 가속 */
+  transform: translateZ(0);
 }
 
 .list-card-img img {
-   width: 100%;
-   height: 150px;
-   object-fit: cover;
-   display: block;
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  display: block;
+  /* 이미지 로딩 최적화 */
+  will-change: opacity;
 }
 
 /* 텍스트 영역 */
 .list-card-body {
-   text-align: center;
+  text-align: center;
 }
 
 .list-sub,
 .list-date {
-   font-size: 13px;
-   color: var(--color-list-sub);
-   margin: 2px 0;
+  font-size: 13px;
+  color: var(--color-list-sub);
+  margin: 2px 0;
 }
 
 /* 버튼 영역 */
 .list-btn-wrap {
-   display: flex;
-   justify-content: end;
-   gap: 8px;
-   margin-top: 14px;
+  display: flex;
+  justify-content: end;
+  gap: 8px;
+  margin-top: 14px;
 }
 
 .list-btn {
-   min-width: 90px;
-   height: 34px;
-   padding: 0 16px;
-   border-radius: 999px;
-   font-size: 13px;
-   border: none;
-   cursor: pointer;
-   display: inline-flex;
-   align-items: center;
-   justify-content: center;
-   text-decoration: none;
+  min-width: 90px;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  /* 버튼도 GPU 가속 */
+  transform: translateZ(0);
 }
 
 .list-btn.outline {
-   text-decoration: none;
-   background: var(--color-list-btn-primary-bg);
-   color: var(--color-list-btn-primary-text);
+  text-decoration: none;
+  background: var(--color-list-btn-primary-bg);
+  color: var(--color-list-btn-primary-text);
 }
 
 .list-btn.outline:hover {
-   background: var(--color-list-btn-primary-hover-bg);
+  background: var(--color-list-btn-primary-hover-bg);
 }
 
 /* primary 버튼 */
 .list-btn.primary {
-   background: var(--color-list-btn-primary-bg);
-   color: var(--color-list-btn-primary-text);
+  background: var(--color-list-btn-primary-bg);
+  color: var(--color-list-btn-primary-text);
 }
 
 .list-btn.primary:hover {
-   background: var(--color-list-btn-primary-hover-bg);
+  background: var(--color-list-btn-primary-hover-bg);
 }

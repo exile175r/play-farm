@@ -18,6 +18,12 @@ export const getAllPrograms = async (page = 1, limit = 20) => {
 export const getProgramById = async (id) => {
   try {
     const response = await fetch(`${API_BASE_URL}/programs/${id}`);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: '알 수 없는 오류가 발생했습니다.' }));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+
     const data = await response.json();
     return data;
   } catch (error) {
