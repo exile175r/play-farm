@@ -74,13 +74,7 @@ function Mypage() {
               >
                 예약/신청 내역
               </button>
-              <button
-                type="button"
-                className={`pf-tab ${tab === "posts" ? "is-active" : ""}`}
-                onClick={() => setTab("posts")}
-              >
-                내가 쓴 글
-              </button>
+
               <button
                 type="button"
                 className={`pf-tab ${tab === "settings" ? "is-active" : ""}`}

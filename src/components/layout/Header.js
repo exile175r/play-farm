@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 function Header({ isLoggedIn, onLogout }) {
   const handleLogoutClick = (e) => {
     e.preventDefault();
-    if (window.confirm('로그아웃 하시겠습니까?')) {
+    if (window.confirm("로그아웃 하시겠습니까?")) {
       onLogout();
     }
   };
@@ -28,10 +28,16 @@ function Header({ isLoggedIn, onLogout }) {
 
         <div className="pf-utils">
           <button className="pf-login-btn">
-            {!isLoggedIn ? <Link to="/user/login">login</Link> : <Link to="/" onClick={handleLogoutClick}>logout</Link>}
+            {!isLoggedIn ? (
+              <Link to="/user/login">login</Link>
+            ) : (
+              <Link to="/" onClick={handleLogoutClick}>
+                logout
+              </Link>
+            )}
           </button>
           <button className="pf-login-btn">
-            {!isLoggedIn ? <Link to="/user/signup">signup</Link> : <Link to="">My Page</Link>}
+            {!isLoggedIn ? <Link to="/user/signup">signup</Link> : <Link to="/mypage">My Page</Link>}
           </button>
         </div>
       </div>

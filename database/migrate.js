@@ -1,34 +1,34 @@
 /**
  * data_final.json에서 MySQL 데이터베이스로 데이터 마이그레이션 스크립트
- * 
+ *
  * 사용법:
  * 1. MySQL 데이터베이스 연결 정보를 설정하세요 (아래 config 객체)
  * 2. npm install mysql2 (필요시)
  * 3. node database/migrate.js
  */
 
-require('dotenv').config();
-const mysql = require('mysql2/promise');
-const fs = require('fs');
-const path = require('path');
+require("dotenv").config();
+const mysql = require("mysql2/promise");
+const fs = require("fs");
+const path = require("path");
 
 // 데이터베이스 연결 설정
 const config = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'play_farm',
-  charset: 'utf8mb4'
+  host: process.env.DB_HOST || "playfram",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "play_farm",
+  charset: "utf8mb4",
 };
 
 // data_final.json 파일 경로
-const dataFilePath = path.join(__dirname, '../src/data_final.json');
+const dataFilePath = path.join(__dirname, "../src/data_final.json");
 
 /**
  * 날짜 문자열을 DATE 형식으로 변환 (YYYYMMDD -> YYYY-MM-DD)
  */
 function formatDate(dateStr) {
-  if (!dateStr || dateStr === 'null' || dateStr === null) return null;
+  if (!dateStr || dateStr === "null" || dateStr === null) return null;
   const str = String(dateStr);
   if (str.length === 8) {
     return `${str.substring(0, 4)}-${str.substring(4, 6)}-${str.substring(6, 8)}`;
@@ -53,7 +53,7 @@ function normalizeProgramType(programType) {
   if (Array.isArray(programType)) {
     return programType;
   }
-  if (programType && typeof programType === 'string') {
+  if (programType && typeof programType === "string") {
     return [programType];
   }
   return [];
@@ -67,17 +67,17 @@ async function migrate() {
 
   try {
     // 데이터베이스 연결
-    console.log('데이터베이스 연결 중...');
+    console.log("데이터베이스 연결 중...");
     connection = await mysql.createConnection(config);
-    console.log('데이터베이스 연결 성공');
+    console.log("데이터베이스 연결 성공");
 
     // data_final.json 파일 읽기
-    console.log('데이터 파일 읽기 중...');
-    const dataFile = fs.readFileSync(dataFilePath, 'utf8');
+    console.log("데이터 파일 읽기 중...");
+    const dataFile = fs.readFileSync(dataFilePath, "utf8");
     const data = JSON.parse(dataFile);
 
     if (!data.DATA || !Array.isArray(data.DATA)) {
-      throw new Error('데이터 형식이 올바르지 않습니다.');
+      throw new Error("데이터 형식이 올바르지 않습니다.");
     }
 
     // 48개만 사용
@@ -85,12 +85,12 @@ async function migrate() {
     console.log(`총 ${programsData.length}개의 프로그램 데이터를 마이그레이션합니다.`);
 
     // 1단계: 프로그램 타입 추출 및 삽입
-    console.log('\n1단계: 프로그램 타입 추출 및 삽입 중...');
+    console.log("\n1단계: 프로그램 타입 추출 및 삽입 중...");
     const programTypesSet = new Set();
 
-    programsData.forEach(item => {
+    programsData.forEach((item) => {
       const types = normalizeProgramType(item.PROGRAM_TYPE);
-      types.forEach(type => {
+      types.forEach((type) => {
         if (type && type.trim()) {
           programTypesSet.add(type.trim());
         }
@@ -100,15 +100,12 @@ async function migrate() {
     const programTypesMap = new Map();
     for (const typeName of programTypesSet) {
       const [result] = await connection.execute(
-        'INSERT INTO program_types (type_name) VALUES (?) ON DUPLICATE KEY UPDATE type_name = type_name',
+        "INSERT INTO program_types (type_name) VALUES (?) ON DUPLICATE KEY UPDATE type_name = type_name",
         [typeName]
       );
 
       // 타입 ID 조회
-      const [rows] = await connection.execute(
-        'SELECT id FROM program_types WHERE type_name = ?',
-        [typeName]
-      );
+      const [rows] = await connection.execute("SELECT id FROM program_types WHERE type_name = ?", [typeName]);
 
       if (rows.length > 0) {
         programTypesMap.set(typeName, rows[0].id);
@@ -118,7 +115,7 @@ async function migrate() {
     console.log(`프로그램 타입 ${programTypesMap.size}개 삽입 완료`);
 
     // 2단계: 프로그램 데이터 삽입
-    console.log('\n2단계: 프로그램 데이터 삽입 중...');
+    console.log("\n2단계: 프로그램 데이터 삽입 중...");
     let insertedCount = 0;
 
     for (const item of programsData) {
@@ -154,7 +151,7 @@ async function migrate() {
             item.GROUP_DISCOUNT_INFO || null,
             item.CANCELLATION_POLICY || null,
             item.OPERATING_HOURS || null,
-            item.DATA || null
+            item.DATA || null,
           ]
         );
 
@@ -167,7 +164,7 @@ async function migrate() {
             const typeId = programTypesMap.get(typeName.trim());
             if (typeId) {
               await connection.execute(
-                'INSERT IGNORE INTO program_program_types (program_id, program_type_id) VALUES (?, ?)',
+                "INSERT IGNORE INTO program_program_types (program_id, program_type_id) VALUES (?, ?)",
                 [programId, typeId]
               );
             }
@@ -178,7 +175,7 @@ async function migrate() {
         if (item.IMAGES && Array.isArray(item.IMAGES)) {
           for (let i = 0; i < item.IMAGES.length; i++) {
             await connection.execute(
-              'INSERT INTO program_images (program_id, image_url, display_order) VALUES (?, ?, ?)',
+              "INSERT INTO program_images (program_id, image_url, display_order) VALUES (?, ?, ?)",
               [programId, item.IMAGES[i], i]
             );
           }
@@ -200,24 +197,23 @@ async function migrate() {
     console.log(`\n총 ${insertedCount}개의 프로그램 데이터 삽입 완료`);
 
     // 통계 출력
-    const [programCount] = await connection.execute('SELECT COUNT(*) as count FROM programs');
-    const [typeCount] = await connection.execute('SELECT COUNT(*) as count FROM program_types');
-    const [imageCount] = await connection.execute('SELECT COUNT(*) as count FROM program_images');
-    const [relationCount] = await connection.execute('SELECT COUNT(*) as count FROM program_program_types');
+    const [programCount] = await connection.execute("SELECT COUNT(*) as count FROM programs");
+    const [typeCount] = await connection.execute("SELECT COUNT(*) as count FROM program_types");
+    const [imageCount] = await connection.execute("SELECT COUNT(*) as count FROM program_images");
+    const [relationCount] = await connection.execute("SELECT COUNT(*) as count FROM program_program_types");
 
-    console.log('\n=== 마이그레이션 완료 ===');
+    console.log("\n=== 마이그레이션 완료 ===");
     console.log(`프로그램: ${programCount[0].count}개`);
     console.log(`프로그램 타입: ${typeCount[0].count}개`);
     console.log(`프로그램-타입 관계: ${relationCount[0].count}개`);
     console.log(`이미지: ${imageCount[0].count}개`);
-
   } catch (error) {
-    console.error('마이그레이션 중 오류 발생:', error);
+    console.error("마이그레이션 중 오류 발생:", error);
     process.exit(1);
   } finally {
     if (connection) {
       await connection.end();
-      console.log('\n데이터베이스 연결 종료');
+      console.log("\n데이터베이스 연결 종료");
     }
   }
 }
@@ -228,4 +224,3 @@ if (require.main === module) {
 }
 
 module.exports = { migrate };
-
