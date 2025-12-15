@@ -14,16 +14,17 @@ import Signup from "./components/login/Signup";
 import EventPage from "./components/events/EventPage.js";
 import EventDetail from "./components/events/EventDetail.js";
 import SupportPage from "./components/SupportPage";
+import Mypage from "./components/mypage/Mypage"; // ✅ 추가
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     // 페이지 로드 시 토큰 확인
-    return !!localStorage.getItem('token');
+    return !!localStorage.getItem("token");
   });
 
   // 로그아웃 함수
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem("token");
     setIsLoggedIn(false);
     // 로그인 페이지로 이동 (선택사항)
     // navigate('/user/login');
@@ -43,9 +44,9 @@ function App() {
         <Route path="/user/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
         <Route path="/user/signup" element={<Signup />} />
         <Route path="/events" element={<EventPage />} />
-        <Route path="/event/:id" element={<EventDetail />} />
+        <Route path="/event/:id" element={<EventDetail />} /> {/* ✅ 원래대로 유지 */}
         <Route path="/support" element={<SupportPage />} />
-
+        <Route path="/mypage" element={<Mypage />} /> {/* ✅ 추가 */}
         <Route path="/data" element={<DataCheck />} />
       </Routes>
       {/* 임시 버튼(데이터 체크 페이지로 이동) 추후 삭제 */}

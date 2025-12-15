@@ -1,117 +1,182 @@
-.event-section {
-   width: 100%;
-   margin: 60px auto 0;
-   padding: 0 240px;
+/* 페이지 래퍼 */
+.pf-event-page {
+  padding: 60px 0 90px;
+  background: #fff;
 }
 
-.event-header {
-   display: flex;
-   align-items: center;
-   gap: 16px;
-   margin-bottom: 28px;
+.pf-event-inner {
+  width: 1200px;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 16px;
+  box-sizing: border-box;
 }
 
-.event-header h2 {
-   font-size: 26px;
-   font-weight: 700;
-   margin: 0;
+/* 타이틀 + 라인 */
+.pf-event-title {
+  margin: 0;
+  font-size: 38px;
+  font-weight: 900;
+  letter-spacing: -0.6px;
+  color: #111;
 }
 
-.event-header p {
-   color: #666;
-   opacity: 0.9;
-   font-size: 14px;
-   margin: 0;
+.pf-event-divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.25);
+  margin: 14px 0 22px;
 }
 
-.more-btn {
-   margin-left: auto;
-   border: none;
-   background: var(--color-primary);
-   color: #171d2f;
-   padding: 8px 14px;
-   border-radius: 6px;
-   font-size: 13px;
-   cursor: pointer;
+/* 탭바(기존 버튼 유지) */
+.pf-event-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
 }
 
-/* 카드 리스트 */
-.event-list {
-   display: grid;
-   grid-template-columns: repeat(3, 1fr);
-   gap: 28px;
+.pf-event-tab-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pf-event-tab-btn {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 8px 0;
+  font-size: 16px;
+  font-weight: 900;
+  color: #111;
+  opacity: 0.55;
+}
+
+.pf-event-tab-btn.is-active {
+  opacity: 1;
+  color: #f08a00;
+  position: relative;
+}
+
+.pf-event-tab-btn.is-active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 2px;
+  width: 100%;
+  height: 2px;
+  background: #f08a00;
+}
+
+.pf-event-count {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+}
+
+/* 카드 그리드: 2열 */
+.pf-event-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 26px;
 }
 
 /* 카드 */
-.event-card {
-   border-radius: 18px;
-   padding: 24px 22px 28px;
-   position: relative;
-   overflow: hidden;
-   box-shadow: 0 18px 30px rgba(0, 0, 0, 0.06);
-   background: #ffffff;
-   border: 1px solid rgba(0, 0, 0, 0.04);
+.pf-event-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #fff;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
-.event-tag {
-   font-size: 12px;
-   font-weight: 600;
-   color: var(--color-primary);
-   background: rgba(243, 194, 0, 0.18);
-   padding: 4px 10px;
-   border-radius: 999px;
+.pf-event-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(0, 0, 0, 0.18);
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.08);
 }
 
-.event-title {
-   font-size: 20px;
-   font-weight: 700;
-   margin: 16px 0 4px;
+/* 썸네일 */
+.pf-event-thumb {
+  width: 100%;
+  height: 230px;
+  overflow: hidden;
+  background: #f2f2f2;
 }
 
-.event-sub {
-   font-size: 15px;
-   color: #444;
-   margin-bottom: 18px;
+.pf-event-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: scale(1);
+  transition: transform 260ms ease;
 }
 
-.event-image {
-   width: 100%;
-   height: 180px;
-   object-fit: cover;
-   object-position: center;
-   border-radius: 12px;
-   margin-bottom: 16px;
+.pf-event-card:hover .pf-event-thumb img {
+  transform: scale(1.04);
 }
 
-.event-items {
-   list-style: none;
-   padding: 0;
-   margin: 0;
+/* 본문 */
+.pf-event-body {
+  padding: 16px 16px 18px;
 }
 
-.event-items li {
-   display: flex;
-   justify-content: space-between;
-   padding: 5px 0;
-   font-size: 14px;
-   color: #333;
+.pf-event-card-title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #111;
 }
 
-.event-items strong {
-   font-weight: 700;
-   color: #222;
+.pf-event-card-desc {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 1.4;
+  height: 2.8em;
+  overflow: hidden;
 }
 
-/*
-@media (max-width: 1056px) {
-  .event-list {
-      grid-template-columns: repeat(2, 1fr);
+.pf-event-card-date {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+/* 페이지네이션(있으면) */
+.pf-event-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.pf-event-pagebtn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: #fff;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.pf-event-pagebtn.is-current {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+/* 반응형 */
+@media (max-width: 980px) {
+  .pf-event-grid {
+    grid-template-columns: 1fr;
+  }
+  .pf-event-tabs {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
-
-@media (max-width: 726px) {
-  .event-list {
-      grid-template-columns: repeat(1, 1fr);
-  }
-}
-*/
