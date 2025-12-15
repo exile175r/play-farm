@@ -26,6 +26,12 @@ function List() {
       const result = await getAllPrograms(pageNum, 20);
 
       if (result.success) {
+        // 텍스트 패턴 치환
+        const replaceText = { 체험: " 체험", 및: " 및 " };
+        result.data.forEach(data => {
+          try { data.program_nm = JSON.parse(data.program_nm).map(v => v.replace(/체험|및/g, match => replaceText[match])).join(', '); }
+          catch (error) { data.program_nm = data.program_nm.replace(/체험|및/g, match => replaceText[match]); }
+        });
         setPrograms(result.data || []);
       } else {
         setError(result.error || '데이터를 불러오는데 실패했습니다.');
