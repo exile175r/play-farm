@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-// import { products } from "../data/ListData";
 import { getProgramById } from '../../services/programApi';
 import './ListDetail.css';
 import { getImagePath } from '../../utils/imagePath';
@@ -14,12 +13,6 @@ function ListDetail() {
    const mapContainer = useRef(null);
    const mapInstance = useRef(null);
    const [mapLoaded, setMapLoaded] = useState(false);
-
-   // const item = products.find((p) => p.id === id);
-   // if (!farmData || !farmData.DATA) return null;
-
-   // const data = farmData.DATA[id - 1];
-   // if (!item || !data) return null;
 
    const fetchProgramDetail = async (id) => {
       try {
@@ -42,12 +35,9 @@ function ListDetail() {
 
    useEffect(() => {
       if (!id) return;
-
-      // cleanup 함수로 중복 요청 방지
       let isMounted = true;
 
       fetchProgramDetail(id).then(() => {
-         // 컴포넌트가 언마운트되었으면 상태 업데이트 안 함
          if (!isMounted) return;
       });
 
@@ -58,22 +48,16 @@ function ListDetail() {
 
    // 카카오맵 API 스크립트 로드
    useEffect(() => {
-      // 이미 스크립트가 로드되어 있고 maps.load()도 완료되었는지 확인
       if (window.kakao && window.kakao.maps && window.kakao.maps.LatLng) {
          setMapLoaded(true);
          return;
       }
 
-      // 이미 스크립트 태그가 있는지 확인
       const existingScript = document.querySelector('script[src*="dapi.kakao.com"]');
       if (existingScript) {
-         // 기존 스크립트가 로드될 때까지 기다림
          existingScript.onload = () => {
             if (window.kakao && window.kakao.maps) {
-               window.kakao.maps.load(() => {
-                  console.log('카카오맵 API 로드 완료');
-                  setMapLoaded(true);
-               });
+               window.kakao.maps.load(() => setMapLoaded(true));
             }
          };
          return;
@@ -81,32 +65,19 @@ function ListDetail() {
 
       const script = document.createElement('script');
       const apiKey = process.env.REACT_APP_KAKAO_MAP_API_KEY;
-      // HTTPS 프로토콜 명시
       script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false`;
       script.async = true;
 
       script.onload = () => {
          if (window.kakao && window.kakao.maps) {
-            // maps.load()를 호출하여 API 완전 로드
             window.kakao.maps.load(() => {
-               console.log('카카오맵 API 로드 완료');
-               // LatLng가 사용 가능한지 확인
-               if (window.kakao.maps.LatLng) {
-                  setMapLoaded(true);
-               } else {
-                  console.error('카카오맵 LatLng를 사용할 수 없습니다.');
-               }
+               if (window.kakao.maps.LatLng) setMapLoaded(true);
             });
          }
       };
 
-      script.onerror = () => {
-         console.error('카카오맵 API 스크립트 로드 실패');
-      };
-
+      script.onerror = () => console.error('카카오맵 API 스크립트 로드 실패');
       document.head.appendChild(script);
-
-      return;
    }, []);
 
    // 지도 초기화 및 마커 표시
@@ -120,30 +91,20 @@ function ListDetail() {
          mapLoaded &&
          window.kakao &&
          window.kakao.maps &&
-         window.kakao.maps.LatLng && // LatLng가 사용 가능한지 확인
-         window.kakao.maps.Map // Map도 사용 가능한지 확인
+         window.kakao.maps.LatLng &&
+         window.kakao.maps.Map
       ) {
          const lat = parseFloat(data.refine_wgs84_lat);
          const lng = parseFloat(data.refine_wgs84_logt);
 
          if (!isNaN(lat) && !isNaN(lng)) {
-            // 약간의 지연을 두어 DOM이 완전히 렌더링되도록 함
             const timer = setTimeout(() => {
                try {
-                  // 기존 지도 인스턴스가 있으면 제거
-                  if (mapInstance.current) {
-                     mapInstance.current = null;
-                  }
+                  if (mapInstance.current) mapInstance.current = null;
 
-                  // 지도 컨테이너가 비어있는지 확인
                   if (mapContainer.current && mapContainer.current.children.length === 0) {
-                     // LatLng와 Map이 실제로 constructor인지 확인
-                     if (typeof window.kakao.maps.LatLng !== 'function') {
-                        console.error('LatLng가 constructor가 아닙니다.');
-                        return;
-                     }
+                     if (typeof window.kakao.maps.LatLng !== 'function') return;
 
-                     // 지도 생성
                      const options = {
                         center: new window.kakao.maps.LatLng(lat, lng),
                         level: 3,
@@ -151,14 +112,10 @@ function ListDetail() {
 
                      mapInstance.current = new window.kakao.maps.Map(mapContainer.current, options);
 
-                     // 마커 생성
                      const markerPosition = new window.kakao.maps.LatLng(lat, lng);
-                     const marker = new window.kakao.maps.Marker({
-                        position: markerPosition,
-                     });
+                     const marker = new window.kakao.maps.Marker({ position: markerPosition });
                      marker.setMap(mapInstance.current);
 
-                     // 인포윈도우 생성
                      const infowindow = new window.kakao.maps.InfoWindow({
                         content: `<div style="padding:8px;font-size:13px;min-width:150px;">
                   <div style="font-weight:600;margin-bottom:4px;">${data.village_nm || '위치'}</div>
@@ -166,8 +123,6 @@ function ListDetail() {
                 </div>`,
                      });
                      infowindow.open(mapInstance.current, marker);
-
-                     console.log('지도 초기화 완료');
                   }
                } catch (error) {
                   console.error('지도 초기화 오류:', error);
@@ -179,6 +134,15 @@ function ListDetail() {
       }
    }, [activeTab, data, mapLoaded]);
 
+   // 표시용 값들
+   const programTypesText = Array.isArray(data?.program_types) && data.program_types.length > 0 ? data.program_types.join(', ') : '정보 없음';
+
+   const feeText = data?.chrge ? data.chrge : '정보 없음';
+
+   const reqPeriodText = data?.reqst_bgnde && data?.reqst_endde ? `${dayjs(data.reqst_bgnde).format('YYYY.MM.DD')} ~ ${dayjs(data.reqst_endde).format('YYYY.MM.DD')}` : '정보 없음';
+
+   const hasLocation = !!(data?.refine_wgs84_lat && data?.refine_wgs84_logt);
+
    return (
       <section className="detail-wrap">
          <div className="detail-inner">
@@ -188,23 +152,23 @@ function ListDetail() {
                      <div className="detail-img">{data.images && data.images.length > 0 && <img src={getImagePath(data.images[0])} alt={data.program_nm} />}</div>
 
                      <div className="detail-info">
-                        <p className="detail-label">{data.village_nm}</p>
+                        <div className="detail-headline">
+                           <span className="detail-badge">{data.village_nm}</span>
+                        </div>
 
                         <h1 className="detail-title">{data.program_nm}</h1>
 
                         <div className="detail-main-text">
-                           <p>프로그램 구분 : {data.program_types.join(', ') || '정보 없음'}</p>
+                           <p>프로그램 구분 : {programTypesText}</p>
                            <p>인원 : {data.max_personnel || '정보 없음'}</p>
-                           <p>
-                              신청 기간 : {dayjs(data.reqst_bgnde).format('YYYY.MM.DD') || '?'} ~ {dayjs(data.reqst_endde).format('YYYY.MM.DD') || '?'}
-                           </p>
+                           <p>신청 기간 : {reqPeriodText}</p>
                            <p>주소 : {data.address || '주소 정보 없음'}</p>
                            <p>소요시간 : {data.use_time || '정보 없음'}</p>
-                           <p>이용 요금 : {data.chrge ? data.chrge : '정보 없음'}</p>
+                           <p>이용 요금 : {feeText}</p>
                         </div>
 
                         <div className="detail-btns">
-                           <Link to="/" className="detail-btn outline">
+                           <Link to="/list" className="detail-btn outline">
                               돌아가기
                            </Link>
                            <button className="detail-btn primary">예약하기</button>
@@ -214,90 +178,154 @@ function ListDetail() {
                </>
             )}
 
+            {/* 탭 */}
             <div className="detail-tabs">
                <button className={activeTab === 'schedule' ? 'tab active' : 'tab'} onClick={() => setActiveTab('schedule')}>
                   프로그램 일정
                </button>
-
                <button className={activeTab === 'location' ? 'tab active' : 'tab'} onClick={() => setActiveTab('location')}>
                   위치정보
                </button>
-
                <button className={activeTab === 'info' ? 'tab active' : 'tab'} onClick={() => setActiveTab('info')}>
                   상세정보
                </button>
-
                <button className={activeTab === 'notice' ? 'tab active' : 'tab'} onClick={() => setActiveTab('notice')}>
                   유의사항
                </button>
             </div>
 
+            {/* 탭 컨텐츠 */}
             <div className="detail-tab-content">
+               {/* 일정 */}
                {activeTab === 'schedule' && (
                   <div className="detail-panel">
-                     <ul>
-                        <li>01. 입소 및 안전교육</li>
-                        <li>02. 체험 활동 진행</li>
-                        <li>03. 간식 시간 및 휴식</li>
-                        <li>04. 마무리 및 정리</li>
+                     <div className="panel-head">
+                        <h3 className="panel-title">프로그램 진행 흐름</h3>
+                        <span className="panel-chip">Schedule</span>
+                     </div>
+
+                     <ul className="step-list">
+                        <li>
+                           <div className="step-no">01</div>
+                           <div className="step-body">
+                              <p className="step-title">입소 및 안전교육</p>
+                              <p className="step-desc">안전 수칙 안내 + 준비물 확인</p>
+                           </div>
+                        </li>
+                        <li>
+                           <div className="step-no">02</div>
+                           <div className="step-body">
+                              <p className="step-title">체험 활동 진행</p>
+                              <p className="step-desc">프로그램 메인 체험 진행</p>
+                           </div>
+                        </li>
+                        <li>
+                           <div className="step-no">03</div>
+                           <div className="step-body">
+                              <p className="step-title">간식 시간 및 휴식</p>
+                              <p className="step-desc">휴식 + 정리 시간</p>
+                           </div>
+                        </li>
+                        <li>
+                           <div className="step-no">04</div>
+                           <div className="step-body">
+                              <p className="step-title">마무리 및 정리</p>
+                              <p className="step-desc">체험 종료 + 안내사항 공유</p>
+                           </div>
+                        </li>
                      </ul>
                   </div>
                )}
 
+               {/* 위치 */}
                {activeTab === 'location' && (
                   <div className="detail-panel">
-                     <p>{data.address || '주소 없음'}</p>
-                     {/* {data.refine_wgs84_lat && data.refine_wgs84_logt && (
-                <p>
-                  위도·경도: {data.refine_wgs84_lat}, {data.refine_wgs84_logt}
-                </p>
-              )} */}
-                     {data?.refine_wgs84_lat && data?.refine_wgs84_logt ? (
-                        <div id="map" ref={mapContainer} className="kakao-map"></div>
-                     ) : (
-                        <p style={{ color: '#999', fontSize: '13px' }}>위치 정보가 없습니다.</p>
-                     )}
+                     <div className="panel-head">
+                        <h3 className="panel-title">위치 안내</h3>
+                        <span className="panel-chip">Location</span>
+                     </div>
 
-                     {/* {data.address && (
-                <a href={`https://map.kakao.com/link/to/${data.refine_wgs84_lat},${data.refine_wgs84_logt}`} target="_blank" rel="noreferrer">
-                  지도보기
-                </a>
-              )} */}
-                  </div>
-               )}
+                     <div className="location-card">
+                        <div className="location-row">
+                           <span className="location-label">주소</span>
+                           <span className="location-value">{data?.address || '주소 없음'}</span>
+                        </div>
 
-               {activeTab === 'info' && (
-                  <div className="detail-panel info-grid">
-                     {Object.keys(data)
-                        .filter((key) =>
-                           ['village_nm', 'program_nm', 'reqst_bgnde', 'reqst_bgnde ', 'reqst_endde', 'chrge', 'use_time', 'min_personnel ', 'max_personnel'].includes(key)
-                        )
-                        .map(
-                           (key) =>
-                              key !== 'reqst_endde' && (
-                                 <div key={key} className="info-row">
-                                    {key !== 'reqst_bgnde' ? (
-                                       <>
-                                          <strong>{data.column_comments[key] || key} : </strong>
-                                          <span>{data[key]}</span>
-                                       </>
-                                    ) : (
-                                       <>
-                                          <strong>신청일 : </strong>
-                                          <span>
-                                             {dayjs(data.reqst_bgnde).format('YYYY.MM.DD')} ~ {dayjs(data.reqst_endde).format('YYYY.MM.DD')}
-                                          </span>
-                                       </>
-                                    )}
-                                 </div>
-                              )
+                        {!hasLocation ? <p className="muted">위치 정보가 없습니다.</p> : <div id="map" ref={mapContainer} className="kakao-map"></div>}
+
+                        {hasLocation && (
+                           <a
+                              className="map-link"
+                              href={`https://map.kakao.com/link/map/${encodeURIComponent(data?.village_nm || '위치')},${data.refine_wgs84_lat},${data.refine_wgs84_logt}`}
+                              target="_blank"
+                              rel="noreferrer">
+                              카카오맵에서 보기
+                           </a>
                         )}
+                     </div>
                   </div>
                )}
 
+               {/* 상세정보 */}
+               {activeTab === 'info' && (
+                  <div className="detail-panel">
+                     <div className="panel-head">
+                        <h3 className="panel-title">프로그램 상세 정보</h3>
+                        <span className="panel-chip">Info</span>
+                     </div>
+
+                     <div className="info-grid">
+                        <div className="info-row">
+                           <strong>마을</strong>
+                           <span>{data?.village_nm || '정보 없음'}</span>
+                        </div>
+
+                        <div className="info-row">
+                           <strong>프로그램명</strong>
+                           <span>{data?.program_nm || '정보 없음'}</span>
+                        </div>
+
+                        <div className="info-row">
+                           <strong>신청 기간</strong>
+                           <span>{reqPeriodText}</span>
+                        </div>
+
+                        <div className="info-row">
+                           <strong>요금</strong>
+                           <span>{feeText}</span>
+                        </div>
+
+                        <div className="info-row">
+                           <strong>소요시간</strong>
+                           <span>{data?.use_time || '정보 없음'}</span>
+                        </div>
+
+                        <div className="info-row">
+                           <strong>인원</strong>
+                           <span>
+                              {data?.min_personnel || '-'} ~ {data?.max_personnel || '-'}
+                           </span>
+                        </div>
+                     </div>
+
+                     {data?.side_activities && (
+                        <div className="sub-card">
+                           <p className="sub-title">부가 활동</p>
+                           <p className="sub-desc">{data.side_activities}</p>
+                        </div>
+                     )}
+                  </div>
+               )}
+
+               {/* 유의사항 */}
                {activeTab === 'notice' && (
                   <div className="detail-panel">
-                     <ul>
+                     <div className="panel-head">
+                        <h3 className="panel-title">유의사항</h3>
+                        <span className="panel-chip">Notice</span>
+                     </div>
+
+                     <ul className="check-list">
                         <li>취소·환불 규정은 운영 농장 정책을 따릅니다.</li>
                         <li>우천 시 일정 변경될 수 있음.</li>
                         <li>편한 복장 권장.</li>

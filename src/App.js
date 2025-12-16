@@ -34,14 +34,15 @@ function App() {
       setIsLoggedIn(false);
    };
 
-   // ✅ SearchBar 노출 조건
-   const showSearchBar = location.pathname === '/' || location.pathname.startsWith('/list');
+   // ✅ SearchBar 노출 조건: 홈(/) + 목록(/list)만
+   const showSearchBar = location.pathname === '/' || location.pathname === '/list';
 
    return (
       <div className="App">
          <Header isLoggedIn={isLoggedIn} onLogout={handleLogout} />
 
          {showSearchBar && <SearchBar />}
+
          <Routes>
             <Route path="/" element={<Main />} />
             <Route path="/list" element={<List />} />
