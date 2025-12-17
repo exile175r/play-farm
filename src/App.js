@@ -1,28 +1,29 @@
 // src/App.js
-import React, { useState } from 'react';
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import './App.css';
+import React, { useState } from "react";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import "./App.css";
 
-import Header from './components/layout/Header';
-import SearchBar from './components/layout/SearchBar';
+import Header from "./components/layout/Header";
+import Main from "./components/Main";
+import SearchBar from "./components/layout/SearchBar";
 
-import Main from './components/Main';
-import List from './components/lists/List';
-import ListData from './components/lists/ListDetail';
+import List from "./components/lists/List";
+import ListData from "./components/lists/ListDetail";
 
-import Login from './components/login/Login';
-import Signup from './components/login/Signup';
+import Login from "./components/login/Login";
+import Signup from "./components/login/Signup";
 
-import EventPage from './components/events/EventPage';
-import EventDetail from './components/events/EventDetail';
+import EventPage from "./components/events/EventPage";
+import EventDetail from "./components/events/EventDetail";
+import Store from "./components/shop/Store";
 
-import SupportPage from './components/SupportPage';
-import Mypage from './components/mypage/Mypage';
-import DataCheck from './components/DataCheck';
+import SupportPage from "./components/SupportPage";
+import Mypage from "./components/mypage/Mypage";
+import DataCheck from "./components/DataCheck";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return !!localStorage.getItem('token');
+    return !!localStorage.getItem("token");
   });
 
   const [searchData, setSearchData] = useState(null);
@@ -32,12 +33,13 @@ function App() {
 
   // 로그아웃
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem("token");
     setIsLoggedIn(false);
   };
 
   // ✅ SearchBar 노출 조건: 홈(/) + 목록(/list)만
-  const showSearchBar = location.pathname === '/' || location.pathname === '/list';
+  // const showSearchBar = location.pathname === "/" || location.pathname === "/list";
+  const showSearchBar = location.pathname === "/list";
 
   return (
     <div className="App">
@@ -55,7 +57,7 @@ function App() {
 
         <Route path="/events" element={<EventPage />} />
         <Route path="/event/:id" element={<EventDetail />} />
-
+        <Route path="/shop" element={<Store />} />
         <Route path="/support" element={<SupportPage />} />
         <Route path="/mypage" element={<Mypage />} />
 
@@ -65,20 +67,21 @@ function App() {
       {/* 임시 Data Check 버튼 */}
       <button
         style={{
-          padding: '5px 10px',
-          width: '70px',
-          backgroundColor: '#3a8e87',
-          borderRadius: '10px',
-          boxShadow: '2px 3px 0 0 #007c60',
-          textAlign: 'center',
-          color: '#f6ce44',
-          fontSize: '16px',
-          fontWeight: '700',
-          position: 'absolute',
-          top: '99px',
-          right: '20px',
+          padding: "5px 10px",
+          width: "70px",
+          backgroundColor: "#3a8e87",
+          borderRadius: "10px",
+          boxShadow: "2px 3px 0 0 #007c60",
+          textAlign: "center",
+          color: "#f6ce44",
+          fontSize: "16px",
+          fontWeight: "700",
+          position: "absolute",
+          top: "99px",
+          right: "20px",
         }}
-        onClick={() => navigate('/data?page=1&limit=20')}>
+        onClick={() => navigate("/data?page=1&limit=20")}
+      >
         Data Check
       </button>
     </div>

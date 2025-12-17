@@ -2,8 +2,8 @@
 -- MySQL 5.7 이상 버전 지원
 
 -- 데이터베이스 생성
--- CREATE DATABASE IF NOT EXISTS play_farm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
--- USE play_farm;
+CREATE DATABASE IF NOT EXISTS play_farm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE play_farm;
 
 -- 1. programs 테이블 (메인 프로그램 테이블)
 CREATE TABLE IF NOT EXISTS `programs` (

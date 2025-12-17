@@ -22,6 +22,7 @@ function Header({ isLoggedIn, onLogout }) {
         <nav className="pf-nav">
           <Link to="/">홈</Link>
           <Link to="/list?page=1&limit=20">체험</Link>
+          <Link to="/shop">상품구매</Link>
           <Link to="/events">이벤트·공지</Link>
           <Link to="/support">고객지원</Link>
         </nav>
