@@ -36,12 +36,12 @@ const SupportPage = () => {
    };
 
    return (
-      <main className="support-page">
-         <div className="support-inner">
+      <main className="pf-page support-page">
+         <div className="pf-container support-inner">
             {/* 헤더 */}
-            <header className="support-header">
-               <h1 className="support-title">고객지원</h1>
-               <div className="support-divider" />
+            <header className="pf-head support-header">
+               <h1 className="pf-title-lg support-title">고객지원</h1>
+               <div className="pf-divider" />
             </header>
 
             {/* 상단 탭 메뉴 */}

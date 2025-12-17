@@ -9,11 +9,11 @@ function EventPage() {
    const [activeTab, setActiveTab] = useState('event');
 
    return (
-      <main className="pf-event-page">
-         <div className="pf-event-inner">
-            <header className="pf-event-head">
-               <h1 className="pf-event-title">이벤트·공지</h1>
-               <div className="pf-event-divider" />
+      <main className="pf-page pf-event-page">
+         <div className="pf-container pf-event-inner">
+            <header className="pf-head pf-event-head">
+               <h1 className="pf-title-lg pf-event-title">이벤트·공지</h1>
+               <div className="pf-divider" />
             </header>
 
             <div className="pf-event-tabs">

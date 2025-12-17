@@ -1,3 +1,4 @@
+/* ===== layout ===== */
 .detail-wrap {
    padding: 56px 0 80px;
 }
@@ -26,13 +27,10 @@
    background: var(--color-header-bg);
 }
 
-/* =====================
-   Top Section
-===================== */
+/* ===== top ===== */
 .detail-top {
    display: flex;
    gap: 40px;
-   align-items: flex-start;
    margin-top: 20px;
    margin-bottom: 28px;
 }
@@ -56,15 +54,11 @@
 }
 
 .detail-headline {
-   display: flex;
-   gap: 10px;
-   align-items: center;
    margin-bottom: 10px;
 }
 
 .detail-badge {
    display: inline-flex;
-   align-items: center;
    padding: 6px 12px;
    border-radius: 999px;
    font-size: 12px;
@@ -75,7 +69,7 @@
 }
 
 .detail-title {
-   margin-bottom: 14px;
+   margin: 0 0 14px;
    font-size: 26px;
    font-weight: 800;
    color: var(--color-list-title);
@@ -84,15 +78,15 @@
 
 .detail-main-text {
    font-size: 14px;
-   color: var(--color-list-sub);
    line-height: 1.8;
+   color: var(--color-list-sub);
 }
 
 .detail-main-text p {
    margin: 0 0 8px;
 }
 
-/* Buttons */
+/* ===== buttons ===== */
 .detail-btns {
    margin-top: 20px;
    display: flex;
@@ -128,15 +122,17 @@
    transform: translateY(-1px);
 }
 
-/* =====================
-   Tabs
-===================== */
+/* ✅ 북마크 ON 상태 */
+.detail-btn.is-bm {
+   color: var(--color-text-sub);
+   border-color: rgba(176, 123, 0, 0.25);
+}
+
+/* ===== tabs ===== */
 .detail-tabs {
    display: flex;
-   justify-content: space-between;
    border-bottom: 2px solid var(--color-border);
    margin-top: 12px;
-   gap: 2px;
 }
 
 .tab {
@@ -144,12 +140,11 @@
    padding: 14px 0;
    font-size: 14px;
    font-weight: 700;
-   background: transparent;
+   background: none;
    border: none;
    cursor: pointer;
    color: var(--color-list-sub);
    transition: 0.2s;
-   border-radius: 12px 12px 0 0;
 }
 
 .tab:hover {
@@ -158,29 +153,22 @@
 
 .tab.active {
    color: var(--color-navy-deep);
+   box-shadow: inset 0 -3px 0 var(--color-primary);
    background: var(--color-bg);
-   box-shadow: 0 -3px 0 var(--color-primary) inset;
 }
 
-/* =====================
-   Tab Content Upgrade
-===================== */
+/* ===== panel ===== */
 .detail-tab-content {
-   background: transparent;
-   padding: 22px 0 0;
+   padding-top: 22px;
 }
 
-/* 패널(탭 내용 카드) */
 .detail-panel {
    background: var(--color-bg);
    border: 1px solid var(--color-border);
    border-radius: 18px;
    box-shadow: 0 10px 24px var(--color-shadow-mid);
-   padding: 22px 22px;
-   color: var(--color-list-title);
-   line-height: 1.8;
+   padding: 22px;
    position: relative;
-   overflow: hidden;
 }
 
 .detail-panel::before {
@@ -192,45 +180,32 @@
    height: 3px;
    border-radius: 999px;
    background: var(--color-primary);
-   opacity: 0.9;
-}
-
-/* 패널 헤더 */
-.panel-head {
-   display: flex;
-   justify-content: space-between;
-   align-items: center;
-   gap: 12px;
-   margin: 4px 0 14px;
 }
 
 .panel-title {
-   margin: 0;
+   margin: 0 0 14px;
    font-size: 15px;
    font-weight: 900;
    color: var(--color-navy-deep);
    letter-spacing: 0.2px;
 }
 
-.panel-chip {
-   display: inline-flex;
-   align-items: center;
-   padding: 6px 10px;
-   border-radius: 999px;
-   font-size: 12px;
-   font-weight: 900;
-   background: var(--color-list-card-bg);
-   border: 1px solid var(--color-border);
-   color: var(--color-list-sub);
+.panel-title.small {
+   margin-top: 16px;
+   font-size: 14px;
 }
 
-/* =====================
-   Schedule - step list
-===================== */
+.divider-line {
+   height: 1px;
+   background: var(--color-border);
+   margin: 16px 0 14px;
+}
+
+/* ===== schedule ===== */
 .step-list {
    list-style: none;
-   padding: 0;
    margin: 0;
+   padding: 0;
    display: grid;
    gap: 10px;
 }
@@ -238,33 +213,27 @@
 .step-list li {
    display: flex;
    gap: 12px;
-   align-items: flex-start;
-   padding: 12px 12px;
+   padding: 12px;
    background: var(--color-list-card-bg);
    border: 1px solid var(--color-border);
    border-radius: 14px;
 }
 
 .step-no {
-   flex: 0 0 auto;
    width: 34px;
    height: 34px;
-   border-radius: 999px;
+   border-radius: 50%;
    display: grid;
    place-items: center;
    font-size: 12px;
-   font-weight: 1000;
+   font-weight: 900;
    background: var(--color-header-bg);
    color: #fff;
    margin-top: 2px;
 }
 
-.step-body {
-   flex: 1;
-}
-
 .step-title {
-   margin: 0 0 3px;
+   margin: 0 0 4px;
    font-size: 14px;
    font-weight: 900;
    color: var(--color-list-title);
@@ -277,14 +246,94 @@
    line-height: 1.6;
 }
 
-/* =====================
-   Location
-===================== */
+/* ===== info ===== */
+.info-grid {
+   display: grid;
+   grid-template-columns: 1fr 1fr;
+   gap: 12px;
+}
+
+.info-row {
+   background: var(--color-list-card-bg);
+   border: 1px solid var(--color-border);
+   border-radius: 14px;
+   padding: 12px 14px;
+   display: grid;
+   gap: 6px;
+}
+
+.info-row strong {
+   font-size: 12px;
+   color: var(--color-list-sub);
+   font-weight: 900;
+}
+
+.info-row span {
+   font-size: 13px;
+   font-weight: 800;
+   color: var(--color-list-title);
+}
+
+.sub-card {
+   margin-top: 14px;
+   border: 1px solid var(--color-border);
+   background: var(--color-bg);
+   border-radius: 14px;
+   padding: 14px;
+}
+
+.sub-title {
+   margin: 0 0 6px;
+   font-size: 13px;
+   font-weight: 900;
+   color: var(--color-navy-deep);
+}
+
+.sub-desc {
+   margin: 0;
+   font-size: 13px;
+   color: var(--color-list-sub);
+   line-height: 1.7;
+}
+
+/* ===== notice list ===== */
+.check-list {
+   list-style: none;
+   margin: 0;
+   padding: 0;
+   display: grid;
+   gap: 10px;
+}
+
+.check-list li {
+   display: flex;
+   gap: 10px;
+   padding: 12px;
+   background: var(--color-list-card-bg);
+   border: 1px solid var(--color-border);
+   border-radius: 12px;
+   align-items: flex-start;
+}
+
+.check-list li::before {
+   content: '✓';
+   width: 22px;
+   height: 22px;
+   border-radius: 50%;
+   display: grid;
+   place-items: center;
+   background: var(--color-header-bg);
+   color: #fff;
+   margin-top: 2px;
+   flex: 0 0 auto;
+}
+
+/* ===== location ===== */
 .location-card {
    background: var(--color-list-card-bg);
    border: 1px solid var(--color-border);
    border-radius: 16px;
-   padding: 14px 14px;
+   padding: 14px;
 }
 
 .location-row {
@@ -313,7 +362,6 @@
    font-size: 13px;
 }
 
-/* map */
 .kakao-map {
    width: 100%;
    height: 380px;
@@ -345,92 +393,249 @@
    transform: translateY(-1px);
 }
 
-/* =====================
-   Info grid
-===================== */
-.info-grid {
-   display: grid;
-   grid-template-columns: 1fr 1fr;
-   gap: 12px;
-   margin-top: 6px;
-}
-
-.info-row {
+/* ===== review form ===== */
+.review-form {
+   margin-bottom: 16px;
+   padding: 14px;
    border: 1px solid var(--color-border);
    background: var(--color-list-card-bg);
    border-radius: 14px;
-   padding: 12px 14px;
-   display: grid;
-   gap: 6px;
 }
 
-.info-row strong {
+.review-form-row {
+   display: grid;
+   grid-template-columns: 1fr 180px; /* 별점 넓이 고려 */
+   gap: 10px;
+   margin-bottom: 10px;
+}
+
+.review-textarea {
+   width: 100%;
+   border-radius: 12px;
+   border: 1px solid var(--color-border);
+   padding: 12px;
+   font-size: 13px;
+   background: var(--color-bg);
+   color: var(--color-list-title);
+   resize: vertical;
+   margin-bottom: 10px;
+}
+
+/* ✅ 자동 이름 표시 */
+.review-userline {
+   display: flex;
+   align-items: center;
+   height: 40px;
+   padding: 0 12px;
+   border-radius: 12px;
+   border: 1px solid var(--color-border);
+   background: var(--color-bg);
+}
+
+.review-username {
+   font-size: 13px;
+   font-weight: 900;
+   color: var(--color-list-title);
+}
+
+/* ✅ 별점 클릭 UI */
+.rating {
+   display: inline-flex;
+   justify-content: center;
+   align-items: center;
+   gap: 4px;
+   height: 40px;
+   padding: 0 5px;
+   border-radius: 12px;
+   border: 1px solid var(--color-border);
+   background: var(--color-bg);
+}
+
+.star {
+   border: 0;
+   background: transparent;
+   cursor: pointer;
+   font-size: 18px;
+   line-height: 1;
+   padding: 0 2px;
+   color: #cfcfcf;
+}
+
+.star.is-on {
+   color: var(--color-text-sub);
+}
+
+.star:active {
+   transform: translateY(1px);
+}
+
+.star:focus-visible {
+   outline: 2px solid var(--color-header-bg);
+   outline-offset: 2px;
+   border-radius: 6px;
+}
+
+.review-upload {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+   margin-bottom: 12px;
+}
+
+.upload-btn {
+   display: inline-flex;
+   align-items: center;
+   padding: 10px 14px;
+   border-radius: 999px;
+   border: 1px solid var(--color-border);
+   background: var(--color-bg);
+   font-size: 13px;
+   font-weight: 900;
+   color: var(--color-list-title);
+   cursor: pointer;
+}
+
+.upload-btn input {
+   display: none;
+}
+
+.preview-grid {
+   display: grid;
+   grid-template-columns: repeat(6, 1fr);
+   gap: 8px;
+   margin-bottom: 12px;
+}
+
+.preview-item {
+   position: relative;
+   border-radius: 12px;
+   overflow: hidden;
+   border: 1px solid var(--color-border);
+   background: var(--color-card-bg);
+   aspect-ratio: 1 / 1;
+}
+
+.preview-item img {
+   width: 100%;
+   height: 100%;
+   object-fit: cover;
+}
+
+.preview-remove {
+   position: absolute;
+   right: 6px;
+   top: 6px;
+   border: none;
+   border-radius: 999px;
+   padding: 6px 10px;
+   font-size: 11px;
+   font-weight: 900;
+   cursor: pointer;
+   background: rgba(0, 0, 0, 0.55);
+   color: #fff;
+}
+
+.review-submit {
+   width: 100%;
+   height: 42px;
+   border: none;
+   border-radius: 12px;
+   background: var(--color-list-btn-primary-bg);
+   color: var(--color-list-btn-primary-text);
+   font-size: 14px;
+   font-weight: 900;
+   cursor: pointer;
+}
+
+.review-submit:disabled {
+   opacity: 0.5;
+   cursor: not-allowed;
+}
+
+/* ===== review list ===== */
+.review-list {
+   list-style: none;
+   margin: 0;
+   padding: 0;
+   display: grid;
+   gap: 10px;
+}
+
+.review-item {
+   background: var(--color-list-card-bg);
+   border: 1px solid var(--color-border);
+   border-radius: 14px;
+   padding: 14px;
+}
+
+.review-top {
+   display: flex;
+   justify-content: space-between;
+   gap: 10px;
+   margin-bottom: 8px;
+}
+
+.review-left {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+}
+
+.review-user {
+   font-size: 13px;
+   font-weight: 900;
+   color: var(--color-list-title);
+}
+
+.review-date {
    font-size: 12px;
    color: var(--color-list-sub);
-   font-weight: 900;
-   letter-spacing: 0.2px;
-}
-
-.info-row span {
-   font-size: 13px;
-   color: var(--color-list-title);
    font-weight: 800;
 }
 
-.sub-card {
-   margin-top: 14px;
+.review-right {
+   display: inline-flex;
+   align-items: center;
+   gap: 10px;
+}
+
+.review-stars {
+   font-size: 13px;
+   font-weight: 900;
+   letter-spacing: 1px;
+   color: var(--color-text-sub);
+}
+
+.review-del {
    border: 1px solid var(--color-border);
    background: var(--color-bg);
-   border-radius: 14px;
-   padding: 14px 14px;
-}
-
-.sub-title {
-   margin: 0 0 6px;
-   font-size: 13px;
-   font-weight: 1000;
-   color: var(--color-navy-deep);
-}
-
-.sub-desc {
-   margin: 0;
-   font-size: 13px;
    color: var(--color-list-sub);
-   line-height: 1.7;
-}
-
-/* =====================
-   Notice - checklist
-===================== */
-.check-list {
-   list-style: none;
-   padding: 0;
-   margin: 0;
-   display: grid;
-   gap: 10px;
-}
-
-.check-list li {
-   display: flex;
-   gap: 10px;
-   align-items: flex-start;
-   padding: 12px 12px;
-   background: var(--color-list-card-bg);
-   border: 1px solid var(--color-border);
-   border-radius: 12px;
-}
-
-.check-list li::before {
-   content: '✓';
-   flex: 0 0 auto;
-   width: 22px;
-   height: 22px;
    border-radius: 999px;
-   display: grid;
-   place-items: center;
+   padding: 6px 10px;
    font-size: 12px;
-   font-weight: 1000;
-   background: var(--color-header-bg);
-   color: #fff;
-   margin-top: 2px;
+   font-weight: 900;
+   cursor: pointer;
+}
+
+.review-content {
+   margin: 0 0 10px;
+   font-size: 13px;
+   line-height: 1.7;
+   color: var(--color-list-sub);
+   font-weight: 700;
+}
+
+.review-img-grid {
+   display: grid;
+   grid-template-columns: repeat(6, 1fr);
+   gap: 8px;
+}
+
+.review-img-grid img {
+   width: 100%;
+   aspect-ratio: 1 / 1;
+   object-fit: cover;
+   border-radius: 12px;
+   border: 1px solid var(--color-border);
+   background: var(--color-card-bg);
 }

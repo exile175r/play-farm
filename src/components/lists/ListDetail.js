@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { getProgramById } from '../../services/programApi';
 import './ListDetail.css';
 import { getImagePath } from '../../utils/imagePath';
@@ -8,22 +8,107 @@ import dayjs from 'dayjs';
 function ListDetail() {
    const [data, setData] = useState(null);
    const { id } = useParams();
+   const location = useLocation();
 
    const [activeTab, setActiveTab] = useState('schedule');
+
+   // kakao map
    const mapContainer = useRef(null);
    const mapInstance = useRef(null);
    const [mapLoaded, setMapLoaded] = useState(false);
 
-   const fetchProgramDetail = async (id) => {
+   // 로그인 여부
+   const isLoggedIn = !!localStorage.getItem('token');
+
+   // 유저 정보
+   const user = useMemo(() => {
       try {
-         const result = await getProgramById(id);
+         const raw = localStorage.getItem('user');
+         return raw ? JSON.parse(raw) : null;
+      } catch {
+         return null;
+      }
+   }, []);
+
+   // 화면 표시 이름
+   const displayName = user?.nickname || user?.name || user?.user_id || '익명';
+
+   // ✅ “본인 판별용” ID (서버 붙으면 여기만 진짜 user_id로 통일)
+   const myUserId = user?.user_id || user?.id || user?.email || null;
+
+   // =========================
+   // ✅ 북마크(찜) - List/Mypage와 동일 키로 동기화
+   // =========================
+   const BOOKMARK_KEY = 'bookmarks_program';
+
+   const [bookmarks, setBookmarks] = useState(() => {
+      try {
+         return JSON.parse(localStorage.getItem(BOOKMARK_KEY) || '[]');
+      } catch {
+         return [];
+      }
+   });
+
+   const bookmarked = useMemo(() => {
+      return bookmarks.some((b) => String(b.programId) === String(id));
+   }, [bookmarks, id]);
+
+   const toggleBookmark = () => {
+      if (!data || !id) return;
+
+      const exists = bookmarks.some((b) => String(b.programId) === String(id));
+
+      const next = exists
+         ? bookmarks.filter((b) => String(b.programId) !== String(id))
+         : [
+              {
+                 programId: id,
+                 title: data.program_nm,
+                 image: data.images?.[0] ? getImagePath(data.images[0]) : '',
+                 savedAt: new Date().toISOString(),
+              },
+              ...bookmarks,
+           ];
+
+      setBookmarks(next);
+      localStorage.setItem(BOOKMARK_KEY, JSON.stringify(next));
+   };
+
+   // 다른 탭/페이지에서 localStorage 변경 시 동기화(같은 탭에서는 storage 이벤트 미발생하는 게 정상이라, 안전용)
+   useEffect(() => {
+      const onStorage = (e) => {
+         if (e.key !== BOOKMARK_KEY) return;
+         try {
+            const next = JSON.parse(e.newValue || '[]');
+            setBookmarks(Array.isArray(next) ? next : []);
+         } catch {
+            setBookmarks([]);
+         }
+      };
+      window.addEventListener('storage', onStorage);
+      return () => window.removeEventListener('storage', onStorage);
+   }, []);
+
+   // reviews
+   const storageKey = `reviews_program_${id}`;
+   const [reviews, setReviews] = useState([]);
+
+   // review form
+   const [reviewRating, setReviewRating] = useState(5);
+   const [reviewContent, setReviewContent] = useState('');
+   const [reviewFiles, setReviewFiles] = useState([]); // File[]
+   const [reviewPreviews, setReviewPreviews] = useState([]); // objectURL[]
+
+   const fetchProgramDetail = async (programId) => {
+      try {
+         const result = await getProgramById(programId);
          if (result.success) {
             const replaceText = { 체험: ' 체험', 및: ' 및 ' };
             try {
                result.data.program_nm = JSON.parse(result.data.program_nm)
                   .map((v) => v.replace(/체험|및/g, (match) => replaceText[match]))
                   .join(', ');
-            } catch (error) {
+            } catch {
                result.data.program_nm = result.data.program_nm.replace(/체험|및/g, (match) => replaceText[match]);
             }
             setData(result.data || null);
@@ -33,20 +118,44 @@ function ListDetail() {
       }
    };
 
+   // program detail
    useEffect(() => {
       if (!id) return;
-      let isMounted = true;
-
-      fetchProgramDetail(id).then(() => {
-         if (!isMounted) return;
-      });
-
-      return () => {
-         isMounted = false;
-      };
+      fetchProgramDetail(id);
    }, [id]);
 
-   // 카카오맵 API 스크립트 로드
+   // URL/State로 review 탭 자동 오픈
+   useEffect(() => {
+      const openTab = location.state?.openTab;
+      if (openTab) setActiveTab(openTab);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+
+   // load reviews
+   useEffect(() => {
+      if (!id) return;
+      try {
+         const raw = localStorage.getItem(storageKey);
+         const parsed = raw ? JSON.parse(raw) : [];
+         setReviews(Array.isArray(parsed) ? parsed : []);
+      } catch (e) {
+         console.error('리뷰 로드 실패:', e);
+         setReviews([]);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [id]);
+
+   // save reviews
+   useEffect(() => {
+      if (!id) return;
+      try {
+         localStorage.setItem(storageKey, JSON.stringify(reviews));
+      } catch (e) {
+         console.error('리뷰 저장 실패:', e);
+      }
+   }, [reviews, id, storageKey]);
+
+   // kakao map script
    useEffect(() => {
       if (window.kakao && window.kakao.maps && window.kakao.maps.LatLng) {
          setMapLoaded(true);
@@ -80,7 +189,7 @@ function ListDetail() {
       document.head.appendChild(script);
    }, []);
 
-   // 지도 초기화 및 마커 표시
+   // map init
    useEffect(() => {
       if (
          activeTab === 'location' &&
@@ -103,8 +212,6 @@ function ListDetail() {
                   if (mapInstance.current) mapInstance.current = null;
 
                   if (mapContainer.current && mapContainer.current.children.length === 0) {
-                     if (typeof window.kakao.maps.LatLng !== 'function') return;
-
                      const options = {
                         center: new window.kakao.maps.LatLng(lat, lng),
                         level: 3,
@@ -134,7 +241,7 @@ function ListDetail() {
       }
    }, [activeTab, data, mapLoaded]);
 
-   // 표시용 값들
+   // computed
    const programTypesText = Array.isArray(data?.program_types) && data.program_types.length > 0 ? data.program_types.join(', ') : '정보 없음';
 
    const feeText = data?.chrge ? data.chrge : '정보 없음';
@@ -143,66 +250,167 @@ function ListDetail() {
 
    const hasLocation = !!(data?.refine_wgs84_lat && data?.refine_wgs84_logt);
 
+   // review stars (list)
+   const renderStars = (rating = 0) => '★'.repeat(rating) + '☆'.repeat(Math.max(0, 5 - rating));
+
+   // ✅ 본인 리뷰인지 판별
+   const isMyReview = (review) => {
+      if (!isLoggedIn) return false;
+
+      // 새로 저장되는 리뷰는 userId로 판별
+      if (review?.userId && myUserId) return String(review.userId) === String(myUserId);
+
+      // 예전 데이터( userId 없던 것 )는 이름으로 임시 판별
+      // (서버 붙으면 다 userId로 통일하면 됨)
+      return (review?.user || '') === displayName;
+   };
+
+   // file change
+   const handleReviewFilesChange = (e) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length === 0) return;
+
+      reviewPreviews.forEach((url) => URL.revokeObjectURL(url));
+
+      const nextFiles = files.slice(0, 6);
+      const nextPreviews = nextFiles.map((f) => URL.createObjectURL(f));
+
+      setReviewFiles(nextFiles);
+      setReviewPreviews(nextPreviews);
+   };
+
+   const removePreviewAt = (idx) => {
+      setReviewFiles((prev) => prev.filter((_, i) => i !== idx));
+      setReviewPreviews((prev) => {
+         const target = prev[idx];
+         if (target) URL.revokeObjectURL(target);
+         return prev.filter((_, i) => i !== idx);
+      });
+   };
+
+   // submit
+   const handleSubmitReview = async (e) => {
+      e.preventDefault();
+      if (!isLoggedIn) return;
+
+      const content = reviewContent.trim();
+      if (!content) return;
+
+      const toBase64 = (file) =>
+         new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result));
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+         });
+
+      let images = [];
+      try {
+         images = await Promise.all(reviewFiles.map((f) => toBase64(f)));
+      } catch (err) {
+         console.error('이미지 변환 실패:', err);
+         images = [];
+      }
+
+      const newReview = {
+         id: `${Date.now()}`,
+         user: displayName,
+         userId: myUserId, // ✅ 본인 판별용
+         rating: Number(reviewRating),
+         date: new Date().toISOString(),
+         content,
+         images,
+      };
+
+      setReviews((prev) => [newReview, ...prev]);
+
+      // reset
+      setReviewRating(5);
+      setReviewContent('');
+      setReviewFiles([]);
+      reviewPreviews.forEach((url) => URL.revokeObjectURL(url));
+      setReviewPreviews([]);
+   };
+
+   // ✅ 삭제도 "본인만" 되게 방어
+   const handleDeleteReview = (reviewId) => {
+      const target = reviews.find((r) => r.id === reviewId);
+      if (!target) return;
+
+      if (!isMyReview(target)) return; // ✅ 비회원/타인 삭제 차단
+
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+   };
+
+   // cleanup previews
+   useEffect(() => {
+      return () => {
+         reviewPreviews.forEach((url) => URL.revokeObjectURL(url));
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
+
    return (
       <section className="detail-wrap">
          <div className="detail-inner">
             {data && (
-               <>
-                  <div className="detail-top">
-                     <div className="detail-img">{data.images && data.images.length > 0 && <img src={getImagePath(data.images[0])} alt={data.program_nm} />}</div>
+               <div className="detail-top">
+                  <div className="detail-img">{data.images && data.images.length > 0 && <img src={getImagePath(data.images[0])} alt={data.program_nm} />}</div>
 
-                     <div className="detail-info">
-                        <div className="detail-headline">
-                           <span className="detail-badge">{data.village_nm}</span>
-                        </div>
+                  <div className="detail-info">
+                     <div className="detail-headline">
+                        <span className="detail-badge">{data.village_nm}</span>
+                     </div>
 
-                        <h1 className="detail-title">{data.program_nm}</h1>
+                     <h1 className="detail-title">{data.program_nm}</h1>
 
-                        <div className="detail-main-text">
-                           <p>프로그램 구분 : {programTypesText}</p>
-                           <p>인원 : {data.max_personnel || '정보 없음'}</p>
-                           <p>신청 기간 : {reqPeriodText}</p>
-                           <p>주소 : {data.address || '주소 정보 없음'}</p>
-                           <p>소요시간 : {data.use_time || '정보 없음'}</p>
-                           <p>이용 요금 : {feeText}</p>
-                        </div>
+                     <div className="detail-main-text">
+                        <p>프로그램 구분 : {programTypesText}</p>
+                        <p>인원 : {data.max_personnel || '정보 없음'}</p>
+                        <p>신청 기간 : {reqPeriodText}</p>
+                        <p>주소 : {data.address || '주소 정보 없음'}</p>
+                        <p>소요시간 : {data.use_time || '정보 없음'}</p>
+                        <p>이용 요금 : {feeText}</p>
+                     </div>
 
-                        <div className="detail-btns">
-                           <Link to="/list" className="detail-btn outline">
-                              돌아가기
-                           </Link>
-                           <button className="detail-btn primary">예약하기</button>
-                        </div>
+                     <div className="detail-btns">
+                        <Link to="/list" className="detail-btn outline">
+                           돌아가기
+                        </Link>
+
+                        <button type="button" className={`detail-btn outline ${bookmarked ? 'is-bm' : ''}`} onClick={toggleBookmark}>
+                           {bookmarked ? '★ 찜됨' : '☆ 찜하기'}
+                        </button>
+
+                        <button type="button" className="detail-btn primary">
+                           예약하기
+                        </button>
                      </div>
                   </div>
-               </>
+               </div>
             )}
 
-            {/* 탭 */}
+            {/* tabs */}
             <div className="detail-tabs">
                <button className={activeTab === 'schedule' ? 'tab active' : 'tab'} onClick={() => setActiveTab('schedule')}>
                   프로그램 일정
                </button>
+               <button className={activeTab === 'detail' ? 'tab active' : 'tab'} onClick={() => setActiveTab('detail')}>
+                  상세정보
+               </button>
                <button className={activeTab === 'location' ? 'tab active' : 'tab'} onClick={() => setActiveTab('location')}>
                   위치정보
                </button>
-               <button className={activeTab === 'info' ? 'tab active' : 'tab'} onClick={() => setActiveTab('info')}>
-                  상세정보
-               </button>
-               <button className={activeTab === 'notice' ? 'tab active' : 'tab'} onClick={() => setActiveTab('notice')}>
-                  유의사항
+               <button className={activeTab === 'review' ? 'tab active' : 'tab'} onClick={() => setActiveTab('review')}>
+                  체험 후기
                </button>
             </div>
 
-            {/* 탭 컨텐츠 */}
             <div className="detail-tab-content">
-               {/* 일정 */}
+               {/* schedule */}
                {activeTab === 'schedule' && (
                   <div className="detail-panel">
-                     <div className="panel-head">
-                        <h3 className="panel-title">프로그램 진행 흐름</h3>
-                        <span className="panel-chip">Schedule</span>
-                     </div>
+                     <h3 className="panel-title">프로그램 진행 흐름</h3>
 
                      <ul className="step-list">
                         <li>
@@ -237,42 +445,10 @@ function ListDetail() {
                   </div>
                )}
 
-               {/* 위치 */}
-               {activeTab === 'location' && (
+               {/* detail + notice */}
+               {activeTab === 'detail' && (
                   <div className="detail-panel">
-                     <div className="panel-head">
-                        <h3 className="panel-title">위치 안내</h3>
-                        <span className="panel-chip">Location</span>
-                     </div>
-
-                     <div className="location-card">
-                        <div className="location-row">
-                           <span className="location-label">주소</span>
-                           <span className="location-value">{data?.address || '주소 없음'}</span>
-                        </div>
-
-                        {!hasLocation ? <p className="muted">위치 정보가 없습니다.</p> : <div id="map" ref={mapContainer} className="kakao-map"></div>}
-
-                        {hasLocation && (
-                           <a
-                              className="map-link"
-                              href={`https://map.kakao.com/link/map/${encodeURIComponent(data?.village_nm || '위치')},${data.refine_wgs84_lat},${data.refine_wgs84_logt}`}
-                              target="_blank"
-                              rel="noreferrer">
-                              카카오맵에서 보기
-                           </a>
-                        )}
-                     </div>
-                  </div>
-               )}
-
-               {/* 상세정보 */}
-               {activeTab === 'info' && (
-                  <div className="detail-panel">
-                     <div className="panel-head">
-                        <h3 className="panel-title">프로그램 상세 정보</h3>
-                        <span className="panel-chip">Info</span>
-                     </div>
+                     <h3 className="panel-title">프로그램 상세 정보</h3>
 
                      <div className="info-grid">
                         <div className="info-row">
@@ -314,23 +490,144 @@ function ListDetail() {
                            <p className="sub-desc">{data.side_activities}</p>
                         </div>
                      )}
-                  </div>
-               )}
 
-               {/* 유의사항 */}
-               {activeTab === 'notice' && (
-                  <div className="detail-panel">
-                     <div className="panel-head">
-                        <h3 className="panel-title">유의사항</h3>
-                        <span className="panel-chip">Notice</span>
-                     </div>
+                     <div className="divider-line" />
 
+                     <h3 className="panel-title small">유의사항</h3>
                      <ul className="check-list">
                         <li>취소·환불 규정은 운영 농장 정책을 따릅니다.</li>
                         <li>우천 시 일정 변경될 수 있음.</li>
                         <li>편한 복장 권장.</li>
                         <li>알레르기 시 사전문의 필요.</li>
                      </ul>
+                  </div>
+               )}
+
+               {/* location */}
+               {activeTab === 'location' && (
+                  <div className="detail-panel">
+                     <h3 className="panel-title">위치 안내</h3>
+
+                     <div className="location-card">
+                        <div className="location-row">
+                           <span className="location-label">주소</span>
+                           <span className="location-value">{data?.address || '주소 없음'}</span>
+                        </div>
+
+                        {!hasLocation ? <p className="muted">위치 정보가 없습니다.</p> : <div id="map" ref={mapContainer} className="kakao-map" />}
+
+                        {hasLocation && (
+                           <a
+                              className="map-link"
+                              href={`https://map.kakao.com/link/map/${encodeURIComponent(data?.village_nm || '위치')},${data.refine_wgs84_lat},${data.refine_wgs84_logt}`}
+                              target="_blank"
+                              rel="noreferrer">
+                              카카오맵에서 보기
+                           </a>
+                        )}
+                     </div>
+                  </div>
+               )}
+
+               {/* review */}
+               {activeTab === 'review' && (
+                  <div className="detail-panel">
+                     <h3 className="panel-title">체험 후기</h3>
+
+                     {/* 로그인일 때만 작성 폼 */}
+                     {isLoggedIn && (
+                        <form className="review-form" onSubmit={handleSubmitReview}>
+                           <div className="review-form-row">
+                              <div className="review-userline">
+                                 <span className="review-username">{displayName}</span>
+                              </div>
+
+                              <div className="rating" role="radiogroup" aria-label="별점 선택">
+                                 {[1, 2, 3, 4, 5].map((n) => (
+                                    <button key={n} type="button" className={`star ${reviewRating >= n ? 'is-on' : ''}`} onClick={() => setReviewRating(n)} aria-label={`${n}점`}>
+                                       {reviewRating >= n ? '★' : '☆'}
+                                    </button>
+                                 ))}
+                              </div>
+                           </div>
+
+                           <textarea
+                              className="review-textarea"
+                              value={reviewContent}
+                              onChange={(e) => setReviewContent(e.target.value)}
+                              placeholder="내용을 적어주세요."
+                              rows={4}
+                           />
+
+                           <div className="review-upload">
+                              <label className="upload-btn">
+                                 사진 첨부 (최대 6장)
+                                 <input type="file" accept="image/*" multiple onChange={handleReviewFilesChange} />
+                              </label>
+                           </div>
+
+                           {reviewPreviews.length > 0 && (
+                              <div className="preview-grid">
+                                 {reviewPreviews.map((src, idx) => (
+                                    <div className="preview-item" key={src}>
+                                       <img src={src} alt={`preview-${idx}`} />
+                                       <button type="button" className="preview-remove" onClick={() => removePreviewAt(idx)}>
+                                          삭제
+                                       </button>
+                                    </div>
+                                 ))}
+                              </div>
+                           )}
+
+                           <button className="review-submit" type="submit" disabled={!reviewContent.trim()}>
+                              후기 등록
+                           </button>
+                        </form>
+                     )}
+
+                     {!isLoggedIn && <p className="muted">리뷰 작성은 로그인 후 이용할 수 있어.</p>}
+
+                     {/* list */}
+                     {!reviews || reviews.length === 0 ? (
+                        <p className="muted">아직 등록된 후기가 없습니다.</p>
+                     ) : (
+                        <ul className="review-list">
+                           {reviews.map((r) => {
+                              const canDelete = isMyReview(r); // ✅ 본인만 true
+                              return (
+                                 <li key={r.id} className="review-item">
+                                    <div className="review-top">
+                                       <div className="review-left">
+                                          <span className="review-user">{r.user || '익명'}</span>
+                                          <span className="review-date">{r.date ? dayjs(r.date).format('YYYY.MM.DD') : ''}</span>
+                                       </div>
+
+                                       <div className="review-right">
+                                          <span className="review-stars">{renderStars(r.rating || 0)}</span>
+
+                                          {/* ✅ 본인만 삭제 버튼 노출 */}
+                                          {canDelete && (
+                                             <button type="button" className="review-del" onClick={() => handleDeleteReview(r.id)}>
+                                                삭제
+                                             </button>
+                                          )}
+                                       </div>
+                                    </div>
+
+                                    <p className="review-content">{r.content}</p>
+
+                                    {Array.isArray(r.images) && r.images.length > 0 && (
+                                       <div className="review-img-grid">
+                                          {r.images.map((src, idx) => (
+                                             <img key={`${r.id}_${idx}`} src={src} alt={`review-${idx}`} />
+                                          ))}
+                                       </div>
+                                    )}
+                                 </li>
+                              );
+                           })}
+                        </ul>
+                     )}
                   </div>
                )}
             </div>

@@ -1,34 +1,3 @@
-/* src/components/events/EventPage.css */
-
-/* 페이지 래퍼 */
-.pf-event-page {
-   padding: 56px 0 80px;
-}
-
-.pf-event-inner {
-   width: 1200px;
-   margin: 0 auto;
-}
-
-/* 헤더 */
-.pf-event-head {
-   margin-bottom: 18px;
-}
-
-.pf-event-title {
-   margin: 0 0 14px;
-   font-size: 30px;
-   font-weight: 800;
-   letter-spacing: -0.02em;
-   color: var(--color-list-title, #222);
-}
-
-.pf-event-divider {
-   height: 1px;
-   background: var(--color-border, #e8e2d0);
-   opacity: 0.9;
-}
-
 /* 탭 바 */
 .pf-event-tabs {
    display: flex;

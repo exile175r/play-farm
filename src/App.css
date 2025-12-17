@@ -1,85 +1,251 @@
+/* src/App.css */
 :root {
-   --color-header-bg: #3a8e87;
-   --color-border: #e8e2d0;
-   --color-text: #ffffff;
-   --color-text-sub: #f3c200;
+   /* ===== Brand / Core ===== */
+   --brand-primary: #f3c200; /* 기존: --color-primary / 로고 */
+   --brand-orange: #f8a201; /* 기존: --color-orange */
+   --brand-teal: #3a8e87; /* 기존: --color-header-bg */
+   --brand-green-light: #007c60; /* 기존: --color-green-light */
+   --brand-green-dark: #00464a; /* 기존: --color-green-dark */
+   --brand-navy: #171d2f; /* 기존: --color-navy-deep */
+   --brand-danger: #d64550; /* 기존: trpcal-3 */
+
+   /* ===== Surface / Text ===== */
+   --bg: #ffffff; /* 기존: --color-bg */
+   --surface: #ffffff;
+   --surface-soft: #f5f5f5; /* 기존: --color-list-bg */
+   --surface-tint: #effbf3; /* 기존: --color-list-card-bg */
+   --text: #333333; /* 기존: --color-list-title */
+   --text-sub: #555555; /* 기존: --color-list-sub */
+   --text-on-brand: #ffffff; /* 기존: --color-text */
+
+   /* ===== Border / Shadow ===== */
+   --border: #e8e2d0; /* 기존: --color-border */
+   --shadow-mid: 0 10px 24px rgba(0, 0, 0, 0.12); /* 공통 카드 */
+   --shadow-strong: 0 18px 40px rgba(0, 0, 0, 0.18); /* hover 카드 */
+
+   /* ===== Radius ===== */
+   --r-sm: 10px;
+   --r-md: 14px;
+   --r-lg: 18px;
+   --r-xl: 24px;
+   --r-pill: 999px;
+
+   /* ===== Layout ===== */
+   --container: 1200px; /* 공통 컨테이너 폭 */
+   --px: 16px; /* 좌우 패딩 */
+   --section-pt: 56px; /* 페이지 상단 패딩 */
+   --section-pb: 80px; /* 페이지 하단 패딩 */
+
+   /* ===== Buttons ===== */
+   --btn-outline-bg: #ffffff; /* 기존: --color-list-btn-outline-bg */
+   --btn-outline-border: #cccccc; /* 기존: --color-list-btn-outline-border */
+   --btn-hover: #f7f7f7; /* 기존: --color-btn-hover */
+
+   --btn-primary-bg: #ff9f1c; /* 기존: --color-list-btn-primary-bg */
+   --btn-primary-hover: #f18f0c; /* 기존: --color-list-btn-primary-hover-bg */
+   --btn-primary-text: #ffffff; /* 기존: --color-list-btn-primary-text */
+
+   /* ===== Etc ===== */
+   --arrow: #222222; /* 기존: --color-arrow */
+   --card-img-bg: #eaeaea; /* 기존: --color-card-bg */
+
+   /* ===== Compatibility (기존 변수 유지용 alias) ===== */
+   --color-header-bg: var(--brand-teal);
+   --color-border: var(--border);
+   --color-text: var(--text-on-brand);
+   --color-text-sub: var(--brand-primary);
    --color-btn-border: #cccccc;
-   --color-btn-hover: #f7f7f7;
+   --color-btn-hover: var(--btn-hover);
    --color-btn-border-hover: #bbbbbb;
-   /* ======================= */
-   --color-bg: #ffffff;
-   --color-shadow-mid: rgba(0, 0, 0, 0.25);
-   --color-shadow-strong: rgba(0, 0, 0, 0.3);
-   --color-arrow: #222222;
-   --color-card-bg: #eaeaea;
 
-   /* list */
-   --color-list-bg: #f5f5f5;
-   --color-list-card-bg: #effbf3;
-   --color-list-title: #333333;
-   --color-list-sub: #555555;
-   --color-list-btn-outline-bg: #ffffff;
-   --color-list-btn-outline-border: #cccccc;
+   --color-bg: var(--bg);
+   --color-shadow-mid: rgba(0, 0, 0, 0.25); /* 기존 값 유지(필요하면 삭제 가능) */
+   --color-shadow-strong: rgba(0, 0, 0, 0.3); /* 기존 값 유지(필요하면 삭제 가능) */
+   --color-arrow: var(--arrow);
+   --color-card-bg: var(--card-img-bg);
+
+   --color-list-bg: var(--surface-soft);
+   --color-list-card-bg: var(--surface-tint);
+   --color-list-title: var(--text);
+   --color-list-sub: var(--text-sub);
+
+   --color-list-btn-outline-bg: var(--btn-outline-bg);
+   --color-list-btn-outline-border: var(--btn-outline-border);
    --color-list-btn-outline-hover-bg: #f3f3f3;
-   --color-list-btn-primary-bg: #ff9f1c;
-   --color-list-btn-primary-hover-bg: #f18f0c;
-   --color-list-btn-primary-text: #ffffff;
-}
-/* SearchBar */
-:root {
-   --color-primary: #f3c200;
-   --color-orange: #f8a201;
-   --color-green-light: #007c60;
-   --color-green-dark: #00464a;
-   --color-navy-deep: #171d2f;
+
+   --color-list-btn-primary-bg: var(--btn-primary-bg);
+   --color-list-btn-primary-hover-bg: var(--btn-primary-hover);
+   --color-list-btn-primary-text: var(--btn-primary-text);
+
+   /* SearchBar 기존 변수 유지 */
+   --color-primary: var(--brand-primary);
+   --color-orange: var(--brand-orange);
+   --color-green-light: var(--brand-green-light);
+   --color-green-dark: var(--brand-green-dark);
+   --color-navy-deep: var(--brand-navy);
 }
 
+/* Base */
 .App {
    margin: 0 auto;
    max-width: 1920px;
 }
 
-/* === 컬러 정리 === */
-/* 로고 및 메인컬러 */
+/* Common Layout (통일) */
+.pf-page {
+   padding: var(--section-pt) 0 var(--section-pb);
+}
+
+.pf-container {
+   width: var(--container);
+   max-width: 100%;
+   margin: 0 auto;
+   padding: 0 var(--px);
+   box-sizing: border-box;
+   font-family: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+}
+
+/* 페이지 헤더(타이틀 + 라인) */
+.pf-head {
+   margin-bottom: 18px;
+}
+
+.pf-title-lg {
+   margin: 0 0 14px;
+   font-size: 30px;
+   font-weight: 900;
+   letter-spacing: -0.02em;
+   color: var(--text);
+}
+
+.pf-divider {
+   height: 1px;
+   background: var(--border);
+   opacity: 0.9;
+}
+
+/* Common Card */
+.pf-card {
+   background: var(--surface);
+   border: 1px solid var(--border);
+   border-radius: var(--r-lg);
+   box-shadow: var(--shadow-mid);
+}
+
+.pf-card-hover {
+   transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+   transform: translateZ(0);
+   will-change: transform;
+}
+
+.pf-card-hover:hover {
+   transform: translateY(-3px);
+   box-shadow: var(--shadow-strong);
+   border-color: rgba(58, 142, 135, 0.35);
+}
+
+/* Common Segmented Tabs (이벤트/서포트/마이페이지 통일용) */
+.pf-seg {
+   display: inline-flex;
+   gap: 0;
+   padding: 3px;
+   border-radius: var(--r-pill);
+   border: 1px solid var(--border);
+   background: #fff;
+   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+.pf-seg-btn {
+   appearance: none;
+   border: 0;
+   background: transparent;
+   cursor: pointer;
+   padding: 8px 12px;
+   border-radius: var(--r-pill);
+   font-size: 14px;
+   font-weight: 900;
+   color: var(--text);
+   transition: transform 0.08s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.pf-seg-btn:hover {
+   background: rgba(58, 142, 135, 0.08);
+}
+
+.pf-seg-btn:active {
+   transform: scale(0.98);
+}
+
+.pf-seg-btn.is-active {
+   background: var(--brand-teal);
+   color: var(--text-on-brand);
+}
+
+/* Common Button */
+.pf-btn-outline {
+   border: 1px solid var(--btn-outline-border);
+   background: var(--btn-outline-bg);
+   color: var(--text);
+   border-radius: var(--r-pill);
+   padding: 10px 22px;
+   font-size: 14px;
+   font-weight: 900;
+   cursor: pointer;
+   transition: 0.2s;
+}
+
+.pf-btn-outline:hover {
+   background: var(--btn-hover);
+   transform: translateY(-1px);
+}
+
+.pf-btn-primary {
+   border: 1px solid var(--btn-primary-bg);
+   background: var(--btn-primary-bg);
+   color: var(--btn-primary-text);
+   border-radius: var(--r-pill);
+   padding: 10px 22px;
+   font-size: 14px;
+   font-weight: 900;
+   cursor: pointer;
+   transition: 0.2s;
+}
+
+.pf-btn-primary:hover {
+   background: var(--btn-primary-hover);
+   transform: translateY(-1px);
+}
+
 .trpcal-1-hex {
    color: #f3c200;
 }
-/* #f3c200 sub 컬러 */
 .trpcal-2-hex {
    color: #f8a201;
 }
-/* 포인트 (취소, 경고, 주의 등) */
 .trpcal-3-hex {
    color: #d64550;
 }
-/* 배너 메인컬러 */
 .trpcal-4-hex {
    color: #3a8e87;
 }
-/* 서브 메인컬러 */
 .trpcal-5-hex {
    color: #00464a;
 }
-/* 전체 boder */
 .trpcal-6-hex {
    color: #e8e2d0;
 }
 .trpcal-7-hex {
    color: #b9d8c2;
 }
-/* 텍스트 1 */
 .trpcal-8-hex {
    color: #ffffff;
 }
-/* 텍스트 2 */
 .trpcal-9-hex {
    color: #2a2a2a;
 }
-/* 그림자 */
 .trpcal-10-hex {
    color: #808080;
 }
-/* 버튼 호버 */
 .trpcal-11-hex {
    color: #f4f4f4;
 }
