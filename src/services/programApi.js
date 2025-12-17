@@ -6,11 +6,38 @@ const API_BASE_URL = getApiBaseUrl();
 export const getAllPrograms = async (page = 1, limit = 20) => {
   try {
     const response = await fetch(`${API_BASE_URL}/programs?page=${page}&limit=${limit}`);
+    
+    // 네트워크 에러나 응답이 없는 경우
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ 
+        error: `서버 오류가 발생했습니다. (${response.status})` 
+      }));
+      return {
+        success: false,
+        error: errorData.error || `HTTP 오류: ${response.status}`,
+        data: null
+      };
+    }
+    
     const data = await response.json();
     return data;
   } catch (error) {
     console.error('프로그램 목록 조회 오류:', error);
-    throw error;
+    
+    // 네트워크 에러 구분
+    if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+      return {
+        success: false,
+        error: '서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.',
+        data: null
+      };
+    }
+    
+    return {
+      success: false,
+      error: error.message || '데이터를 불러오는 중 오류가 발생했습니다.',
+      data: null
+    };
   }
 };
 

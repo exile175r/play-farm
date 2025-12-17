@@ -7,14 +7,14 @@
  * 3. node database/migrate.js
  */
 
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
 const mysql = require("mysql2/promise");
 const fs = require("fs");
-const path = require("path");
 
 // 데이터베이스 연결 설정
 const config = {
-  host: process.env.DB_HOST || "playfram",
+  host: process.env.DB_HOST || "localhost",
   user: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "",
   database: process.env.DB_NAME || "play_farm",
@@ -68,6 +68,7 @@ async function migrate() {
   try {
     // 데이터베이스 연결
     console.log("데이터베이스 연결 중...");
+    console.log(`연결 정보: host=${config.host}, user=${config.user}, database=${config.database}`);
     connection = await mysql.createConnection(config);
     console.log("데이터베이스 연결 성공");
 
