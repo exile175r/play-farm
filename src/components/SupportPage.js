@@ -41,6 +41,7 @@ const SupportPage = () => {
             {/* 헤더 */}
             <header className="support-header">
                <h1 className="support-title">고객지원</h1>
+               <div className="support-divider" />
             </header>
 
             {/* 상단 탭 메뉴 */}

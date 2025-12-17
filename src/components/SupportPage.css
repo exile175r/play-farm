@@ -1,6 +1,5 @@
 .support-page {
-   padding-top: 40px;
-   padding-bottom: 80px;
+   padding: 56px 0 80px;
 }
 
 .support-inner {
@@ -21,6 +20,11 @@
    font-size: 30px;
    font-weight: 700;
    color: var(--color-list-title);
+}
+.support-divider {
+   height: 1px;
+   background: var(--color-border, #e8e2d0);
+   opacity: 0.9;
 }
 
 /* 탭 메뉴 */
