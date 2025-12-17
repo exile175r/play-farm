@@ -1,0 +1,124 @@
+/* shop/ShopSearchBar.css */
+
+.shop-controls {
+  max-width: 1160px;
+  width: calc(100% - 40px); /* 좌우 20px 패딩 효과 */
+  margin: 12px auto 0;
+
+  background: #fff;
+  border: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
+  border-radius: 18px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* 검색 */
+.shop-search {
+  display: flex;
+  gap: 10px;
+}
+
+.shop-search-input {
+  flex: 1;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border, rgba(0, 0, 0, 0.12));
+  padding: 0 12px;
+  outline: none;
+}
+
+.shop-search-input:focus {
+  border-color: rgba(58, 142, 135, 0.45);
+  box-shadow: 0 0 0 4px rgba(58, 142, 135, 0.12);
+}
+
+.shop-search-btn {
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(58, 142, 135, 0.35);
+  background: rgba(58, 142, 135, 0.1);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.shop-search-btn:hover {
+  background: rgba(58, 142, 135, 0.16);
+}
+
+/* 필터 row */
+.shop-filter-row {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 1fr 220px 120px;
+  gap: 12px;
+  align-items: end;
+}
+
+.shop-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.shop-label {
+  font-size: 12px;
+  opacity: 0.7;
+  font-weight: 700;
+}
+
+.shop-seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.shop-seg-btn {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.shop-seg-btn.is-active {
+  border-color: rgba(58, 142, 135, 0.45);
+  background: rgba(58, 142, 135, 0.12);
+}
+
+.shop-select {
+  height: 36px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 0 10px;
+  outline: none;
+  background: #fff;
+}
+
+.shop-reset {
+  height: 36px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.shop-reset:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.shop-result-meta {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.shop-meta-muted {
+  opacity: 0.6;
+}
