@@ -355,7 +355,22 @@ function ListDetail() {
          <div className="detail-inner">
             {data && (
                <div className="detail-top">
-                  <div className="detail-img">{data.images && data.images.length > 0 && <img src={getImagePath(data.images[0])} alt={data.program_nm} />}</div>
+                  {/* ✅ 이미지 영역에 우측 상단 하트 버튼 추가 */}
+                  <div className="detail-img">
+                     {data.images && data.images.length > 0 && <img src={getImagePath(data.images[0])} alt={data.program_nm} />}
+
+                     <button
+                        type="button"
+                        className={`detail-heart-btn ${bookmarked ? 'is-on' : ''}`}
+                        aria-label={bookmarked ? '찜 해제' : '찜하기'}
+                        onClick={(e) => {
+                           e.preventDefault();
+                           e.stopPropagation();
+                           toggleBookmark();
+                        }}>
+                        {bookmarked ? '♥' : '♡'}
+                     </button>
+                  </div>
 
                   <div className="detail-info">
                      <div className="detail-headline">
@@ -377,10 +392,6 @@ function ListDetail() {
                         <Link to="/list" className="detail-btn outline">
                            돌아가기
                         </Link>
-
-                        <button type="button" className={`detail-btn outline ${bookmarked ? 'is-bm' : ''}`} onClick={toggleBookmark}>
-                           {bookmarked ? '★ 찜됨' : '☆ 찜하기'}
-                        </button>
 
                         <button type="button" className="detail-btn primary">
                            예약하기

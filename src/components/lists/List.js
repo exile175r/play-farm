@@ -85,6 +85,18 @@ function List() {
       fetchPrograms(page);
    }, [page, fetchPrograms]);
 
+   // 전체 데이터 중 앞에서 10개만 잘라오기
+   // const list = (farmData?.DATA || []).slice(0, 10);
+
+   // const program = (data) => {
+   //   const p = Array.isArray(data.PROGRAM_NM) ? data.PROGRAM_NM[0] : data.PROGRAM_NM;
+   //   const pTxt = p
+   //     .split("체험")
+   //     .map((v) => (v === "" ? (v = "체험") : v))
+   //     .join(" ");
+   //   return pTxt;
+   // };
+
    // ✅ 북마크 토글
    const toggleBookmark = useCallback(
       (data) => {
@@ -115,7 +127,7 @@ function List() {
       <section className="pf-page list-wrap">
          <div className="pf-container list-inner">
             <header className="pf-head list-head">
-               <h2 className="pf-title-lg list-title">전체 체험 목록</h2>
+               <h2 className="list-title">전체 체험 목록</h2>
                <div className="pf-divider list-divider" />
             </header>
 
@@ -148,7 +160,6 @@ function List() {
 
                         {/* 텍스트 영역 */}
                         <div className="list-card-body">
-                           {/* ✅ (수정) 카드 제목 클래스만 분리 */}
                            <h3 className="list-item-title">{data.program_nm}</h3>
                            <p className="list-sub">{data.side_activities}</p>
                            <p className="list-date">{dayjs(data.reqst_endde).format('YYYY.MM.DD')}</p>
