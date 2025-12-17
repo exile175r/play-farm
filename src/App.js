@@ -21,66 +21,68 @@ import Mypage from './components/mypage/Mypage';
 import DataCheck from './components/DataCheck';
 
 function App() {
-   const [isLoggedIn, setIsLoggedIn] = useState(() => {
-      return !!localStorage.getItem('token');
-   });
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return !!localStorage.getItem('token');
+  });
 
-   const navigate = useNavigate();
-   const location = useLocation();
+  const [searchData, setSearchData] = useState(null);
 
-   // 로그아웃
-   const handleLogout = () => {
-      localStorage.removeItem('token');
-      setIsLoggedIn(false);
-   };
+  const navigate = useNavigate();
+  const location = useLocation();
 
-   // ✅ SearchBar 노출 조건: 홈(/) + 목록(/list)만
-   const showSearchBar = location.pathname === '/' || location.pathname === '/list';
+  // 로그아웃
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setIsLoggedIn(false);
+  };
 
-   return (
-      <div className="App">
-         <Header isLoggedIn={isLoggedIn} onLogout={handleLogout} />
+  // ✅ SearchBar 노출 조건: 홈(/) + 목록(/list)만
+  const showSearchBar = location.pathname === '/' || location.pathname === '/list';
 
-         {showSearchBar && <SearchBar />}
+  return (
+    <div className="App">
+      <Header isLoggedIn={isLoggedIn} onLogout={handleLogout} />
 
-         <Routes>
-            <Route path="/" element={<Main />} />
-            <Route path="/list" element={<List />} />
-            <Route path="/list/:id" element={<ListData />} />
+      {showSearchBar && <SearchBar setSearchData={setSearchData} />}
 
-            <Route path="/user/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
-            <Route path="/user/signup" element={<Signup />} />
+      <Routes>
+        <Route path="/" element={<Main />} />
+        <Route path="/list" element={<List searchData={searchData} />} />
+        <Route path="/list/:id" element={<ListData />} />
 
-            <Route path="/events" element={<EventPage />} />
-            <Route path="/event/:id" element={<EventDetail />} />
+        <Route path="/user/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
+        <Route path="/user/signup" element={<Signup />} />
 
-            <Route path="/support" element={<SupportPage />} />
-            <Route path="/mypage" element={<Mypage />} />
+        <Route path="/events" element={<EventPage />} />
+        <Route path="/event/:id" element={<EventDetail />} />
 
-            <Route path="/data" element={<DataCheck />} />
-         </Routes>
+        <Route path="/support" element={<SupportPage />} />
+        <Route path="/mypage" element={<Mypage />} />
 
-         {/* 임시 Data Check 버튼 */}
-         <button
-            style={{
-               padding: '5px 10px',
-               width: '70px',
-               backgroundColor: '#3a8e87',
-               borderRadius: '10px',
-               boxShadow: '2px 3px 0 0 #007c60',
-               textAlign: 'center',
-               color: '#f6ce44',
-               fontSize: '16px',
-               fontWeight: '700',
-               position: 'absolute',
-               top: '99px',
-               right: '20px',
-            }}
-            onClick={() => navigate('/data?page=1&limit=20')}>
-            Data Check
-         </button>
-      </div>
-   );
+        <Route path="/data" element={<DataCheck />} />
+      </Routes>
+
+      {/* 임시 Data Check 버튼 */}
+      <button
+        style={{
+          padding: '5px 10px',
+          width: '70px',
+          backgroundColor: '#3a8e87',
+          borderRadius: '10px',
+          boxShadow: '2px 3px 0 0 #007c60',
+          textAlign: 'center',
+          color: '#f6ce44',
+          fontSize: '16px',
+          fontWeight: '700',
+          position: 'absolute',
+          top: '99px',
+          right: '20px',
+        }}
+        onClick={() => navigate('/data?page=1&limit=20')}>
+        Data Check
+      </button>
+    </div>
+  );
 }
 
 export default App;
