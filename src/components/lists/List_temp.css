@@ -1,0 +1,217 @@
+/* src/components/List.css */
+.list-error {
+  margin: 12px 0 18px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  border-radius: 12px;
+  color: var(--color-list-sub);
+  font-size: 13px;
+}
+
+.list-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.list-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+  /* ✅ GPU 가속으로 hover 성능 개선 */
+  will-change: transform;
+  transform: translateZ(0);
+  /* 하드웨어 가속 활성화 */
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  /* ✅ 순차 표시 애니메이션 */
+  opacity: 0;
+  transform: translateY(20px) translateZ(0);
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+.list-card-visible {
+  opacity: 1;
+  transform: translateY(0) translateZ(0);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) translateZ(0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+.list-card:hover {
+  transform: translateY(-2px) translateZ(0);
+  border-color: rgba(58, 142, 135, 0.35);
+}
+
+/* 이미지 영역 */
+.list-card-img {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: var(--color-list-bg);
+  /* ✅ 이미지 영역도 GPU 가속 */
+  transform: translateZ(0);
+}
+
+.list-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  /* ✅ 이미지 렌더링 최적화 */
+  image-rendering: -webkit-optimize-contrast;
+}
+
+/* 이미지 위 하트 버튼*/
+.list-heart-btn {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  /* ✅ GPU 가속으로 hover 애니메이션 성능 개선 */
+  will-change: transform, opacity;
+  transform: translate(-50%, -50%) translateY(6px) translateZ(0);
+
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 22px;
+  line-height: 1;
+  color: #9aa0a6;
+
+  opacity: 0;
+
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.14);
+  transition: opacity 0.18s ease, transform 0.18s ease, color 0.18s ease;
+}
+
+.list-card:hover .list-heart-btn {
+  opacity: 1;
+  transform: translate(-50%, -50%) translateY(-1px) translateZ(0);
+}
+
+.list-heart-btn:active {
+  transform: translate(-50%, -50%) scale(0.98) translateZ(0);
+}
+
+.list-heart-btn:focus-visible {
+  outline: 2px solid var(--color-header-bg);
+  outline-offset: 2px;
+}
+
+/* ♥ 상태 */
+.list-heart-btn.is-on {
+  color: #e11d48;
+  border-color: rgba(225, 29, 72, 0.22);
+}
+
+/* 텍스트 영역 */
+.list-card-body {
+  padding: 12px 12px 14px;
+}
+
+.list-item-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--color-list-title);
+  line-height: 1.35;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.list-sub {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  color: var(--color-list-sub);
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-date {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* ✅ Dots Loader 스타일 */
+.dots-loader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 20px;
+}
+
+.dots-loader-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--color-header-bg, #3a8e87);
+  animation: dotsLoaderAnimation 1.4s ease-in-out infinite;
+}
+
+.dots-loader-dot:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.dots-loader-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dots-loader-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dotsLoaderAnimation {
+
+  0%,
+  60%,
+  100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+
+  30% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+}
+
+.list-loader-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+}
+
+.list-observer-target {
+  height: 1px;
+  width: 100%;
+}
