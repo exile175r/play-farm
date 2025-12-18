@@ -106,3 +106,109 @@ exports.login = async (req, res) => {
     return res.status(500).json({ success: false, message: '로그인 중 오류가 발생했습니다.' });
   }
 };
+
+// 마이페이지 - 내 정보 조회 (인증 필요)
+exports.getMyProfile = async (req, res) => {
+  try {
+    // authenticateToken 미들웨어에서 설정한 req.userId 사용
+    const userId = req.userId;
+
+    // 사용자 정보 조회
+    const [users] = await db.query(
+      'SELECT id, user_id, name, email, phone, region, marketing_agree, created_at, last_login_at FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '사용자를 찾을 수 없습니다.'
+      });
+    }
+
+    const user = users[0];
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          user_id: user.user_id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          region: user.region,
+          marketing_agree: user.marketing_agree,
+          created_at: user.created_at,
+          last_login_at: user.last_login_at
+        }
+      }
+    });
+  } catch (error) {
+    console.error('마이페이지 조회 실패:', error);
+    return res.status(500).json({ success: false, message: '마이페이지 조회 중 오류가 발생했습니다.' });
+  }
+};
+
+// 마이페이지 - 내 정보 수정 (인증 필요)
+exports.updateMyProfile = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { name, email, phone, region, marketing_agree } = req.body;
+
+    // 이메일 중복 확인 (본인 이메일 제외)
+    if (email) {
+      const [existingEmail] = await db.query(
+        `SELECT * FROM users WHERE email = ? AND id != ?`,
+        [email, userId]
+      );
+      if (existingEmail.length > 0) {
+        return res.status(400).json({ success: false, message: '이미 사용중인 이메일입니다.' });
+      }
+    }
+
+    // 업데이트할 필드만 동적으로 구성
+    const updateFields = [];
+    const updateValues = [];
+
+    if (name) {
+      updateFields.push('name = ?');
+      updateValues.push(name);
+    }
+    if (email) {
+      updateFields.push('email = ?');
+      updateValues.push(email);
+    }
+    if (phone) {
+      updateFields.push('phone = ?');
+      updateValues.push(phone);
+    }
+    if (region) {
+      updateFields.push('region = ?');
+      updateValues.push(region);
+    }
+    if (marketing_agree !== undefined) {
+      updateFields.push('marketing_agree = ?');
+      updateValues.push(marketing_agree);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ success: false, message: '수정할 정보가 없습니다.' });
+    }
+
+    updateValues.push(userId);
+
+    await db.query(
+      `UPDATE users SET ${updateFields.join(', ')}, updated_at = NOW() WHERE id = ?`,
+      updateValues
+    );
+
+    res.status(200).json({
+      success: true,
+      message: '정보가 수정되었습니다.'
+    });
+  } catch (error) {
+    console.error('정보 수정 실패:', error);
+    return res.status(500).json({ success: false, message: '정보 수정 중 오류가 발생했습니다.' });
+  }
+};

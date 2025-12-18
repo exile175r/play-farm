@@ -3,6 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import "./Login.css";
 import { getImagePath } from "../../utils/imagePath";
 import { getApiBaseUrl } from "../../utils/apiConfig";
+import KakaoLogin from "./KakaoLogin";
+import GoogleLogin from "./GoogleLogin";
+import NaverLogin from "./NaverLogin";
 
 const Login = ({ setIsLoggedIn }) => {
   const [formData, setFormData] = useState({
@@ -67,15 +70,9 @@ const Login = ({ setIsLoggedIn }) => {
 
       <h3>간편 로그인</h3>
       <div className="login-async-btns">
-        <button type="button" className="login-btn">
-          <img src={getImagePath("/icons/Kakao.png")} alt="kakao" />
-        </button>
-        <button type="button" className="login-btn">
-          <img src={getImagePath("/icons/Google.png")} alt="google" />
-        </button>
-        <button type="button" className="login-btn">
-          <img src={getImagePath("/icons/Naver.png")} alt="naver" />
-        </button>
+        <KakaoLogin setIsLoggedIn={setIsLoggedIn} />
+        <GoogleLogin setIsLoggedIn={setIsLoggedIn} />
+        <NaverLogin setIsLoggedIn={setIsLoggedIn} />
       </div>
 
       <div className="login-signup">

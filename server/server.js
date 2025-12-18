@@ -13,10 +13,12 @@ app.use(express.urlencoded({ extended: true }));
 // 라우트
 const programRouter = require('./routes/programs');
 const userRouter = require('./routes/users');
+const socialAuthRouter = require('./routes/socialAuth');
 // const reservationRouter = require('./routes/reservations');
 
 app.use('/api/programs', programRouter);
 app.use('/api/users', userRouter);
+app.use('/api/social-auth', socialAuthRouter);
 // app.use('/api/reservations', reservationRouter);
 
 // 기본 라우트

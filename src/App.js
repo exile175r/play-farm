@@ -11,6 +11,7 @@ import List from "./components/lists/List";
 import ListData from "./components/lists/ListDetail";
 
 import Login from "./components/login/Login";
+
 import Signup from "./components/login/Signup";
 
 import EventPage from "./components/events/EventPage";
@@ -53,6 +54,9 @@ function App() {
         <Route path="/list/:id" element={<ListData />} />
 
         <Route path="/user/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
+        <Route path="/login/kakao/callback" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
+        <Route path="/login/google/callback" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
+        <Route path="/login/naver/callback" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
         <Route path="/user/signup" element={<Signup />} />
 
         <Route path="/events" element={<EventPage />} />
