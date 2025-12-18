@@ -9,6 +9,21 @@ export const events = [
       status: '종료',
       image: '/images/events/event (2).png',
    },
+   {
+      id: 3,
+      status: '진행중',
+      image: '/images/events/event (3).png',
+   },
+   {
+      id: 4,
+      status: '진행중',
+      image: '/images/events/event (4).png',
+   },
+   {
+      id: 5,
+      status: '진행중',
+      image: '/images/events/event (5).png',
+   },
 ];
 
 export const notices = [
