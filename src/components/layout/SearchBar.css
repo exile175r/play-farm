@@ -1,90 +1,87 @@
+/* 섹션은 유지 */
 .pf-search-section {
-  padding: 22px 0 32px;
-  background: #ffffff;
+   padding: 22px 0 32px;
+   background: #ffffff;
 }
 
-/* 검색 바 */
+/* ✅ pf-search-bar를 shop-controls 카드 컨테이너로 변경 */
 .pf-search-bar {
-  max-width: 960px;
-  margin: 0 auto;
-  height: 56px;
-  border-radius: 999px;
-  border: 3px solid var(--color-green-light);
-  background: #fff;
-  display: flex;
-  align-items: center;
-  padding: 0 22px;
-  gap: 16px;
-  box-sizing: border-box;
+   max-width: 1160px;
+   width: calc(100% - 40px); /* 좌우 20px */
+   margin: 12px auto 0;
+
+   background: #fff;
+   border: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
+   border-radius: 18px;
+   padding: 16px;
+   box-sizing: border-box;
+   height: auto;
+   display: block;
 }
 
-/* 드롭다운 영역 */
+/* ✅ "검색 row" 만들기: 카테고리 + 인풋 + 버튼을 한 줄로 */
 .pf-search-category {
-  display: flex;
-  align-items: center;
-  margin-right: 16px;
-  border-right: 1px solid #dddddd;
-  padding-right: 16px;
+   display: flex;
+   align-items: center;
+   margin: 0;
+   padding: 0;
+   border-right: 1px solid #dddddd;
+   padding-right: 12px;
 }
 
-/* select */
 .pf-search-category select {
-  border: none;
-  background: transparent;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-green-dark);
-  cursor: pointer;
+   border: none;
+   background: transparent;
+   font-size: 14px;
+   font-weight: 700;
+   color: var(--color-green-dark);
+   cursor: pointer;
 
-  /* 기본 브라우저 화살표 제거 */
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
+   appearance: none;
+   -webkit-appearance: none;
+   -moz-appearance: none;
 }
 
-/* 검색 인풋 */
+/* ✅ 검색 row 전체 flex */
+.pf-search-row {
+   display: flex;
+   gap: 10px;
+   align-items: center;
+}
+
+/* 인풋은 shop-search-input 매핑 */
 .pf-search-input {
-  flex: 1;
-  border: none;
-  outline: none;
-  font-size: 14px;
-  color: var(--color-navy-deep);
-  background: transparent;
+   flex: 1;
+   border: none;
+   outline: none;
+   font-size: 14px;
+   color: var(--color-navy-deep);
+   background: transparent;
 }
 
-.pf-search-input::placeholder {
-  color: #888;
+.pf-search-row:focus-within {
+   /* box-shadow: 0 0 0 4px rgba(58, 142, 135, 0.12); */
+   border-radius: 12px;
 }
 
-/* 검색 버튼 */
 .pf-search-btn {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
+   height: 44px;
+   padding: 0 14px;
+   border-radius: 12px;
+   border: 1px solid rgba(58, 142, 135, 0.35);
+   background: rgba(58, 142, 135, 0.1);
+   font-weight: 800;
+   cursor: pointer;
+   width: auto;
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
 }
 
-.pf-search-btn img {
-  width: 100%;
+.pf-search-btn:hover {
+   background: rgba(58, 142, 135, 0.16);
 }
 
-/* 돋보기 아이콘 */
-.pf-search-icon {
-  width: 20px;
-  height: 20px;
-  stroke: var(--color-navy-deep);
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  fill: none;
-}
-
-/* 버튼 hover */
 .pf-search-btn:hover .pf-search-icon {
-  stroke: var(--color-primary);
+   stroke: var(--color-primary);
 }
