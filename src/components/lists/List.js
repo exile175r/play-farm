@@ -7,209 +7,302 @@ import { getAllPrograms } from '../../services/programApi';
 import { getImagePath } from '../../utils/imagePath';
 
 function List({ searchData }) {
-   const [programs, setPrograms] = useState([]);
-   const [page, setPage] = useState(1);
-   const [error, setError] = useState(null);
+  const [programs, setPrograms] = useState([]);
+  const [page, setPage] = useState(1);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [pagination, setPagination] = useState(null);
 
-   // 중복 호출 방지
-   const isLoadingRef = useRef(false);
-   // ✅ searchData 이전 값 추적 (무한 루프 방지)
-   const prevSearchDataRef = useRef(null);
+  // 중복 호출 방지
+  const isLoadingRef = useRef(false);
+  // ✅ searchData 이전 값 추적 (무한 루프 방지)
+  const prevSearchDataRef = useRef(null);
+  // 스크롤 감지용 ref
+  const observerTarget = useRef(null);
 
-   // ✅ 북마크(찜) - List/Detail/Mypage 동일 키로 동기화
-   const BOOKMARK_KEY = 'bookmarks_program';
+  // ✅ 북마크(찜) - List/Detail/Mypage 동일 키로 동기화
+  const BOOKMARK_KEY = 'bookmarks_program';
 
-   const [bookmarks, setBookmarks] = useState(() => {
+  const [bookmarks, setBookmarks] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(BOOKMARK_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  // ✅ 북마크 id 빠른 조회용 Set
+  const bookmarkedSet = useMemo(() => {
+    return new Set((bookmarks || []).map((b) => String(b.programId)));
+  }, [bookmarks]);
+
+  // 다른 탭/페이지에서 localStorage 변경 시 동기화
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key !== BOOKMARK_KEY) return;
       try {
-         return JSON.parse(localStorage.getItem(BOOKMARK_KEY) || '[]');
+        const next = JSON.parse(e.newValue || '[]');
+        setBookmarks(Array.isArray(next) ? next : []);
       } catch {
-         return [];
+        setBookmarks([]);
       }
-   });
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
-   // ✅ 북마크 id 빠른 조회용 Set
-   const bookmarkedSet = useMemo(() => {
-      return new Set((bookmarks || []).map((b) => String(b.programId)));
-   }, [bookmarks]);
+  // ✅ 데이터 처리 함수 (메모이제이션으로 중복 처리 방지)
+  const processProgramData = useCallback((data) => {
+    if (!data || !Array.isArray(data)) return [];
 
-   // 다른 탭/페이지에서 localStorage 변경 시 동기화(같은 탭에서는 storage 이벤트 미발생하는 게 정상이라, 안전용)
-   useEffect(() => {
-      const onStorage = (e) => {
-         if (e.key !== BOOKMARK_KEY) return;
-         try {
-            const next = JSON.parse(e.newValue || '[]');
-            setBookmarks(Array.isArray(next) ? next : []);
-         } catch {
-            setBookmarks([]);
-         }
-      };
-      window.addEventListener('storage', onStorage);
-      return () => window.removeEventListener('storage', onStorage);
-   }, []);
+    const replaceText = { 체험: ' 체험', 및: ' 및 ' };
+    return data.map((item) => {
+      const newItem = { ...item };
+      try {
+        if (typeof newItem.program_nm === 'string' && newItem.program_nm.includes(' 체험')) {
+          return newItem;
+        }
+        newItem.program_nm = JSON.parse(newItem.program_nm)
+          .map((v) => v.replace(/체험|및/g, (match) => replaceText[match] || match))
+          .join(', ');
+      } catch (error) {
+        if (typeof newItem.program_nm === 'string' && !newItem.program_nm.includes(' 체험')) {
+          newItem.program_nm = newItem.program_nm.replace(/체험|및/g, (match) => replaceText[match] || match);
+        }
+      }
+      return newItem;
+    });
+  }, []);
 
-   // ✅ 데이터 처리 함수 (메모이제이션으로 중복 처리 방지)
-   const processProgramData = useCallback((data) => {
-      if (!data || !Array.isArray(data)) return [];
+  // 전체 프로그램 목록 조회
+  const fetchPrograms = useCallback(async (pageNum = 1, append = false) => {
+    // 이미 로딩 중이면 중복 호출 방지
+    if (isLoadingRef.current) return;
 
-      const replaceText = { 체험: ' 체험', 및: ' 및 ' };
-      // ✅ 원본 데이터를 직접 수정하지 않고 새 배열 생성 (불변성 유지)
-      return data.map((item) => {
-         const newItem = { ...item };
-         try {
-            // 이미 처리된 데이터인지 확인 (공백이 포함되어 있으면 처리된 것으로 간주)
-            if (typeof newItem.program_nm === 'string' && newItem.program_nm.includes(' 체험')) {
-               return newItem; // 이미 처리됨
-            }
-            newItem.program_nm = JSON.parse(newItem.program_nm)
-               .map((v) => v.replace(/체험|및/g, (match) => replaceText[match] || match))
-               .join(', ');
-         } catch (error) {
-            // JSON 파싱 실패 시 문자열로 처리
-            if (typeof newItem.program_nm === 'string' && !newItem.program_nm.includes(' 체험')) {
-               newItem.program_nm = newItem.program_nm.replace(/체험|및/g, (match) => replaceText[match] || match);
-            }
-         }
-         return newItem;
-      });
-   }, []);
+    // 검색 데이터가 있으면 무한 스크롤 비활성화
+    if (searchData && append) return;
 
-   // 전체 프로그램 목록 조회
-   const fetchPrograms = useCallback(
-      async (pageNum = 1) => {
-         // 이미 로딩 중이면 중복 호출 방지
-         if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
+    setLoading(true);
+    setError(null);
 
-         isLoadingRef.current = true;
-         setError(null);
+    try {
+      const result = await getAllPrograms(pageNum, 20);
+      
+      // getAllPrograms가 에러 객체를 반환한 경우
+      if (!result || result.success === false) {
+        setError(result?.error || '데이터를 불러오는데 실패했습니다.');
+        if (!append) {
+          setPrograms([]);
+        }
+        setHasMore(false);
+        return;
+      }
 
-         try {
-            const result = await getAllPrograms(pageNum, 20);
+      if (result.success) {
+        // 검색 데이터 있으면 검색 데이터 사용, 없으면 전체 데이터 사용
+        const data = searchData ? searchData : (result.data || []);
+        const processedData = processProgramData(data);
 
-            if (result.success) {
-               // 검색 데이터 있으면 검색 데이터 사용, 없으면 전체 데이터 사용
-               const data = searchData ? searchData : result.data || [];
-               // ✅ 원본 데이터를 직접 수정하지 않고 새 배열 생성
-               const processedData = processProgramData(data);
-               setPrograms(processedData);
-            } else {
-               setError(result.error || '데이터를 불러오는데 실패했습니다.');
-               setPrograms([]);
-            }
-         } catch (err) {
-            setError('프로그램 목록을 불러오는 중 오류가 발생했습니다.');
-            setPrograms([]);
-         } finally {
-            isLoadingRef.current = false;
-         }
+        if (append) {
+          // 무한 스크롤: 기존 데이터에 추가
+          setPrograms((prev) => [...prev, ...processedData]);
+        } else {
+          // 초기 로드: 데이터 교체
+          setPrograms(processedData);
+        }
+
+        // pagination 정보 저장 및 hasMore 업데이트
+        if (result.pagination) {
+          setPagination(result.pagination);
+          const currentPage = result.pagination.page;
+          const totalPages = result.pagination.totalPages;
+          setHasMore(currentPage < totalPages);
+        } else {
+          setHasMore(processedData.length === 20);
+        }
+      } else {
+        setError(result.error || '데이터를 불러오는데 실패했습니다.');
+        if (!append) {
+          setPrograms([]);
+        }
+        setHasMore(false);
+      }
+    } catch (err) {
+      console.error('예상치 못한 오류:', err);
+      setError('프로그램 목록을 불러오는 중 오류가 발생했습니다.');
+      if (!append) {
+        setPrograms([]);
+      }
+      setHasMore(false);
+    } finally {
+      isLoadingRef.current = false;
+      setLoading(false);
+    }
+  }, [searchData, processProgramData]);
+
+  // ✅ searchData 변경 감지 및 처리
+  useEffect(() => {
+    if (searchData !== prevSearchDataRef.current) {
+      prevSearchDataRef.current = searchData;
+      if (searchData) {
+        const processedData = processProgramData(searchData);
+        setPrograms(processedData);
+        setHasMore(false);
+        setPage(1);
+        setPagination(null);
+      } else {
+        setPrograms([]);
+        setPage(1);
+        setHasMore(true);
+        setPagination(null);
+      }
+    }
+  }, [searchData, processProgramData]);
+
+  // ✅ searchData가 없을 때만 API 호출
+  useEffect(() => {
+    if (!searchData && prevSearchDataRef.current === null) {
+      fetchPrograms(1, false);
+      setPage(1);
+    } else if (!searchData && prevSearchDataRef.current !== null) {
+      prevSearchDataRef.current = null;
+      fetchPrograms(1, false);
+      setPage(1);
+    }
+  }, [fetchPrograms, searchData]);
+
+  // ✅ 무한 스크롤: Intersection Observer로 스크롤 감지
+  useEffect(() => {
+    if (searchData || !hasMore || loading) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading && !isLoadingRef.current) {
+          const nextPage = page + 1;
+          setPage(nextPage);
+          fetchPrograms(nextPage, true);
+        }
       },
-      [searchData, processProgramData]
-   );
-
-   // ✅ searchData 변경 감지 및 처리 (별도 useEffect로 분리하여 무한 루프 방지)
-   useEffect(() => {
-      // searchData가 실제로 변경되었는지 확인 (참조 비교)
-      if (searchData !== prevSearchDataRef.current) {
-         prevSearchDataRef.current = searchData;
-         if (searchData) {
-            const processedData = processProgramData(searchData);
-            setPrograms(processedData);
-         }
+      { 
+        threshold: 0.1,
+        rootMargin: '100px'
       }
-   }, [searchData, processProgramData]);
+    );
 
-   // ✅ searchData가 없을 때만 API 호출 (불필요한 호출 방지)
-   useEffect(() => {
-      // searchData가 없고, 이전에 searchData가 없었을 때만 API 호출
-      if (!searchData && prevSearchDataRef.current === null) {
-         fetchPrograms(page);
-      } else if (!searchData && prevSearchDataRef.current !== null) {
-         // searchData가 null로 변경된 경우 (검색 초기화)
-         prevSearchDataRef.current = null;
-         fetchPrograms(page);
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
       }
-   }, [page, fetchPrograms]);
+    };
+  }, [page, hasMore, loading, searchData]);
 
-   // ✅ 북마크 토글
-   const toggleBookmark = useCallback(
-      (data) => {
-         if (!data?.id) return;
+  // ✅ 북마크 토글
+  const toggleBookmark = useCallback(
+    (data) => {
+      if (!data?.id) return;
 
-         const pid = String(data.id);
-         const exists = bookmarkedSet.has(pid);
+      const pid = String(data.id);
+      const exists = bookmarkedSet.has(pid);
 
-         const next = exists
-            ? bookmarks.filter((b) => String(b.programId) !== pid)
-            : [
-                 {
-                    programId: pid,
-                    title: data.program_nm,
-                    image: data.images?.[0] ? getImagePath(data.images[0]) : '',
-                    savedAt: new Date().toISOString(),
-                 },
-                 ...bookmarks,
-              ];
+      const next = exists
+        ? bookmarks.filter((b) => String(b.programId) !== pid)
+        : [
+          {
+            programId: pid,
+            title: data.program_nm,
+            image: data.images?.[0] ? getImagePath(data.images[0]) : '',
+            savedAt: new Date().toISOString(),
+          },
+          ...bookmarks,
+        ];
 
-         setBookmarks(next);
-         localStorage.setItem(BOOKMARK_KEY, JSON.stringify(next));
-      },
-      [bookmarks, bookmarkedSet]
-   );
+      setBookmarks(next);
+      localStorage.setItem(BOOKMARK_KEY, JSON.stringify(next));
+    },
+    [bookmarks, bookmarkedSet]
+  );
 
-   // ✅ 처리된 프로그램 데이터 메모이제이션 (불필요한 재계산 방지)
-   const processedPrograms = useMemo(() => {
-      return programs.map((data) => ({
-         ...data,
-         formattedDate: data.reqst_endde ? dayjs(data.reqst_endde).format('YYYY.MM.DD') : '',
-      }));
-   }, [programs]);
+  // ✅ 처리된 프로그램 데이터 메모이제이션
+  const processedPrograms = useMemo(() => {
+    return programs.map((data) => ({
+      ...data,
+      formattedDate: data.reqst_endde ? dayjs(data.reqst_endde).format('YYYY.MM.DD') : '',
+    }));
+  }, [programs]);
+  
+  // ✅ Dots Loader 컴포넌트
+  const DotsLoader = () => (
+    <div className="dots-loader">
+      <div className="dots-loader-dot"></div>
+      <div className="dots-loader-dot"></div>
+      <div className="dots-loader-dot"></div>
+    </div>
+  );
 
-   return (
-      <section className="pf-page list-wrap">
-         <div className="pf-container list-inner">
-            <header className="pf-head list-head">
-               <div className="pf-divider list-divider" />
-            </header>
+  return (
+    <section className="pf-page list-wrap">
+      <div className="pf-container list-inner">
+        <header className="pf-head list-head">
+          <h2 className="list-title">전체 체험 목록</h2>
+          <div className="pf-divider list-divider" />
+        </header>
 
-            {error && <p className="list-error">{error}</p>}
+        {error && <p className="list-error">{error}</p>}
 
-            <div className="list-grid">
-               {processedPrograms.map((data) => {
-                  const bookmarked = bookmarkedSet.has(String(data.id));
+        <div className="list-grid">
+          {processedPrograms.map((data) => {
+            const bookmarked = bookmarkedSet.has(String(data.id));
 
-                  return (
-                     <Link to={`/list/${data.id}`} className="list-card" key={data.id}>
-                        {/* 이미지 영역 */}
-                        <div className="list-card-img">
-                           {data.images && data.images.length > 0 && <img src={getImagePath(data.images[0])} alt={data.program_nm} loading="lazy" />}
+            return (
+              <Link to={`/list/${data.id}`} className="list-card" key={data.id}>
+                {/* 이미지 영역 */}
+                <div className="list-card-img">
+                  {data.images && data.images.length > 0 && <img src={getImagePath(data.images[0])} alt={data.program_nm} loading="lazy" />}
 
-                           {/* ✅ hover 했을때만 뜨는 하트 버튼 */}
-                           <button
-                              type="button"
-                              className={`list-heart-btn ${bookmarked ? 'is-on' : ''}`}
-                              aria-label={bookmarked ? '찜 해제' : '찜하기'}
-                              onClick={(e) => {
-                                 // ✅ 카드(Link) 이동 막고 찜만 토글
-                                 e.preventDefault();
-                                 e.stopPropagation();
-                                 toggleBookmark(data);
-                              }}>
-                              {bookmarked ? '♥' : '♡'}
-                           </button>
-                        </div>
+                  {/* ✅ hover 했을때만 뜨는 하트 버튼 */}
+                  <button
+                    type="button"
+                    className={`list-heart-btn ${bookmarked ? 'is-on' : ''}`}
+                    aria-label={bookmarked ? '찜 해제' : '찜하기'}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleBookmark(data);
+                    }}>
+                    {bookmarked ? '♥' : '♡'}
+                  </button>
+                </div>
 
-                        {/* 텍스트 영역 */}
-                        <div className="list-card-body">
-                           <h3 className="list-item-title">{data.program_nm}</h3>
-                           <p className="list-sub">{data.side_activities}</p>
-                           <p className="list-date">{data.formattedDate}</p>
-                        </div>
-                     </Link>
-                  );
-               })}
-            </div>
-         </div>
-      </section>
-   );
+                {/* 텍스트 영역 */}
+                <div className="list-card-body">
+                  <h3 className="list-item-title">{data.program_nm}</h3>
+                  <p className="list-sub">{data.side_activities}</p>
+                  <p className="list-date">{data.formattedDate}</p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+        
+        {/* 무한 스크롤 감지 영역 및 로더 */}
+        {!searchData && (
+          <>
+            <div ref={observerTarget} className="observer-target" />
+            {loading && hasMore && <DotsLoader />}
+          </>
+        )}
+      </div>
+    </section>
+  );
 }
 
 export default List;
