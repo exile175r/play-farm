@@ -110,3 +110,16 @@ CREATE TABLE IF NOT EXISTS `reservations` (
   INDEX `idx_user_program` (`user_id`, `program_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='예약 정보 테이블';
 
+-- 7. bookmarks 테이블 (북마크 정보)
+CREATE TABLE IF NOT EXISTS `bookmarks` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL COMMENT '회원 ID',
+  `program_id` INT NOT NULL COMMENT '프로그램 ID',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '북마크 생성일시',
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`program_id`) REFERENCES `programs`(`id`) ON DELETE CASCADE,
+  UNIQUE KEY `uk_user_program` (`user_id`, `program_id`),
+  INDEX `idx_user_id` (`user_id`),
+  INDEX `idx_program_id` (`program_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='북마크 정보 테이블';
+

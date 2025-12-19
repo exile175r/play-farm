@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getImagePath } from '../../utils/imagePath';
 import { getApiBaseUrl } from '../../utils/apiConfig';
@@ -30,19 +30,7 @@ const KakaoLogin = ({ setIsLoggedIn }) => {
   // 카카오 콜백 처리 (URL에 code가 있을 때)
   const processingRef = React.useRef(false);
 
-  React.useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-
-    if (code && window.location.pathname.includes('/login/kakao/callback') && !processingRef.current) {
-      processingRef.current = true;
-      // URL에서 code를 즉시 제거하여 중복 실행 방지
-      window.history.replaceState({}, document.title, window.location.pathname);
-      handleKakaoCallback(code);
-    }
-  }, []);
-
-  const handleKakaoCallback = async (code) => {
+  const handleKakaoCallback = useCallback(async (code) => {
     try {
       const apiUrl = `${getApiBaseUrl()}/social-auth/kakao/callback`;
       // 백엔드에서 액세스 토큰 교환 및 로그인 처리
@@ -69,8 +57,6 @@ const KakaoLogin = ({ setIsLoggedIn }) => {
 
       if (data.success && data.data?.token) {
         handleSocialLoginSuccess(data, setIsLoggedIn, navigate);
-        // URL에서 code 제거 (이미 useEffect에서 제거했지만 안전을 위해)
-        window.history.replaceState({}, document.title, '/user/login');
       } else {
         handleSocialLoginError(data);
         processingRef.current = false; // 에러 시 플래그 리셋
@@ -80,7 +66,19 @@ const KakaoLogin = ({ setIsLoggedIn }) => {
       handleSocialLoginError({ success: false, message: '네트워크 오류가 발생했습니다.' });
       processingRef.current = false; // 에러 시 플래그 리셋
     }
-  };
+  }, [setIsLoggedIn, navigate, REDIRECT_URI]);
+
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+
+    if (code && window.location.pathname.includes('/login/kakao/callback') && !processingRef.current) {
+      processingRef.current = true;
+      // URL에서 code를 즉시 제거하여 중복 실행 방지
+      window.history.replaceState({}, document.title, window.location.pathname);
+      handleKakaoCallback(code);
+    }
+  }, [handleKakaoCallback]);
 
   return (
     <button type="button" className="login-btn" onClick={handleKakaoLogin}>

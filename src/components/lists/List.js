@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom';
 import './List.css';
 import dayjs from 'dayjs';
+import { useBookmark } from '../../hooks/useBookmark';
 import { getAllPrograms } from '../../services/programApi';
 import { getImagePath } from '../../utils/imagePath';
 
@@ -12,7 +13,6 @@ function List({ searchData }) {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [pagination, setPagination] = useState(null);
 
   // 중복 호출 방지
   const isLoadingRef = useRef(false);
@@ -21,36 +21,50 @@ function List({ searchData }) {
   // 스크롤 감지용 ref
   const observerTarget = useRef(null);
 
-  // ✅ 북마크(찜) - List/Detail/Mypage 동일 키로 동기화
-  const BOOKMARK_KEY = 'bookmarks_program';
+  // ✅ 북마크 훅 사용
+  const programIds = useMemo(() => programs.map(p => p.id), [programs]);
+  // isBookmarked: 북마크 상태, toggleBookmark: 북마크 토글, isLoggedIn: 로그인 여부 (useBookmark 훅에서 처리)
+  const { isBookmarked, toggleBookmark, isLoggedIn } = useBookmark(programIds);
 
-  const [bookmarks, setBookmarks] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(BOOKMARK_KEY) || '[]');
-    } catch {
-      return [];
+  // ✅ 북마크 토글 핸들러
+  const handleToggleBookmark = useCallback(async (data) => {
+    if (!isLoggedIn) return;
+    const result = await toggleBookmark(data.id, data);
+    if (!result.success && result.requiresLogin) {
+      // 로그인 필요 시 처리 (선택사항)
     }
-  });
+  }, [toggleBookmark, isLoggedIn]);
 
-  // ✅ 북마크 id 빠른 조회용 Set
-  const bookmarkedSet = useMemo(() => {
-    return new Set((bookmarks || []).map((b) => String(b.programId)));
-  }, [bookmarks]);
+  // // ✅ 북마크(찜) - List/Detail/Mypage 동일 키로 동기화
+  // const BOOKMARK_KEY = 'bookmarks_program';
 
-  // 다른 탭/페이지에서 localStorage 변경 시 동기화
-  useEffect(() => {
-    const onStorage = (e) => {
-      if (e.key !== BOOKMARK_KEY) return;
-      try {
-        const next = JSON.parse(e.newValue || '[]');
-        setBookmarks(Array.isArray(next) ? next : []);
-      } catch {
-        setBookmarks([]);
-      }
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, []);
+  // const [bookmarks, setBookmarks] = useState(() => {
+  //   try {
+  //     return JSON.parse(localStorage.getItem(BOOKMARK_KEY) || '[]');
+  //   } catch {
+  //     return [];
+  //   }
+  // });
+
+  // // ✅ 북마크 id 빠른 조회용 Set
+  // const bookmarkedSet = useMemo(() => {
+  //   return new Set((bookmarks || []).map((b) => String(b.programId)));
+  // }, [bookmarks]);
+
+  // // 다른 탭/페이지에서 localStorage 변경 시 동기화
+  // useEffect(() => {
+  //   const onStorage = (e) => {
+  //     if (e.key !== BOOKMARK_KEY) return;
+  //     try {
+  //       const next = JSON.parse(e.newValue || '[]');
+  //       setBookmarks(Array.isArray(next) ? next : []);
+  //     } catch {
+  //       setBookmarks([]);
+  //     }
+  //   };
+  //   window.addEventListener('storage', onStorage);
+  //   return () => window.removeEventListener('storage', onStorage);
+  // }, []);
 
   // ✅ 데이터 처리 함수 (메모이제이션으로 중복 처리 방지)
   const processProgramData = useCallback((data) => {
@@ -89,7 +103,7 @@ function List({ searchData }) {
 
     try {
       const result = await getAllPrograms(pageNum, 20);
-      
+
       // getAllPrograms가 에러 객체를 반환한 경우
       if (!result || result.success === false) {
         setError(result?.error || '데이터를 불러오는데 실패했습니다.');
@@ -113,9 +127,8 @@ function List({ searchData }) {
           setPrograms(processedData);
         }
 
-        // pagination 정보 저장 및 hasMore 업데이트
+        // hasMore 업데이트
         if (result.pagination) {
-          setPagination(result.pagination);
           const currentPage = result.pagination.page;
           const totalPages = result.pagination.totalPages;
           setHasMore(currentPage < totalPages);
@@ -151,12 +164,10 @@ function List({ searchData }) {
         setPrograms(processedData);
         setHasMore(false);
         setPage(1);
-        setPagination(null);
       } else {
         setPrograms([]);
         setPage(1);
         setHasMore(true);
-        setPagination(null);
       }
     }
   }, [searchData, processProgramData]);
@@ -187,7 +198,7 @@ function List({ searchData }) {
           fetchPrograms(nextPage, true);
         }
       },
-      { 
+      {
         threshold: 0.1,
         rootMargin: '100px'
       }
@@ -203,33 +214,33 @@ function List({ searchData }) {
         observer.unobserve(currentTarget);
       }
     };
-  }, [page, hasMore, loading, searchData]);
+  }, [page, hasMore, loading, searchData, fetchPrograms]);
 
-  // ✅ 북마크 토글
-  const toggleBookmark = useCallback(
-    (data) => {
-      if (!data?.id) return;
+  // // ✅ 북마크 토글
+  // const toggleBookmark = useCallback(
+  //   (data) => {
+  //     if (!data?.id) return;
 
-      const pid = String(data.id);
-      const exists = bookmarkedSet.has(pid);
+  //     const pid = String(data.id);
+  //     const exists = bookmarkedSet.has(pid);
 
-      const next = exists
-        ? bookmarks.filter((b) => String(b.programId) !== pid)
-        : [
-          {
-            programId: pid,
-            title: data.program_nm,
-            image: data.images?.[0] ? getImagePath(data.images[0]) : '',
-            savedAt: new Date().toISOString(),
-          },
-          ...bookmarks,
-        ];
+  //     const next = exists
+  //       ? bookmarks.filter((b) => String(b.programId) !== pid)
+  //       : [
+  //         {
+  //           programId: pid,
+  //           title: data.program_nm,
+  //           image: data.images?.[0] ? getImagePath(data.images[0]) : '',
+  //           savedAt: new Date().toISOString(),
+  //         },
+  //         ...bookmarks,
+  //       ];
 
-      setBookmarks(next);
-      localStorage.setItem(BOOKMARK_KEY, JSON.stringify(next));
-    },
-    [bookmarks, bookmarkedSet]
-  );
+  //     setBookmarks(next);
+  //     localStorage.setItem(BOOKMARK_KEY, JSON.stringify(next));
+  //   },
+  //   [bookmarks, bookmarkedSet]
+  // );
 
   // ✅ 처리된 프로그램 데이터 메모이제이션
   const processedPrograms = useMemo(() => {
@@ -238,7 +249,7 @@ function List({ searchData }) {
       formattedDate: data.reqst_endde ? dayjs(data.reqst_endde).format('YYYY.MM.DD') : '',
     }));
   }, [programs]);
-  
+
   // ✅ Dots Loader 컴포넌트
   const DotsLoader = () => (
     <div className="dots-loader">
@@ -260,7 +271,8 @@ function List({ searchData }) {
 
         <div className="list-grid">
           {processedPrograms.map((data) => {
-            const bookmarked = bookmarkedSet.has(String(data.id));
+            // const bookmarked = bookmarkedSet.has(String(data.id));
+            const bookmarked = isBookmarked(data.id);
 
             return (
               <Link to={`/list/${data.id}`} className="list-card" key={data.id}>
@@ -276,7 +288,7 @@ function List({ searchData }) {
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      toggleBookmark(data);
+                      handleToggleBookmark(data);
                     }}>
                     {bookmarked ? '♥' : '♡'}
                   </button>
@@ -292,7 +304,7 @@ function List({ searchData }) {
             );
           })}
         </div>
-        
+
         {/* 무한 스크롤 감지 영역 및 로더 */}
         {!searchData && (
           <>

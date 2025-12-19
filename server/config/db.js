@@ -1,10 +1,10 @@
 const mysql = require('mysql2/promise');
 
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
+  host: process.env.DB_HOST || '',
+  user: process.env.DB_USER || '',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'play_farm',
+  database: process.env.DB_NAME || '',
   charset: 'utf8mb4',
   waitForConnections: true, // 연결 풀에 사용 가능한 연결이 없을 때 대기 여부
   connectionLimit: 10, // 풀에서 동시에 유지할 최대 연결 수
