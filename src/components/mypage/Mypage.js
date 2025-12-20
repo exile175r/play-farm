@@ -1,10 +1,12 @@
 // src/components/mypage/Mypage.js
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import dayjs from 'dayjs';
 import './Mypage.css';
 
 import { listMyReservations, cancelReservation } from '../../services/reservationApi';
+import { getMyBookmarks } from '../../services/bookmarkApi';
+import { useBookmark } from '../../hooks/useBookmark';
 
 function Mypage() {
    const navigate = useNavigate();
@@ -76,13 +78,92 @@ function Mypage() {
    });
 
    // ===== bookmarks =====
-   const [bookmarks, setBookmarks] = useState(() => {
-      try {
-         return JSON.parse(localStorage.getItem('bookmarks_program') || '[]');
-      } catch {
-         return [];
+   const [bookmarks, setBookmarks] = useState([]);
+   
+   // 서버에서 북마크 목록 가져오기
+   const fetchMyBookmarks = async () => {
+      if (!isLoggedIn) {
+         setBookmarks([]);
+         return;
       }
-   });
+      try {
+         const res = await getMyBookmarks();
+         if (res?.success) {
+            const bookmarkList = Array.isArray(res.data?.bookmarks) ? res.data.bookmarks : [];
+            const replaceText = { 체험: " 체험", 및: " 및 " };
+            const newBookmarkList = bookmarkList.map((item) => {
+               const newItem = { ...item };
+               try {
+                  if (typeof newItem.program_nm === "string" && newItem.program_nm.includes(" 체험")) {
+                     return newItem;
+                  }
+                  newItem.program_nm = JSON.parse(newItem.program_nm)
+                     .map((v) => v.replace(/체험|및/g, (match) => replaceText[match] || match))
+                     .join(", ");
+               } catch (error) {
+                  if (typeof newItem.program_nm === "string" && !newItem.program_nm.includes(" 체험")) {
+                     newItem.program_nm = newItem.program_nm.replace(/체험|및/g, (match) => replaceText[match] || match);
+                  }
+               }
+               return newItem;
+            });
+            setBookmarks(newBookmarkList);
+         } else {
+            setBookmarks([]);
+         }
+      } catch (error) {
+         console.error('북마크 목록 조회 실패:', error);
+         setBookmarks([]);
+      }
+   };
+   // 북마크 탭이 열릴 때 목록 가져오기
+   useEffect(() => {
+      if (tab === 'bookmarks' && isLoggedIn) {
+         fetchMyBookmarks();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [tab, isLoggedIn]);
+      
+      // ✅ 북마크 훅 사용
+   // 북마크 목록에서 program_id 추출 (서버 응답 형식에 맞게 조정)
+   const programIds = useMemo(() => {
+      return bookmarks.map((b) => b.program_id || b.programId).filter(Boolean);
+   }, [bookmarks]);
+   
+   // isBookmarked: 북마크 상태, toggleBookmark: 북마크 토글, isLoggedIn: 로그인 여부
+   const { isBookmarked, toggleBookmark } = useBookmark(programIds);
+
+   // ✅ 북마크 토글 핸들러
+   const handleToggleBookmark = useCallback(
+      async (bookmarkData) => {
+         if (!isLoggedIn) return;
+         
+         const programId = bookmarkData.program_id || bookmarkData.programId;
+         if (!programId) return;
+         
+         const result = await toggleBookmark(programId, bookmarkData);
+         
+         if (result.success) {
+            // 북마크 목록 갱신
+            await fetchMyBookmarks();
+         } else if (result.requiresLogin) {
+            alert('북마크 기능을 사용하려면 로그인이 필요합니다.');
+         }
+      },
+      [toggleBookmark, isLoggedIn]
+   );
+
+   const removeBookmark = async (programId) => {
+      if (!window.confirm('북마크를 해제하시겠습니까?')) return;
+      
+      const result = await toggleBookmark(programId);
+      if (result.success) {
+         // 북마크 목록 갱신
+         await fetchMyBookmarks();
+      } else {
+         alert(result.message || '북마크 해제에 실패했습니다.');
+      }
+   };
 
    // ===== reservation filter =====
    // ✅ 요구사항 반영:
@@ -201,13 +282,6 @@ function Mypage() {
 
       setMyReviews((prev) => prev.filter((r) => r.id !== reviewId));
       if (editingReviewId === reviewId) cancelEditReview();
-   };
-
-   // ===== bookmarks =====
-   const removeBookmark = (programId) => {
-      const next = bookmarks.filter((b) => b.programId !== programId);
-      setBookmarks(next);
-      localStorage.setItem('bookmarks_program', JSON.stringify(next));
    };
 
    // ===== helpers =====
@@ -563,25 +637,40 @@ function Mypage() {
                            </div>
                         ) : (
                            <div className="pf-list">
-                              {bookmarks.map((b) => (
-                                 <div className="pf-item" key={b.programId}>
-                                    <div className="pf-item-main">
-                                       <p className="pf-item-title">{b.title || `체험 #${b.programId}`}</p>
-                                       <p className="pf-item-sub">저장일: {b.savedAt ? dayjs(b.savedAt).format('YYYY.MM.DD') : '-'}</p>
+                              {bookmarks.map((b) => {
+                                 const programId = b.program_id || b.programId;
+                                 const bookmarked = isBookmarked(programId); // ✅ 북마크 상태 확인
+                                 
+                                 return (
+                                    <div className="pf-item" key={b.id || programId}>
+                                       <div className="pf-item-main">
+                                          <p className="pf-item-title">{b.program_nm || b.title || `체험 #${programId}`}</p>
+                                          <p className="pf-item-sub">
+                                             {b.village_nm ? `${b.village_nm} · ` : ''}
+                                             저장일: {b.created_at ? dayjs(b.created_at).format('YYYY.MM.DD') : '-'}
+                                          </p>
 
-                                       <div className="pf-item-actions">
-                                          <button type="button" className="pf-linkbtn" onClick={() => navigate(`/list/${b.programId}`)}>
-                                             상세
-                                          </button>
-                                          <button type="button" className="pf-linkbtn" onClick={() => removeBookmark(b.programId)}>
-                                             북마크 해제
-                                          </button>
+                                          <div className="pf-item-actions">
+                                             <button type="button" className="pf-linkbtn" onClick={() => navigate(`/list/${programId}`)}>
+                                                상세
+                                             </button>
+                                             {/* ✅ handleToggleBookmark 사용 (또는 removeBookmark) */}
+                                             <button 
+                                                type="button" 
+                                                className="pf-linkbtn" 
+                                                onClick={() => removeBookmark(programId)}
+                                             >
+                                                북마크 해제
+                                             </button>
+                                          </div>
                                        </div>
-                                    </div>
 
-                                    <span className="pf-chip is-wait">북마크</span>
-                                 </div>
-                              ))}
+                                       <span className={`pf-chip ${bookmarked ? 'is-wait' : ''}`}>
+                                          북마크
+                                       </span>
+                                    </div>
+                                 );
+                              })}
                            </div>
                         )}
                      </div>
