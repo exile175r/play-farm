@@ -1,11 +1,11 @@
 // src/components/List.js
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import './List.css';
-import dayjs from 'dayjs';
-import { useBookmark } from '../../hooks/useBookmark';
-import { getAllPrograms } from '../../services/programApi';
-import { getImagePath } from '../../utils/imagePath';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Link } from "react-router-dom";
+import "./List.css";
+import dayjs from "dayjs";
+import { useBookmark } from "../../hooks/useBookmark";
+import { getAllPrograms } from "../../services/programApi";
+import { getImagePath } from "../../utils/imagePath";
 
 function List({ searchData }) {
   const [programs, setPrograms] = useState([]);
@@ -22,18 +22,21 @@ function List({ searchData }) {
   const observerTarget = useRef(null);
 
   // ✅ 북마크 훅 사용
-  const programIds = useMemo(() => programs.map(p => p.id), [programs]);
+  const programIds = useMemo(() => programs.map((p) => p.id), [programs]);
   // isBookmarked: 북마크 상태, toggleBookmark: 북마크 토글, isLoggedIn: 로그인 여부 (useBookmark 훅에서 처리)
   const { isBookmarked, toggleBookmark, isLoggedIn } = useBookmark(programIds);
 
   // ✅ 북마크 토글 핸들러
-  const handleToggleBookmark = useCallback(async (data) => {
-    if (!isLoggedIn) return;
-    const result = await toggleBookmark(data.id, data);
-    if (!result.success && result.requiresLogin) {
-      // 로그인 필요 시 처리 (선택사항)
-    }
-  }, [toggleBookmark, isLoggedIn]);
+  const handleToggleBookmark = useCallback(
+    async (data) => {
+      if (!isLoggedIn) return;
+      const result = await toggleBookmark(data.id, data);
+      if (!result.success && result.requiresLogin) {
+        // 로그인 필요 시 처리 (선택사항)
+      }
+    },
+    [toggleBookmark, isLoggedIn]
+  );
 
   // // ✅ 북마크(찜) - List/Detail/Mypage 동일 키로 동기화
   // const BOOKMARK_KEY = 'bookmarks_program';
@@ -70,18 +73,18 @@ function List({ searchData }) {
   const processProgramData = useCallback((data) => {
     if (!data || !Array.isArray(data)) return [];
 
-    const replaceText = { 체험: ' 체험', 및: ' 및 ' };
+    const replaceText = { 체험: " 체험", 및: " 및 " };
     return data.map((item) => {
       const newItem = { ...item };
       try {
-        if (typeof newItem.program_nm === 'string' && newItem.program_nm.includes(' 체험')) {
+        if (typeof newItem.program_nm === "string" && newItem.program_nm.includes(" 체험")) {
           return newItem;
         }
         newItem.program_nm = JSON.parse(newItem.program_nm)
           .map((v) => v.replace(/체험|및/g, (match) => replaceText[match] || match))
-          .join(', ');
+          .join(", ");
       } catch (error) {
-        if (typeof newItem.program_nm === 'string' && !newItem.program_nm.includes(' 체험')) {
+        if (typeof newItem.program_nm === "string" && !newItem.program_nm.includes(" 체험")) {
           newItem.program_nm = newItem.program_nm.replace(/체험|및/g, (match) => replaceText[match] || match);
         }
       }
@@ -90,70 +93,73 @@ function List({ searchData }) {
   }, []);
 
   // 전체 프로그램 목록 조회
-  const fetchPrograms = useCallback(async (pageNum = 1, append = false) => {
-    // 이미 로딩 중이면 중복 호출 방지
-    if (isLoadingRef.current) return;
+  const fetchPrograms = useCallback(
+    async (pageNum = 1, append = false) => {
+      // 이미 로딩 중이면 중복 호출 방지
+      if (isLoadingRef.current) return;
 
-    // 검색 데이터가 있으면 무한 스크롤 비활성화
-    if (searchData && append) return;
+      // 검색 데이터가 있으면 무한 스크롤 비활성화
+      if (searchData && append) return;
 
-    isLoadingRef.current = true;
-    setLoading(true);
-    setError(null);
+      isLoadingRef.current = true;
+      setLoading(true);
+      setError(null);
 
-    try {
-      const result = await getAllPrograms(pageNum, 20);
+      try {
+        const result = await getAllPrograms(pageNum, 20);
 
-      // getAllPrograms가 에러 객체를 반환한 경우
-      if (!result || result.success === false) {
-        setError(result?.error || '데이터를 불러오는데 실패했습니다.');
+        // getAllPrograms가 에러 객체를 반환한 경우
+        if (!result || result.success === false) {
+          setError(result?.error || "데이터를 불러오는데 실패했습니다.");
+          if (!append) {
+            setPrograms([]);
+          }
+          setHasMore(false);
+          return;
+        }
+
+        if (result.success) {
+          // 검색 데이터 있으면 검색 데이터 사용, 없으면 전체 데이터 사용
+          const data = searchData ? searchData : result.data || [];
+          const processedData = processProgramData(data);
+
+          if (append) {
+            // 무한 스크롤: 기존 데이터에 추가
+            setPrograms((prev) => [...prev, ...processedData]);
+          } else {
+            // 초기 로드: 데이터 교체
+            setPrograms(processedData);
+          }
+
+          // hasMore 업데이트
+          if (result.pagination) {
+            const currentPage = result.pagination.page;
+            const totalPages = result.pagination.totalPages;
+            setHasMore(currentPage < totalPages);
+          } else {
+            setHasMore(processedData.length === 20);
+          }
+        } else {
+          setError(result.error || "데이터를 불러오는데 실패했습니다.");
+          if (!append) {
+            setPrograms([]);
+          }
+          setHasMore(false);
+        }
+      } catch (err) {
+        console.error("예상치 못한 오류:", err);
+        setError("프로그램 목록을 불러오는 중 오류가 발생했습니다.");
         if (!append) {
           setPrograms([]);
         }
         setHasMore(false);
-        return;
+      } finally {
+        isLoadingRef.current = false;
+        setLoading(false);
       }
-
-      if (result.success) {
-        // 검색 데이터 있으면 검색 데이터 사용, 없으면 전체 데이터 사용
-        const data = searchData ? searchData : (result.data || []);
-        const processedData = processProgramData(data);
-
-        if (append) {
-          // 무한 스크롤: 기존 데이터에 추가
-          setPrograms((prev) => [...prev, ...processedData]);
-        } else {
-          // 초기 로드: 데이터 교체
-          setPrograms(processedData);
-        }
-
-        // hasMore 업데이트
-        if (result.pagination) {
-          const currentPage = result.pagination.page;
-          const totalPages = result.pagination.totalPages;
-          setHasMore(currentPage < totalPages);
-        } else {
-          setHasMore(processedData.length === 20);
-        }
-      } else {
-        setError(result.error || '데이터를 불러오는데 실패했습니다.');
-        if (!append) {
-          setPrograms([]);
-        }
-        setHasMore(false);
-      }
-    } catch (err) {
-      console.error('예상치 못한 오류:', err);
-      setError('프로그램 목록을 불러오는 중 오류가 발생했습니다.');
-      if (!append) {
-        setPrograms([]);
-      }
-      setHasMore(false);
-    } finally {
-      isLoadingRef.current = false;
-      setLoading(false);
-    }
-  }, [searchData, processProgramData]);
+    },
+    [searchData, processProgramData]
+  );
 
   // ✅ searchData 변경 감지 및 처리
   useEffect(() => {
@@ -200,7 +206,7 @@ function List({ searchData }) {
       },
       {
         threshold: 0.1,
-        rootMargin: '100px'
+        rootMargin: "100px",
       }
     );
 
@@ -246,7 +252,7 @@ function List({ searchData }) {
   const processedPrograms = useMemo(() => {
     return programs.map((data) => ({
       ...data,
-      formattedDate: data.reqst_endde ? dayjs(data.reqst_endde).format('YYYY.MM.DD') : '',
+      formattedDate: data.reqst_endde ? dayjs(data.reqst_endde).format("YYYY.MM.DD") : "",
     }));
   }, [programs]);
 
@@ -278,19 +284,22 @@ function List({ searchData }) {
               <Link to={`/list/${data.id}`} className="list-card" key={data.id}>
                 {/* 이미지 영역 */}
                 <div className="list-card-img">
-                  {data.images && data.images.length > 0 && <img src={getImagePath(data.images[0])} alt={data.program_nm} loading="lazy" />}
+                  {data.images && data.images.length > 0 && (
+                    <img src={getImagePath(data.images[0])} alt={data.program_nm} loading="lazy" />
+                  )}
 
                   {/* ✅ hover 했을때만 뜨는 하트 버튼 */}
                   <button
                     type="button"
-                    className={`list-heart-btn ${bookmarked ? 'is-on' : ''}`}
-                    aria-label={bookmarked ? '찜 해제' : '찜하기'}
+                    className={`list-heart-btn ${bookmarked ? "is-on" : ""}`}
+                    aria-label={bookmarked ? "찜 해제" : "찜하기"}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       handleToggleBookmark(data);
-                    }}>
-                    {bookmarked ? '♥' : '♡'}
+                    }}
+                  >
+                    {bookmarked ? "♥" : "♡"}
                   </button>
                 </div>
 
