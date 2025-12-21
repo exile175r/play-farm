@@ -421,6 +421,9 @@ function Mypage() {
                 설정/보안
               </button>
             </nav>
+
+            {/* 필요하면 여기 로그아웃 버튼 붙여도 됨 */}
+            {/* <button type="button" className="pf-btn" onClick={logout}>로그아웃</button> */}
           </aside>
 
           <section className="pf-right">
@@ -742,6 +745,9 @@ function Mypage() {
                               <button type="button" className="pf-linkbtn" onClick={() => removeBookmark(programId)}>
                                 북마크 해제
                               </button>
+
+                              {/* 필요하면 “토글” 버튼 쓰고 싶을 때 */}
+                              {/* <button type="button" className="pf-linkbtn" onClick={() => handleToggleBookmark(b)}>토글</button> */}
                             </div>
                           </div>
 
@@ -771,6 +777,8 @@ function Mypage() {
                   <button type="button" className="pf-btn" onClick={() => navigate("/support")}>
                     고객센터
                   </button>
+                  {/* 로그아웃 쓰고 싶으면 이거 */}
+                  {/* <button type="button" className="pf-btn" onClick={logout}>로그아웃</button> */}
                 </div>
 
                 <div className="pf-divider" />
