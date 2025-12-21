@@ -1,17 +1,15 @@
 // src/App.js
 import React, { useState } from "react";
-import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import "./App.css";
 
 import Header from "./components/layout/Header";
 import Main from "./components/Main";
-import SearchBar from "./components/layout/SearchBar";
 
 import List from "./components/lists/List";
-import ListData from "./components/lists/ListDetail";
+import ListDetail from "./components/lists/ListDetail";
 
 import Login from "./components/login/Login";
-
 import Signup from "./components/login/Signup";
 
 import EventPage from "./components/events/EventPage";
@@ -22,36 +20,40 @@ import SupportPage from "./components/SupportPage";
 import Mypage from "./components/mypage/Mypage";
 import DataCheck from "./components/DataCheck";
 
+import CheckoutPage from "./components/checkout/CheckoutPage";
+import CheckoutResult from "./components/checkout/CheckoutResult";
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => {
     return !!localStorage.getItem("token");
   });
 
+  // ✅ List 검색 결과(배열) or null(검색 해제)
   const [searchData, setSearchData] = useState(null);
 
   const navigate = useNavigate();
-  const location = useLocation();
 
   // 로그아웃
   const handleLogout = () => {
     localStorage.removeItem("token");
     setIsLoggedIn(false);
+    navigate("/");
   };
-
-  // ✅ SearchBar 노출 조건: 홈(/) + 목록(/list)만
-  // const showSearchBar = location.pathname === "/" || location.pathname === "/list";
-  const showSearchBar = location.pathname === "/list";
 
   return (
     <div className="App">
       <Header isLoggedIn={isLoggedIn} onLogout={handleLogout} />
 
-      {showSearchBar && <SearchBar setSearchData={setSearchData} />}
-
       <Routes>
         <Route path="/" element={<Main />} />
-        <Route path="/list" element={<List searchData={searchData} />} />
-        <Route path="/list/:id" element={<ListData />} />
+
+        {/* ✅ List 내부(h2 아래)에 검색창을 넣을 거라 setSearchData 내려줌 */}
+        <Route path="/list" element={<List searchData={searchData} setSearchData={setSearchData} />} />
+        <Route path="/list/:id" element={<ListDetail />} />
+
+        {/* ✅ 결제 시뮬레이션 */}
+        <Route path="/checkout/:bookingId" element={<CheckoutPage />} />
+        <Route path="/checkout/result" element={<CheckoutResult />} />
 
         <Route path="/user/login" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
         <Route path="/login/kakao/callback" element={<Login setIsLoggedIn={setIsLoggedIn} />} />

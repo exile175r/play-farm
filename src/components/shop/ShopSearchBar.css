@@ -1,87 +1,49 @@
-/* 섹션은 유지 */
-.pf-search-section {
-   padding: 22px 0 32px;
-   background: #ffffff;
+.shop-searchbar {
+  margin: 14px 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.pf-shop-extra {
-   max-width: 1160px;
-   margin: 12px auto 0;
-   width: calc(100% - 40px);
+/* select */
+.shop-searchbar select {
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border, rgba(0, 0, 0, 0.12));
+  font-size: 13px;
+  font-weight: 700;
+  background: #fff;
 }
 
-.pf-shop-row {
-   margin-top: 14px;
-   display: grid;
-   grid-template-columns: 1fr 220px 120px;
-   gap: 12px;
-   align-items: end;
+/* input */
+.shop-searchbar input {
+  flex: 1;
+  min-width: 260px;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border, rgba(0, 0, 0, 0.12));
+  font-size: 14px;
 }
 
-.pf-shop-field {
-   display: flex;
-   flex-direction: column;
-   gap: 8px;
+.shop-searchbar input::placeholder {
+  opacity: 0.6;
 }
 
-.pf-shop-label {
-   font-size: 12px;
-   opacity: 0.7;
-   font-weight: 700;
+/* button */
+.shop-searchbar button {
+  height: 42px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
 }
 
-.pf-shop-seg {
-   display: flex;
-   flex-wrap: wrap;
-   gap: 8px;
-}
-
-.pf-shop-seg-btn {
-   height: 36px;
-   padding: 0 12px;
-   border-radius: 999px;
-   border: 1px solid rgba(0, 0, 0, 0.1);
-   background: #fff;
-   cursor: pointer;
-   font-size: 12px;
-   font-weight: 700;
-}
-
-.pf-shop-seg-btn.is-active {
-   border-color: rgba(58, 142, 135, 0.45);
-   background: rgba(58, 142, 135, 0.12);
-}
-
-.pf-shop-select {
-   height: 36px;
-   border-radius: 12px;
-   border: 1px solid rgba(0, 0, 0, 0.12);
-   padding: 0 10px;
-   outline: none;
-   background: #fff;
-}
-
-.pf-shop-reset {
-   height: 36px;
-   border-radius: 12px;
-   border: 1px solid rgba(0, 0, 0, 0.12);
-   background: rgba(0, 0, 0, 0.03);
-   cursor: pointer;
-   font-weight: 800;
-}
-
-.pf-shop-reset:hover {
-   background: rgba(0, 0, 0, 0.06);
-}
-
-.pf-shop-meta {
-   margin-top: 12px;
-   display: flex;
-   align-items: center;
-   gap: 10px;
-   font-size: 13px;
-}
-
-.pf-shop-meta-muted {
-   opacity: 0.6;
+.shop-searchbar button.is-ghost {
+  opacity: 0.7;
 }

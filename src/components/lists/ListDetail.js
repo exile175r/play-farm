@@ -1,12 +1,12 @@
-import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
-import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
-import { getProgramById } from '../../services/programApi';
-import './ListDetail.css';
-import { getImagePath } from '../../utils/imagePath';
-import { useBookmark } from '../../hooks/useBookmark';
-import dayjs from 'dayjs';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
+import { getProgramById } from "../../services/programApi";
+import "./ListDetail.css";
+import { getImagePath } from "../../utils/imagePath";
+import { useBookmark } from "../../hooks/useBookmark";
+import dayjs from "dayjs";
 
-import ReservationModal from '../reservation/ReservationModal';
+import ReservationModal from "../reservation/ReservationModal";
 
 function ListDetail() {
   const [data, setData] = useState(null);
@@ -14,7 +14,7 @@ function ListDetail() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('schedule');
+  const [activeTab, setActiveTab] = useState("schedule");
 
   // ✅ 예약 모달
   const [isReserveOpen, setIsReserveOpen] = useState(false);
@@ -30,7 +30,7 @@ function ListDetail() {
   // 유저 정보
   const user = useMemo(() => {
     try {
-      const raw = localStorage.getItem('user');
+      const raw = localStorage.getItem("user");
       return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
@@ -38,7 +38,7 @@ function ListDetail() {
   }, []);
 
   // 화면 표시 이름
-  const displayName = user?.nickname || user?.name || user?.user_id || '익명';
+  const displayName = user?.nickname || user?.name || user?.user_id || "익명";
 
   // ✅ “본인 판별용” ID (서버 붙으면 여기만 진짜 user_id로 통일)
   const myUserId = user?.user_id || user?.id || user?.email || null;
@@ -122,7 +122,7 @@ function ListDetail() {
 
   // review form
   const [reviewRating, setReviewRating] = useState(5);
-  const [reviewContent, setReviewContent] = useState('');
+  const [reviewContent, setReviewContent] = useState("");
   const [reviewFiles, setReviewFiles] = useState([]);
   const [reviewPreviews, setReviewPreviews] = useState([]);
 
@@ -130,11 +130,11 @@ function ListDetail() {
     try {
       const result = await getProgramById(programId);
       if (result.success) {
-        const replaceText = { 체험: ' 체험', 및: ' 및 ' };
+        const replaceText = { 체험: " 체험", 및: " 및 " };
         try {
           result.data.program_nm = JSON.parse(result.data.program_nm)
             .map((v) => v.replace(/체험|및/g, (m) => replaceText[m]))
-            .join(', ');
+            .join(", ");
         } catch {
           result.data.program_nm = result.data.program_nm.replace(/체험|및/g, (m) => replaceText[m]);
         }
@@ -163,7 +163,7 @@ function ListDetail() {
       const parsed = raw ? JSON.parse(raw) : [];
       setReviews(Array.isArray(parsed) ? parsed : []);
     } catch (e) {
-      console.error('리뷰 로드 실패:', e);
+      console.error("리뷰 로드 실패:", e);
       setReviews([]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -174,7 +174,7 @@ function ListDetail() {
     try {
       localStorage.setItem(storageKey, JSON.stringify(reviews));
     } catch (e) {
-      console.error('리뷰 저장 실패:', e);
+      console.error("리뷰 저장 실패:", e);
     }
   }, [reviews, id, storageKey]);
 
@@ -195,7 +195,7 @@ function ListDetail() {
       return;
     }
 
-    const script = document.createElement('script');
+    const script = document.createElement("script");
     const apiKey = process.env.REACT_APP_KAKAO_MAP_API_KEY;
     script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false`;
     script.async = true;
@@ -208,13 +208,13 @@ function ListDetail() {
       }
     };
 
-    script.onerror = () => console.error('카카오맵 API 스크립트 로드 실패');
+    script.onerror = () => console.error("카카오맵 API 스크립트 로드 실패");
     document.head.appendChild(script);
   }, []);
 
   useEffect(() => {
     if (
-      activeTab === 'location' &&
+      activeTab === "location" &&
       data &&
       data.refine_wgs84_lat &&
       data.refine_wgs84_logt &&
@@ -247,14 +247,14 @@ function ListDetail() {
 
               const infowindow = new window.kakao.maps.InfoWindow({
                 content: `<div style="padding:8px;font-size:13px;min-width:150px;">
-                  <div style="font-weight:600;margin-bottom:4px;">${data.village_nm || '위치'}</div>
-                  <div style="font-size:12px;color:#666;">${data.address || ''}</div>
+                  <div style="font-weight:600;margin-bottom:4px;">${data.village_nm || "위치"}</div>
+                  <div style="font-size:12px;color:#666;">${data.address || ""}</div>
                 </div>`,
               });
               infowindow.open(mapInstance.current, marker);
             }
           } catch (error) {
-            console.error('지도 초기화 오류:', error);
+            console.error("지도 초기화 오류:", error);
           }
         }, 200);
 
@@ -263,20 +263,24 @@ function ListDetail() {
     }
   }, [activeTab, data, mapLoaded]);
 
-  const programTypesText = Array.isArray(data?.program_types) && data.program_types.length > 0 ? data.program_types.join(', ') : '정보 없음';
+  const programTypesText =
+    Array.isArray(data?.program_types) && data.program_types.length > 0 ? data.program_types.join(", ") : "정보 없음";
 
-  const feeText = data?.chrge ? data.chrge : '정보 없음';
+  const feeText = data?.chrge ? data.chrge : "정보 없음";
 
-  const reqPeriodText = data?.reqst_bgnde && data?.reqst_endde ? `${dayjs(data.reqst_bgnde).format('YYYY.MM.DD')} ~ ${dayjs(data.reqst_endde).format('YYYY.MM.DD')}` : '정보 없음';
+  const reqPeriodText =
+    data?.reqst_bgnde && data?.reqst_endde
+      ? `${dayjs(data.reqst_bgnde).format("YYYY.MM.DD")} ~ ${dayjs(data.reqst_endde).format("YYYY.MM.DD")}`
+      : "정보 없음";
 
   const hasLocation = !!(data?.refine_wgs84_lat && data?.refine_wgs84_logt);
 
-  const renderStars = (rating = 0) => '★'.repeat(rating) + '☆'.repeat(Math.max(0, 5 - rating));
+  const renderStars = (rating = 0) => "★".repeat(rating) + "☆".repeat(Math.max(0, 5 - rating));
 
   const isMyReview = (review) => {
     if (!isLoggedIn) return false;
     if (review?.userId && myUserId) return String(review.userId) === String(myUserId);
-    return (review?.user || '') === displayName;
+    return (review?.user || "") === displayName;
   };
 
   const handleReviewFilesChange = (e) => {
@@ -320,7 +324,7 @@ function ListDetail() {
     try {
       images = await Promise.all(reviewFiles.map((f) => toBase64(f)));
     } catch (err) {
-      console.error('이미지 변환 실패:', err);
+      console.error("이미지 변환 실패:", err);
       images = [];
     }
 
@@ -337,7 +341,7 @@ function ListDetail() {
     setReviews((prev) => [newReview, ...prev]);
 
     setReviewRating(5);
-    setReviewContent('');
+    setReviewContent("");
     setReviewFiles([]);
     reviewPreviews.forEach((url) => URL.revokeObjectURL(url));
     setReviewPreviews([]);
@@ -364,18 +368,21 @@ function ListDetail() {
         {data && (
           <div className="detail-top">
             <div className="detail-img">
-              {data.images && data.images.length > 0 && <img src={getImagePath(data.images[0])} alt={data.program_nm} />}
+              {data.images && data.images.length > 0 && (
+                <img src={getImagePath(data.images[0])} alt={data.program_nm} />
+              )}
 
               <button
                 type="button"
-                className={`detail-heart-btn ${isBookmarked(id) ? 'is-on' : ''}`}
-                aria-label={isBookmarked(id) ? '찜 해제' : '찜하기'}
+                className={`detail-heart-btn ${isBookmarked(id) ? "is-on" : ""}`}
+                aria-label={isBookmarked(id) ? "찜 해제" : "찜하기"}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   handleToggleBookmark();
-                }}>
-                {isBookmarked(id) ? '♥' : '♡'}
+                }}
+              >
+                {isBookmarked(id) ? "♥" : "♡"}
               </button>
             </div>
 
@@ -388,10 +395,10 @@ function ListDetail() {
 
               <div className="detail-main-text">
                 <p>프로그램 구분 : {programTypesText}</p>
-                <p>인원 : {data.max_personnel || '정보 없음'}</p>
+                <p>인원 : {data.max_personnel || "정보 없음"}</p>
                 <p>신청 기간 : {reqPeriodText}</p>
-                <p>주소 : {data.address || '주소 정보 없음'}</p>
-                <p>소요시간 : {data.use_time || '정보 없음'}</p>
+                <p>주소 : {data.address || "주소 정보 없음"}</p>
+                <p>소요시간 : {data.use_time || "정보 없음"}</p>
                 <p>이용 요금 : {feeText}</p>
               </div>
 
@@ -409,22 +416,22 @@ function ListDetail() {
         )}
 
         <div className="detail-tabs">
-          <button className={activeTab === 'schedule' ? 'tab active' : 'tab'} onClick={() => setActiveTab('schedule')}>
+          <button className={activeTab === "schedule" ? "tab active" : "tab"} onClick={() => setActiveTab("schedule")}>
             프로그램 일정
           </button>
-          <button className={activeTab === 'detail' ? 'tab active' : 'tab'} onClick={() => setActiveTab('detail')}>
+          <button className={activeTab === "detail" ? "tab active" : "tab"} onClick={() => setActiveTab("detail")}>
             상세정보
           </button>
-          <button className={activeTab === 'location' ? 'tab active' : 'tab'} onClick={() => setActiveTab('location')}>
+          <button className={activeTab === "location" ? "tab active" : "tab"} onClick={() => setActiveTab("location")}>
             위치정보
           </button>
-          <button className={activeTab === 'review' ? 'tab active' : 'tab'} onClick={() => setActiveTab('review')}>
+          <button className={activeTab === "review" ? "tab active" : "tab"} onClick={() => setActiveTab("review")}>
             체험 후기
           </button>
         </div>
 
         <div className="detail-tab-content">
-          {activeTab === 'schedule' && (
+          {activeTab === "schedule" && (
             <div className="detail-panel">
               <h3 className="panel-title">프로그램 진행 흐름</h3>
 
@@ -461,19 +468,19 @@ function ListDetail() {
             </div>
           )}
 
-          {activeTab === 'detail' && (
+          {activeTab === "detail" && (
             <div className="detail-panel">
               <h3 className="panel-title">프로그램 상세 정보</h3>
 
               <div className="info-grid">
                 <div className="info-row">
                   <strong>마을</strong>
-                  <span>{data?.village_nm || '정보 없음'}</span>
+                  <span>{data?.village_nm || "정보 없음"}</span>
                 </div>
 
                 <div className="info-row">
                   <strong>프로그램명</strong>
-                  <span>{data?.program_nm || '정보 없음'}</span>
+                  <span>{data?.program_nm || "정보 없음"}</span>
                 </div>
 
                 <div className="info-row">
@@ -488,13 +495,13 @@ function ListDetail() {
 
                 <div className="info-row">
                   <strong>소요시간</strong>
-                  <span>{data?.use_time || '정보 없음'}</span>
+                  <span>{data?.use_time || "정보 없음"}</span>
                 </div>
 
                 <div className="info-row">
                   <strong>인원</strong>
                   <span>
-                    {data?.min_personnel || '-'} ~ {data?.max_personnel || '-'}
+                    {data?.min_personnel || "-"} ~ {data?.max_personnel || "-"}
                   </span>
                 </div>
               </div>
@@ -511,24 +518,31 @@ function ListDetail() {
             </div>
           )}
 
-          {activeTab === 'location' && (
+          {activeTab === "location" && (
             <div className="detail-panel">
               <h3 className="panel-title">위치 안내</h3>
 
               <div className="location-card">
                 <div className="location-row">
                   <span className="location-label">주소</span>
-                  <span className="location-value">{data?.address || '주소 없음'}</span>
+                  <span className="location-value">{data?.address || "주소 없음"}</span>
                 </div>
 
-                {!hasLocation ? <p className="muted">위치 정보가 없습니다.</p> : <div id="map" ref={mapContainer} className="kakao-map" />}
+                {!hasLocation ? (
+                  <p className="muted">위치 정보가 없습니다.</p>
+                ) : (
+                  <div id="map" ref={mapContainer} className="kakao-map" />
+                )}
 
                 {hasLocation && (
                   <a
                     className="map-link"
-                    href={`https://map.kakao.com/link/map/${encodeURIComponent(data?.village_nm || '위치')},${data.refine_wgs84_lat},${data.refine_wgs84_logt}`}
+                    href={`https://map.kakao.com/link/map/${encodeURIComponent(data?.village_nm || "위치")},${
+                      data.refine_wgs84_lat
+                    },${data.refine_wgs84_logt}`}
                     target="_blank"
-                    rel="noreferrer">
+                    rel="noreferrer"
+                  >
                     카카오맵에서 보기
                   </a>
                 )}
@@ -536,7 +550,7 @@ function ListDetail() {
             </div>
           )}
 
-          {activeTab === 'review' && (
+          {activeTab === "review" && (
             <div className="detail-panel">
               <h3 className="panel-title">체험 후기</h3>
 
@@ -549,8 +563,14 @@ function ListDetail() {
 
                     <div className="rating" role="radiogroup" aria-label="별점 선택">
                       {[1, 2, 3, 4, 5].map((n) => (
-                        <button key={n} type="button" className={`star ${reviewRating >= n ? 'is-on' : ''}`} onClick={() => setReviewRating(n)} aria-label={`${n}점`}>
-                          {reviewRating >= n ? '★' : '☆'}
+                        <button
+                          key={n}
+                          type="button"
+                          className={`star ${reviewRating >= n ? "is-on" : ""}`}
+                          onClick={() => setReviewRating(n)}
+                          aria-label={`${n}점`}
+                        >
+                          {reviewRating >= n ? "★" : "☆"}
                         </button>
                       ))}
                     </div>
@@ -602,8 +622,8 @@ function ListDetail() {
                       <li key={r.id} className="review-item">
                         <div className="review-top">
                           <div className="review-left">
-                            <span className="review-user">{r.user || '익명'}</span>
-                            <span className="review-date">{r.date ? dayjs(r.date).format('YYYY.MM.DD') : ''}</span>
+                            <span className="review-user">{r.user || "익명"}</span>
+                            <span className="review-date">{r.date ? dayjs(r.date).format("YYYY.MM.DD") : ""}</span>
                           </div>
 
                           <div className="review-right">
@@ -644,8 +664,9 @@ function ListDetail() {
         isLoggedIn={isLoggedIn}
         user={user}
         onSuccess={() => {
+          // ✅ 예약 성공 -> 마이페이지 '예약/체험관리' 탭으로 이동
           setIsReserveOpen(false);
-          navigate('/mypage', { state: { openTab: 'reservations' } });
+          navigate("/mypage", { state: { openTab: "reservations" } });
         }}
       />
     </section>

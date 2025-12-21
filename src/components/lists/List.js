@@ -1,4 +1,4 @@
-// src/components/List.js
+// src/components/lists/List.js
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import "./List.css";
@@ -6,8 +6,9 @@ import dayjs from "dayjs";
 import { useBookmark } from "../../hooks/useBookmark";
 import { getAllPrograms } from "../../services/programApi";
 import { getImagePath } from "../../utils/imagePath";
+import ListSearchBar from "./ListSearchBar";
 
-function List({ searchData }) {
+function List({ searchData, setSearchData }) {
   const [programs, setPrograms] = useState([]);
   const [page, setPage] = useState(1);
   const [error, setError] = useState(null);
@@ -30,44 +31,47 @@ function List({ searchData }) {
   const handleToggleBookmark = useCallback(
     async (data) => {
       if (!isLoggedIn) return;
-      const result = await toggleBookmark(data.id, data);
-      if (!result.success && result.requiresLogin) {
+
+      const pid = String(data.id);
+
+      // ✅ "클릭 직전"의 현재 상태를 기준으로, 성공 후 localStorage를 추가/삭제
+      const wasBookmarked = isBookmarked(pid);
+
+      // ✅ Mypage가 읽는 localStorage 포맷과 동일하게 payload 표준화
+      const bookmarkPayload = {
+        programId: pid,
+        title: data.program_nm,
+        image: data.images?.[0] ? getImagePath(data.images[0]) : "",
+        savedAt: new Date().toISOString(),
+      };
+
+      const result = await toggleBookmark(pid, bookmarkPayload);
+
+      if (!result?.success && result?.requiresLogin) {
         // 로그인 필요 시 처리 (선택사항)
+        return;
+      }
+      if (!result?.success) return;
+
+      // ✅ 핵심: 서버 토글 성공 후 localStorage(bookmarks_program)도 같이 동기화
+      // - wasBookmarked === true  -> localStorage에서 제거 (해제)
+      // - wasBookmarked === false -> localStorage에 추가 (등록)
+      try {
+        const KEY = "bookmarks_program";
+        const prev = JSON.parse(localStorage.getItem(KEY) || "[]");
+        const list = Array.isArray(prev) ? prev : [];
+
+        const next = wasBookmarked
+          ? list.filter((b) => String(b.programId) !== pid)
+          : [bookmarkPayload, ...list.filter((b) => String(b.programId) !== pid)];
+
+        localStorage.setItem(KEY, JSON.stringify(next));
+      } catch {
+        // 무시
       }
     },
-    [toggleBookmark, isLoggedIn]
+    [toggleBookmark, isLoggedIn, isBookmarked]
   );
-
-  // // ✅ 북마크(찜) - List/Detail/Mypage 동일 키로 동기화
-  // const BOOKMARK_KEY = 'bookmarks_program';
-
-  // const [bookmarks, setBookmarks] = useState(() => {
-  //   try {
-  //     return JSON.parse(localStorage.getItem(BOOKMARK_KEY) || '[]');
-  //   } catch {
-  //     return [];
-  //   }
-  // });
-
-  // // ✅ 북마크 id 빠른 조회용 Set
-  // const bookmarkedSet = useMemo(() => {
-  //   return new Set((bookmarks || []).map((b) => String(b.programId)));
-  // }, [bookmarks]);
-
-  // // 다른 탭/페이지에서 localStorage 변경 시 동기화
-  // useEffect(() => {
-  //   const onStorage = (e) => {
-  //     if (e.key !== BOOKMARK_KEY) return;
-  //     try {
-  //       const next = JSON.parse(e.newValue || '[]');
-  //       setBookmarks(Array.isArray(next) ? next : []);
-  //     } catch {
-  //       setBookmarks([]);
-  //     }
-  //   };
-  //   window.addEventListener('storage', onStorage);
-  //   return () => window.removeEventListener('storage', onStorage);
-  // }, []);
 
   // ✅ 데이터 처리 함수 (메모이제이션으로 중복 처리 방지)
   const processProgramData = useCallback((data) => {
@@ -165,6 +169,7 @@ function List({ searchData }) {
   useEffect(() => {
     if (searchData !== prevSearchDataRef.current) {
       prevSearchDataRef.current = searchData;
+
       if (searchData) {
         const processedData = processProgramData(searchData);
         setPrograms(processedData);
@@ -222,32 +227,6 @@ function List({ searchData }) {
     };
   }, [page, hasMore, loading, searchData, fetchPrograms]);
 
-  // // ✅ 북마크 토글
-  // const toggleBookmark = useCallback(
-  //   (data) => {
-  //     if (!data?.id) return;
-
-  //     const pid = String(data.id);
-  //     const exists = bookmarkedSet.has(pid);
-
-  //     const next = exists
-  //       ? bookmarks.filter((b) => String(b.programId) !== pid)
-  //       : [
-  //         {
-  //           programId: pid,
-  //           title: data.program_nm,
-  //           image: data.images?.[0] ? getImagePath(data.images[0]) : '',
-  //           savedAt: new Date().toISOString(),
-  //         },
-  //         ...bookmarks,
-  //       ];
-
-  //     setBookmarks(next);
-  //     localStorage.setItem(BOOKMARK_KEY, JSON.stringify(next));
-  //   },
-  //   [bookmarks, bookmarkedSet]
-  // );
-
   // ✅ 처리된 프로그램 데이터 메모이제이션
   const processedPrograms = useMemo(() => {
     return programs.map((data) => ({
@@ -273,12 +252,13 @@ function List({ searchData }) {
           <div className="pf-divider list-divider" />
         </header>
 
+        <ListSearchBar setSearchData={setSearchData} setError={setError} />
+
         {error && <p className="list-error">{error}</p>}
 
         <div className="list-grid">
           {processedPrograms.map((data) => {
-            // const bookmarked = bookmarkedSet.has(String(data.id));
-            const bookmarked = isBookmarked(data.id);
+            const bookmarked = isBookmarked(String(data.id));
 
             return (
               <Link to={`/list/${data.id}`} className="list-card" key={data.id}>

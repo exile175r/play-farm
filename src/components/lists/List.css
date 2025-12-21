@@ -105,6 +105,13 @@
   border-color: rgba(225, 29, 72, 0.22);
 }
 
+/* ✅ FIX(옵션): 찜한 상태면 hover 아니어도 버튼이 보이게 (원래대로 “hover에서만” 원하면 이 줄 삭제)
+   - 찜한 상태가 “안 바뀌는 것처럼” 보이는 착시 방지
+*/
+.list-heart-btn.is-on {
+  opacity: 1;
+}
+
 /* 텍스트 영역 */
 .list-card-body {
   padding: 12px 12px 14px;
