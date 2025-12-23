@@ -21,4 +21,7 @@ router.post('/:id/payment', authenticateToken, reservationController.markPayment
 // 결제 실패 처리 (인증 필요)
 router.post('/:id/payment-failed', authenticateToken, reservationController.markPaymentFailed);
 
+// 결제 취소(환불) 처리 (인증 필요)
+router.post('/:id/refund', authenticateToken, reservationController.refundReservation);
+
 module.exports = router;

@@ -9,6 +9,9 @@ router.post('/signup', userController.signup);
 // 로그인
 router.post('/login', userController.login);
 
+// 토큰 갱신
+router.post('/refresh-token', userController.refreshToken);
+
 // 마이페이지 - 내 정보 조회
 router.get('/me', authenticateToken, userController.getMyProfile);
 

@@ -212,3 +212,47 @@ exports.updateMyProfile = async (req, res) => {
     return res.status(500).json({ success: false, message: '정보 수정 중 오류가 발생했습니다.' });
   }
 };
+
+exports.refreshToken = async (req, res) => {
+  try {
+    const token = req.headers['authorization']?.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: '토큰이 필요합니다.'
+      });
+    }
+
+    // 만료된 토큰도 디코딩 가능하도록 설정
+    const decoded = jwt.decode(token, { complete: true });
+
+    if (!decoded || !decoded.payload.id) {
+      return res.status(401).json({
+        success: false,
+        message: '유효하지 않은 토큰입니다.'
+      });
+    }
+
+    // 새 토큰 발급
+    const newToken = jwt.sign(
+      { id: decoded.payload.id },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: '토큰이 갱신되었습니다.',
+      data: {
+        token: newToken
+      }
+    });
+  } catch (error) {
+    console.error('토큰 갱신 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '토큰 갱신 중 오류가 발생했습니다.'
+    });
+  }
+};

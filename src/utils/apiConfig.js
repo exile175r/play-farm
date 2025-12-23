@@ -1,3 +1,5 @@
+import { handleTokenExpired } from './tokenHandler';
+
 export const getApiBaseUrl = () => {
   // 환경 변수가 설정되어 있으면 사용
   if (process.env.REACT_APP_API_URL) {
@@ -46,4 +48,69 @@ export const fetchWithAuth = async (url, options = {}) => {
       ...options.headers,
     },
   });
+};
+
+// 전역 로그아웃 핸들러 (App.js에서 설정)
+let globalLogoutHandler = null;
+
+export const setGlobalLogoutHandler = (handler) => {
+  globalLogoutHandler = handler;
+};
+
+/**
+ * 토큰 만료 처리가 포함된 fetch 래퍼
+ * @param {string} url - 요청 URL
+ * @param {Object} options - fetch 옵션
+ * @param {Function} onLogout - 로그아웃 콜백 (선택사항)
+ * @returns {Promise<Response>} fetch 응답
+ */
+export const fetchWithAuthAndRetry = async (url, options = {}, onLogout = null) => {
+  const headers = getAuthHeaders();
+
+  let response = await fetch(url, {
+    ...options,
+    headers: {
+      ...headers,
+      ...options.headers,
+    },
+  });
+
+  // 401 에러 처리 (토큰 만료)
+  if (response.status === 401) {
+    const errorData = await response.json().catch(() => ({}));
+
+    // 토큰 만료 에러인 경우
+    if (errorData.message?.includes('만료') || errorData.message?.includes('expired')) {
+      const extended = await handleTokenExpired(
+        () => {
+          // 연장 성공 시 아무것도 하지 않음 (다시 요청할 예정)
+        },
+        () => {
+          // 로그아웃 처리
+          if (onLogout) {
+            onLogout();
+          } else if (globalLogoutHandler) {
+            globalLogoutHandler();
+          }
+        }
+      );
+
+      // 연장 성공 시 원래 요청 재시도
+      if (extended) {
+        const newHeaders = getAuthHeaders();
+        response = await fetch(url, {
+          ...options,
+          headers: {
+            ...newHeaders,
+            ...options.headers,
+          },
+        });
+      } else {
+        // 로그아웃 선택 시 에러 반환
+        throw new Error('로그아웃되었습니다.');
+      }
+    }
+  }
+
+  return response;
 };

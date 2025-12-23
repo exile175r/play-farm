@@ -830,3 +830,140 @@ function getCancelReason(memo) {
 
   return null;
 }
+
+// 결제 취소(환불) 처리
+exports.refundReservation = async (req, res) => {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const userId = req.userId;
+    const reservationId = req.params.id;
+    const { reason } = req.body;
+
+    // 예약 조회 및 권한 확인
+    const [reservations] = await connection.query(
+      `SELECT 
+        r.*,
+        p.program_nm as title
+       FROM reservations r
+       INNER JOIN programs p ON r.program_id = p.id
+       WHERE r.id = ? AND r.user_id = ?`,
+      [reservationId, userId]
+    );
+
+    if (reservations.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '예약을 찾을 수 없습니다.'
+      });
+    }
+
+    const reservation = reservations[0];
+
+    // 환불 가능한 상태 확인 (confirmed 상태이고 결제 완료된 예약만 환불 가능)
+    if (reservation.status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        message: '이미 취소된 예약입니다.'
+      });
+    }
+
+    if (reservation.status === 'completed') {
+      return res.status(400).json({
+        success: false,
+        message: '완료된 예약은 환불할 수 없습니다.'
+      });
+    }
+
+    // 결제 완료 여부 확인 (메모에 결제 정보가 있어야 환불 가능)
+    const hasPayment = reservation.memo && reservation.memo.includes('[결제정보]');
+    if (!hasPayment) {
+      return res.status(400).json({
+        success: false,
+        message: '결제가 완료되지 않은 예약은 환불할 수 없습니다.'
+      });
+    }
+
+    // 환불 처리 (예약 취소 + 환불 정보 추가)
+    const refundInfo = {
+      reason: reason || '사용자 요청',
+      refundedAt: new Date().toISOString(),
+      amount: Number(reservation.total_price)
+    };
+
+    const refundMemo = `[환불정보] ${JSON.stringify(refundInfo)}`;
+    const cancelReason = `[사용자 환불 요청] ${reason || '사용자가 환불을 요청했습니다.'}`;
+
+    // 메모에 환불 정보와 취소 사유를 모두 저장
+    const combinedMemo = `${refundMemo}\n${cancelReason}`;
+
+    await connection.query(
+      `UPDATE reservations 
+       SET status = 'cancelled', 
+           cancelled_at = NOW(),
+           memo = COALESCE(CONCAT(COALESCE(memo, ''), '\n', ?), ?)
+       WHERE id = ?`,
+      [combinedMemo, combinedMemo, reservationId]
+    );
+
+    // 환불된 예약 조회
+    const [updated] = await connection.query(
+      `SELECT 
+        r.id,
+        r.user_id,
+        r.program_id,
+        r.res_date as date,
+        r.res_date_time as time,
+        r.personnel as people,
+        r.total_price as price,
+        r.status,
+        r.memo,
+        r.created_at as createdAt,
+        r.cancelled_at as cancelledAt,
+        p.program_nm as title
+       FROM reservations r
+       INNER JOIN programs p ON r.program_id = p.id
+       WHERE r.id = ?`,
+      [reservationId]
+    );
+
+    await connection.commit();
+
+    const refundedReservation = updated[0];
+
+    const response = {
+      bookingId: String(refundedReservation.id),
+      programId: String(refundedReservation.program_id),
+      userId: String(refundedReservation.user_id),
+      title: refundedReservation.title,
+      date: refundedReservation.date,
+      time: refundedReservation.time,
+      people: refundedReservation.people,
+      price: Number(refundedReservation.price),
+      status: mapStatusToFrontend(refundedReservation.status), // 'CANCELLED'
+      paymentStatus: getPaymentStatus(refundedReservation.status, refundedReservation.memo), // 'REFUNDED'
+      payment: getPaymentInfo(refundedReservation.memo),
+      createdAt: refundedReservation.createdAt,
+      cancelledAt: refundedReservation.cancelledAt,
+      memo: refundedReservation.memo,
+      cancelReason: getCancelReason(refundedReservation.memo)
+    };
+
+    res.status(200).json({
+      success: true,
+      message: '환불이 정상적으로 처리되었습니다.',
+      data: response
+    });
+
+  } catch (error) {
+    await connection.rollback();
+    console.error('환불 처리 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '환불 처리 중 오류가 발생했습니다.'
+    });
+  } finally {
+    connection.release();
+  }
+};
