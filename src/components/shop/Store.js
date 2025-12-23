@@ -1,11 +1,13 @@
 // src/components/shop/Store.js
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Store.css';
 
 import shopData from '../data/StoreData';
 import ShopSearchBar from './ShopSearchBar';
 
 function Store() {
+   const navigate = useNavigate();
    const products = shopData;
 
    // ✅ 검색은 "확정값"만 필터에 사용
@@ -20,6 +22,15 @@ function Store() {
       const set = new Set(products.map((p) => p.category).filter(Boolean));
       return ['전체', ...Array.from(set)];
    }, [products]);
+
+   // ✅ 옵션이 있으면 "최저가"를 리스트 가격으로 보여주기
+   const getDisplayPrice = (item) => {
+      if (Array.isArray(item.options) && item.options.length > 0) {
+         const min = Math.min(...item.options.map((o) => Number(o.price || 0)));
+         return Number.isFinite(min) ? min : Number(item.price || 0);
+      }
+      return Number(item.price || 0);
+   };
 
    const filteredProducts = useMemo(() => {
       const k = (appliedKeyword ?? '').trim().toLowerCase();
@@ -37,8 +48,8 @@ function Store() {
       });
 
       // 정렬
-      if (sort === 'priceAsc') list.sort((a, b) => Number(a.price) - Number(b.price));
-      if (sort === 'priceDesc') list.sort((a, b) => Number(b.price) - Number(a.price));
+      if (sort === 'priceAsc') list.sort((a, b) => getDisplayPrice(a) - getDisplayPrice(b));
+      if (sort === 'priceDesc') list.sort((a, b) => getDisplayPrice(b) - getDisplayPrice(a));
       if (sort === 'nameAsc') list.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? '', 'ko'));
 
       return list;
@@ -50,8 +61,12 @@ function Store() {
       setSort('recommend');
    };
 
-   // 이미지 필드 여러 케이스 대응
-   const getThumb = (item) => item.image || item.img || item.thumbnail || item.thumb || '';
+   // ✅ 이미지 필드 여러 케이스 대응 (src까지 포함)
+   const getThumb = (item) => item.image || item.img || item.thumbnail || item.thumb || item.src || '';
+
+   const goDetail = (id) => {
+      navigate(`/shop/${id}`);
+   };
 
    return (
       <section className="pf-page store-wrap">
@@ -80,9 +95,18 @@ function Store() {
                ) : (
                   filteredProducts.map((item) => {
                      const thumb = getThumb(item);
+                     const displayPrice = getDisplayPrice(item);
 
                      return (
-                        <div key={item.id} className="list-card store-card">
+                        <div
+                           key={item.id}
+                           className="list-card store-card"
+                           role="button"
+                           tabIndex={0}
+                           onClick={() => goDetail(item.id)}
+                           onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') goDetail(item.id);
+                           }}>
                            <div className="list-card-img store-card-img">
                               {thumb ? (
                                  <img
@@ -101,7 +125,9 @@ function Store() {
                            <div className="list-card-body store-card-body">
                               <h3 className="list-item-title store-item-title">{item.name}</h3>
                               {item.desc ? <p className="list-sub store-sub">{item.desc}</p> : null}
-                              <p className="store-price">{Number(item.price).toLocaleString()}원</p>
+                              <p className="store-price">{displayPrice.toLocaleString()}원</p>
+                              {/* 옵션선택 지우고 상세, 구매 버튼 넣을 예정 */}
+                              {Array.isArray(item.options) && item.options.length > 0 ? <p className="store-sub">옵션 선택 가능</p> : null}
                            </div>
                         </div>
                      );
