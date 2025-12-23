@@ -20,14 +20,14 @@ const userRouter = require('./routes/users');
 const socialAuthRouter = require('./routes/socialAuth');
 const bookmarksRouter = require('./routes/bookmarks');
 const reviewsRouter = require('./routes/reviews');
-// const reservationRouter = require('./routes/reservations');
+const reservationRouter = require('./routes/reservations');
 
 app.use('/api/programs', programRouter);
 app.use('/api/users', userRouter);
 app.use('/api/social-auth', socialAuthRouter);
 app.use('/api/bookmarks', bookmarksRouter);
 app.use('/api/reviews', reviewsRouter);
-// app.use('/api/reservations', reservationRouter);
+app.use('/api/reservations', reservationRouter);
 
 // 기본 라우트
 app.get('/', (req, res) => {
