@@ -1,0 +1,251 @@
+/* src/components/checkout/Checkout.css */
+
+.pf-checkout {
+   padding: 32px 0 48px;
+}
+
+.pf-checkout-inner {
+   max-width: 720px;
+   margin: 0 auto;
+   padding: 0 16px;
+}
+
+.pf-checkout-head {
+   margin-bottom: 16px;
+}
+
+.pf-checkout-title {
+   margin: 0 0 8px;
+   font-size: 22px;
+   font-weight: 800;
+   letter-spacing: -0.02em;
+}
+
+.pf-checkout-desc {
+   margin: 0;
+   font-size: 14px;
+   opacity: 0.82;
+   line-height: 1.5;
+}
+
+/* 카드(섹션) */
+.pf-checkout-card {
+   border: 1px solid var(--color-border, #ddd);
+   border-radius: 14px;
+   padding: 16px;
+   background: #fff;
+   margin-bottom: 16px;
+}
+
+.pf-checkout-card-h4 {
+   margin: 0 0 12px;
+   font-size: 16px;
+   font-weight: 800;
+}
+
+.pf-checkout-row {
+   display: flex;
+   justify-content: space-between;
+   gap: 12px;
+   font-size: 14px;
+   line-height: 1.55;
+   margin-bottom: 6px;
+}
+
+.pf-checkout-row .k {
+   opacity: 0.75;
+   min-width: 72px;
+}
+
+.pf-checkout-row .v {
+   text-align: right;
+   font-weight: 600;
+}
+
+.pf-checkout-row .v.warn {
+   color: #b91c1c;
+}
+
+.pf-checkout-row.total {
+   margin-top: 10px;
+   padding-top: 10px;
+   border-top: 1px dashed rgba(0, 0, 0, 0.12);
+}
+
+.pf-checkout-row.total .v {
+   font-size: 16px;
+   font-weight: 900;
+}
+
+/* 결제 수단 */
+.pf-pay-methods {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 10px;
+   margin-bottom: 12px;
+}
+
+.pf-radio {
+   display: inline-flex;
+   align-items: center;
+   gap: 8px;
+   padding: 10px 12px;
+   border-radius: 12px;
+   border: 1px solid rgba(0, 0, 0, 0.12);
+   cursor: pointer;
+   user-select: none;
+   background: #fff;
+   font-size: 14px;
+}
+
+.pf-radio input {
+   margin: 0;
+}
+
+.pf-radio.is-active {
+   border-color: rgba(58, 142, 135, 0.55);
+   box-shadow: 0 0 0 3px rgba(58, 142, 135, 0.12);
+}
+
+/* 폼 */
+.pf-form {
+   display: grid;
+   gap: 10px;
+}
+
+.pf-grid2 {
+   display: grid;
+   grid-template-columns: 1fr 1fr;
+   gap: 10px;
+}
+
+@media (max-width: 520px) {
+   .pf-grid2 {
+      grid-template-columns: 1fr;
+   }
+}
+
+.pf-label {
+   display: inline-block;
+   margin-bottom: 6px;
+   font-size: 13px;
+   font-weight: 700;
+   opacity: 0.85;
+}
+
+.pf-input {
+   width: 100%;
+   padding: 11px 12px;
+   border-radius: 10px;
+   border: 1px solid rgba(0, 0, 0, 0.18);
+   font-size: 14px;
+   outline: none;
+   background: #fff;
+}
+
+.pf-input:focus {
+   border-color: rgba(58, 142, 135, 0.6);
+   box-shadow: 0 0 0 3px rgba(58, 142, 135, 0.12);
+}
+
+.pf-hint {
+   margin: 6px 0 0;
+   font-size: 13px;
+   opacity: 0.75;
+   line-height: 1.45;
+}
+
+/* 약관 */
+.pf-agree {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   font-size: 14px;
+   margin-top: 8px;
+}
+
+.pf-agree-sub {
+   opacity: 0.8;
+   font-size: 13px;
+}
+
+/* 버튼 */
+.pf-checkout-actions {
+   display: flex;
+   gap: 10px;
+   align-items: center;
+   margin-top: 10px;
+}
+
+.pf-btn {
+   padding: 12px 14px;
+   border-radius: 12px;
+   border: 1px solid rgba(0, 0, 0, 0.18);
+   background: #fff;
+   font-weight: 800;
+   cursor: pointer;
+}
+
+.pf-btn.ghost {
+   opacity: 0.9;
+}
+
+.pf-btn:disabled {
+   opacity: 0.55;
+   cursor: not-allowed;
+}
+
+.pf-pay-btn {
+   flex: 1;
+   padding: 13px 14px;
+   border-radius: 12px;
+   border: none;
+   font-weight: 900;
+   cursor: pointer;
+   background: #3a8e87;
+   color: #fff;
+}
+
+.pf-pay-btn:disabled {
+   opacity: 0.55;
+   cursor: not-allowed;
+}
+
+/* 로딩 스켈레톤 */
+.pf-checkout-skeleton {
+   display: grid;
+   gap: 12px;
+}
+
+.sk-title,
+.sk-line,
+.sk-card {
+   border-radius: 12px;
+   background: linear-gradient(90deg, #f1f1f1 25%, #e9e9e9 37%, #f1f1f1 63%);
+   background-size: 400% 100%;
+   animation: sk 1.2s ease-in-out infinite;
+}
+
+.sk-title {
+   height: 22px;
+   width: 220px;
+}
+
+.sk-line {
+   height: 14px;
+   width: 100%;
+}
+
+.sk-card {
+   height: 120px;
+   width: 100%;
+}
+
+@keyframes sk {
+   0% {
+      background-position: 100% 0;
+   }
+   100% {
+      background-position: 0 0;
+   }
+}

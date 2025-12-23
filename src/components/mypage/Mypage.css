@@ -562,3 +562,10 @@
    opacity: 0.7;
    margin: 14px 0;
 }
+
+/* 경고, 주의 (결제) */
+.pf-chip.is-fail {
+   border-color: rgba(220, 38, 38, 0.35);
+   background: rgba(220, 38, 38, 0.1);
+   color: #b91c1c;
+}
