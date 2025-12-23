@@ -1,4 +1,4 @@
-import { fetchWithAuthAndRetry } from '../utils/apiConfig';
+import { fetchWithAuthAndRetry } from "../utils/apiConfig";
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 
@@ -14,9 +14,9 @@ export async function createReservation(payload) {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/reservations`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       },
@@ -25,7 +25,7 @@ export async function createReservation(payload) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '예약 생성 실패');
+      throw new Error(error.message || "예약 생성 실패");
     }
 
     const data = await res.json();
@@ -43,9 +43,9 @@ export async function listMyReservations({ userId } = {}) {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/reservations/my`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       },
       onLogout
@@ -53,7 +53,7 @@ export async function listMyReservations({ userId } = {}) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '예약 목록 조회 실패');
+      throw new Error(error.message || "예약 목록 조회 실패");
     }
 
     const data = await res.json();
@@ -71,9 +71,9 @@ export async function cancelReservation({ bookingId, userId }) {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/reservations/${bookingId}/cancel`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       },
       onLogout
@@ -81,7 +81,7 @@ export async function cancelReservation({ bookingId, userId }) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '예약 취소 실패');
+      throw new Error(error.message || "예약 취소 실패");
     }
 
     const data = await res.json();
@@ -99,9 +99,9 @@ export async function markReservationPaid({ bookingId, method = "CARD" }) {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/reservations/${bookingId}/payment`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ method }),
       },
@@ -114,9 +114,9 @@ export async function markReservationPaid({ bookingId, method = "CARD" }) {
     if (!res.ok || !data.success) {
       return {
         success: false,
-        error: new Error(data.message || '결제 처리 실패'),
+        error: new Error(data.message || "결제 처리 실패"),
         data: data.data || null,
-        cancelled: true
+        cancelled: true,
       };
     }
 
@@ -134,9 +134,9 @@ export async function markReservationPaymentFailed({ bookingId }) {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/reservations/${bookingId}/payment-failed`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       },
       onLogout
@@ -144,7 +144,7 @@ export async function markReservationPaymentFailed({ bookingId }) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '결제 실패 처리 실패');
+      throw new Error(error.message || "결제 실패 처리 실패");
     }
 
     const data = await res.json();
@@ -173,7 +173,7 @@ export function normalizeReservationStatus(reservations) {
   let changed = false;
   const next = reservations.map((res) => {
     // BOOKED 상태이고 결제 완료된 예약만 체크
-    if (res.status === 'BOOKED' && res.paymentStatus === 'PAID') {
+    if (res.status === "BOOKED" && res.paymentStatus === "PAID") {
       const resDate = new Date(res.date);
       resDate.setHours(0, 0, 0, 0);
 
@@ -182,7 +182,7 @@ export function normalizeReservationStatus(reservations) {
         changed = true;
         return {
           ...res,
-          status: 'COMPLETED'
+          status: "COMPLETED",
         };
       }
     }
@@ -201,9 +201,9 @@ export async function refundReservation({ bookingId, userId, reason }) {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/reservations/${bookingId}/refund`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ reason }),
       },
@@ -212,7 +212,7 @@ export async function refundReservation({ bookingId, userId, reason }) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '환불 처리 실패');
+      throw new Error(error.message || "환불 처리 실패");
     }
 
     const data = await res.json();

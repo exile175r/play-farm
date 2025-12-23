@@ -115,6 +115,10 @@
 /* 텍스트 영역 */
 .list-card-body {
   padding: 12px 12px 14px;
+
+  /* ✅ 상세보기 버튼 오른쪽 하단 고정 기준 */
+  position: relative;
+  padding-bottom: 46px; /* ✅ 버튼 자리 확보 */
 }
 
 .list-item-title {
@@ -151,6 +155,29 @@
   font-size: 12px;
   font-weight: 700;
   color: rgba(0, 0, 0, 0.45);
+}
+
+/* ✅ 카드 오른쪽 하단 상세보기 버튼 */
+.list-detail-btn {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.list-detail-btn:hover {
+  border-color: rgba(58, 142, 135, 0.35);
+}
+
+.list-detail-btn:focus-visible {
+  outline: 2px solid rgba(58, 142, 135, 0.35);
+  outline-offset: 2px;
 }
 
 /* 무한 스크롤 감지 영역 */

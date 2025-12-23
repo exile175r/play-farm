@@ -1,67 +1,77 @@
-/** cart storage key (user별) */
-export function getCartKey() {
+// src/utils/cartStorage.js
+// ✅ store cart localStorage helper
+// ✅ Checkout / Mypage 공통 사용
+
+const CART_KEY = "cart_store";
+
+const safeParse = (raw, fallback) => {
   try {
-    const raw = localStorage.getItem("user");
-    const user = raw ? JSON.parse(raw) : null;
-    const userId = user?.user_id || user?.id || user?.email || "guest";
-    return `cart_${userId}`;
+    const parsed = JSON.parse(raw);
+    return parsed ?? fallback;
   } catch {
-    return "cart_guest";
+    return fallback;
   }
-}
+};
 
-/** cart: [{ productId, name, price, qty, image }] */
-export function getCart() {
-  const key = getCartKey();
-  try {
-    const raw = localStorage.getItem(key);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
+export const readCart = () => {
+  const list = safeParse(localStorage.getItem(CART_KEY), []);
+  return Array.isArray(list) ? list : [];
+};
 
-export function setCart(next) {
-  const key = getCartKey();
-  localStorage.setItem(key, JSON.stringify(next));
-  window.dispatchEvent(new CustomEvent("cart:updated"));
-}
+export const writeCart = (next) => {
+  localStorage.setItem(CART_KEY, JSON.stringify(next));
+};
 
-export function addToCart(item) {
-  const curr = getCart();
-  const idx = curr.findIndex((c) => String(c.productId) === String(item.productId));
+/**
+ * ✅ 장바구니 담기
+ * - 같은 상품 + 같은 옵션이면 qty 합침
+ */
+export const addToCart = (payload) => {
+  const list = readCart();
 
-  let next = [];
+  const nextItem = {
+    id: String(payload.id), // productId
+    name: payload.name || "",
+    image: payload.image || "",
+    optionId: payload.optionId ? String(payload.optionId) : null,
+    optionName: payload.optionName || null,
+    price: Number(payload.price || 0), // unit price
+    qty: Math.max(1, Number(payload.qty || 1)),
+  };
+
+  const idx = list.findIndex(
+    (it) => String(it.id) === String(nextItem.id) && String(it.optionId || "") === String(nextItem.optionId || "")
+  );
+
+  let next = list;
+
   if (idx >= 0) {
-    next = curr.map((c, i) => (i === idx ? { ...c, qty: (c.qty || 1) + (item.qty || 1) } : c));
+    next = list.map((it, i) => (i === idx ? { ...it, qty: Math.min(999, Number(it.qty || 1) + nextItem.qty) } : it));
   } else {
-    next = [{ ...item, qty: item.qty || 1 }, ...curr];
+    next = [nextItem, ...list];
   }
-  setCart(next);
-  return next;
-}
 
-export function updateQty(productId, qty) {
-  const curr = getCart();
-  const next = curr
-    .map((c) => (String(c.productId) === String(productId) ? { ...c, qty } : c))
-    .filter((c) => (c.qty || 1) > 0);
-  setCart(next);
-  return next;
-}
+  writeCart(next);
+  window.dispatchEvent(new Event("cart_store_updated"));
 
-export function removeFromCart(productId) {
-  const curr = getCart();
-  const next = curr.filter((c) => String(c.productId) !== String(productId));
-  setCart(next);
-  return next;
-}
+  return { success: true };
+};
 
-export function getCartCount() {
-  return getCart().reduce((sum, c) => sum + (Number(c.qty) || 0), 0);
-}
+/**
+ * ✅ 여러 상품 한 번에 제거 (결제 완료 후 사용)
+ * @param {Array<{id, optionId}>} targets
+ */
+export const removeManyFromCart = (targets = []) => {
+  if (!Array.isArray(targets) || targets.length === 0) return;
 
-export function getCartTotal() {
-  return getCart().reduce((sum, c) => sum + (Number(c.price) || 0) * (Number(c.qty) || 0), 0);
-}
+  const list = readCart();
+
+  const next = list.filter((item) => {
+    return !targets.some(
+      (t) => String(t.id) === String(item.id) && String(t.optionId || "") === String(item.optionId || "")
+    );
+  });
+
+  writeCart(next);
+  window.dispatchEvent(new Event("cart_store_updated"));
+};

@@ -1,6 +1,6 @@
 // src/components/lists/List.js
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // ✅ Link 제거
 import "./List.css";
 import dayjs from "dayjs";
 import { useBookmark } from "../../hooks/useBookmark";
@@ -9,6 +9,8 @@ import { getImagePath } from "../../utils/imagePath";
 import ListSearchBar from "./ListSearchBar";
 
 function List({ searchData, setSearchData }) {
+  const navigate = useNavigate();
+
   const [programs, setPrograms] = useState([]);
   const [page, setPage] = useState(1);
   const [error, setError] = useState(null);
@@ -115,9 +117,7 @@ function List({ searchData, setSearchData }) {
         // getAllPrograms가 에러 객체를 반환한 경우
         if (!result || result.success === false) {
           setError(result?.error || "데이터를 불러오는데 실패했습니다.");
-          if (!append) {
-            setPrograms([]);
-          }
+          if (!append) setPrograms([]);
           setHasMore(false);
           return;
         }
@@ -127,13 +127,8 @@ function List({ searchData, setSearchData }) {
           const data = searchData ? searchData : result.data || [];
           const processedData = processProgramData(data);
 
-          if (append) {
-            // 무한 스크롤: 기존 데이터에 추가
-            setPrograms((prev) => [...prev, ...processedData]);
-          } else {
-            // 초기 로드: 데이터 교체
-            setPrograms(processedData);
-          }
+          if (append) setPrograms((prev) => [...prev, ...processedData]);
+          else setPrograms(processedData);
 
           // hasMore 업데이트
           if (result.pagination) {
@@ -145,17 +140,13 @@ function List({ searchData, setSearchData }) {
           }
         } else {
           setError(result.error || "데이터를 불러오는데 실패했습니다.");
-          if (!append) {
-            setPrograms([]);
-          }
+          if (!append) setPrograms([]);
           setHasMore(false);
         }
       } catch (err) {
         console.error("예상치 못한 오류:", err);
         setError("프로그램 목록을 불러오는 중 오류가 발생했습니다.");
-        if (!append) {
-          setPrograms([]);
-        }
+        if (!append) setPrograms([]);
         setHasMore(false);
       } finally {
         isLoadingRef.current = false;
@@ -197,9 +188,7 @@ function List({ searchData, setSearchData }) {
 
   // ✅ 무한 스크롤: Intersection Observer로 스크롤 감지
   useEffect(() => {
-    if (searchData || !hasMore || loading) {
-      return;
-    }
+    if (searchData || !hasMore || loading) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -209,21 +198,14 @@ function List({ searchData, setSearchData }) {
           fetchPrograms(nextPage, true);
         }
       },
-      {
-        threshold: 0.1,
-        rootMargin: "100px",
-      }
+      { threshold: 0.1, rootMargin: "100px" }
     );
 
     const currentTarget = observerTarget.current;
-    if (currentTarget) {
-      observer.observe(currentTarget);
-    }
+    if (currentTarget) observer.observe(currentTarget);
 
     return () => {
-      if (currentTarget) {
-        observer.unobserve(currentTarget);
-      }
+      if (currentTarget) observer.unobserve(currentTarget);
     };
   }, [page, hasMore, loading, searchData, fetchPrograms]);
 
@@ -261,7 +243,7 @@ function List({ searchData, setSearchData }) {
             const bookmarked = isBookmarked(String(data.id));
 
             return (
-              <Link to={`/list/${data.id}`} className="list-card" key={data.id}>
+              <div className="list-card" key={data.id}>
                 {/* 이미지 영역 */}
                 <div className="list-card-img">
                   {data.images && data.images.length > 0 && (
@@ -274,7 +256,6 @@ function List({ searchData, setSearchData }) {
                     className={`list-heart-btn ${bookmarked ? "is-on" : ""}`}
                     aria-label={bookmarked ? "찜 해제" : "찜하기"}
                     onClick={(e) => {
-                      e.preventDefault();
                       e.stopPropagation();
                       handleToggleBookmark(data);
                     }}
@@ -288,8 +269,13 @@ function List({ searchData, setSearchData }) {
                   <h3 className="list-item-title">{data.program_nm}</h3>
                   <p className="list-sub">{data.side_activities}</p>
                   <p className="list-date">{data.formattedDate}</p>
+
+                  {/* ✅ "상세보기" 버튼만 이동 */}
+                  <button type="button" className="list-detail-btn" onClick={() => navigate(`/list/${data.id}`)}>
+                    상세보기
+                  </button>
                 </div>
-              </Link>
+              </div>
             );
           })}
         </div>

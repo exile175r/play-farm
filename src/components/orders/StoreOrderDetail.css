@@ -1,0 +1,144 @@
+/* src/components/orders/StoreOrderDetail.css */
+.sod-wrap {
+  padding: 24px 0;
+}
+.sod-inner {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.sod-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.sod-title {
+  font-size: 22px;
+  margin: 0;
+}
+.sod-sub {
+  margin: 6px 0 0;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.sod-chip {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+.sod-chip.is-ok {
+  background: rgba(58, 142, 135, 0.12);
+  border-color: rgba(58, 142, 135, 0.3);
+}
+.sod-chip.is-cancel {
+  background: rgba(0, 0, 0, 0.06);
+}
+.sod-chip.is-refund {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.22);
+}
+
+.sod-card {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.sod-card-title {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.sod-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 13px;
+}
+.sod-row .k {
+  opacity: 0.8;
+}
+.sod-row .v {
+  font-weight: 600;
+}
+
+.sod-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sod-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+}
+.sod-item-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.sod-item-sub {
+  font-size: 13px;
+  opacity: 0.85;
+}
+.sod-item-actions {
+  margin-top: 8px;
+}
+.sod-link {
+  font-size: 13px;
+  text-decoration: underline;
+}
+
+.sod-item-right {
+  text-align: right;
+  min-width: 120px;
+}
+.sod-item-price {
+  font-size: 13px;
+  opacity: 0.85;
+}
+.sod-item-total {
+  font-size: 14px;
+  font-weight: 800;
+  margin-top: 6px;
+}
+
+.sod-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.sod-btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  background: #fff;
+  cursor: pointer;
+}
+.sod-btn.ghost {
+  opacity: 0.9;
+}
+.sod-btn.danger {
+  border-color: rgba(220, 38, 38, 0.35);
+}
+.sod-btn.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.sod-muted {
+  font-size: 13px;
+  opacity: 0.8;
+}

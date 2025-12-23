@@ -34,6 +34,10 @@
   flex-direction: column;
   gap: 8px;
   min-height: 92px;
+
+  /* ✅ 상세보기 버튼 오른쪽 하단 고정 기준 */
+  position: relative;
+  padding-bottom: 44px; /* ✅ 버튼 자리 확보 */
 }
 
 .store-price {
@@ -42,6 +46,29 @@
   font-size: 14px;
   font-weight: 900;
   color: rgba(0, 0, 0, 0.82);
+}
+
+/* ✅ 카드 오른쪽 하단 상세보기 버튼 */
+.store-detail-btn {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.store-detail-btn:hover {
+  border-color: rgba(58, 142, 135, 0.35);
+}
+
+.store-detail-btn:focus-visible {
+  outline: 2px solid rgba(58, 142, 135, 0.35);
+  outline-offset: 2px;
 }
 
 /* empty */
