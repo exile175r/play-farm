@@ -123,3 +123,29 @@ CREATE TABLE IF NOT EXISTS `bookmarks` (
   INDEX `idx_program_id` (`program_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='북마크 정보 테이블';
 
+-- 8. reviews 테이블 (후기 정보)
+CREATE TABLE IF NOT EXISTS `reviews` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL COMMENT '회원 ID',
+  `program_id` INT NOT NULL COMMENT '프로그램 ID',
+  `rating` TINYINT NOT NULL COMMENT '별점 (1-5)',
+  `content` TEXT NOT NULL COMMENT '후기 내용',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '작성일시',
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`program_id`) REFERENCES `programs`(`id`) ON DELETE CASCADE,
+  INDEX `idx_user_id` (`user_id`),
+  INDEX `idx_program_id` (`program_id`),
+  INDEX `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='후기 정보 테이블';
+
+-- 9. review_images 테이블 (후기 이미지)
+CREATE TABLE IF NOT EXISTS `review_images` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `review_id` INT NOT NULL COMMENT '후기 ID',
+  `image_path` VARCHAR(500) NOT NULL COMMENT '이미지 파일 경로',
+  `display_order` INT NOT NULL DEFAULT 0 COMMENT '표시 순서',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  FOREIGN KEY (`review_id`) REFERENCES `reviews`(`id`) ON DELETE CASCADE,
+  INDEX `idx_review_display_order` (`review_id`, `display_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='후기 이미지 테이블';

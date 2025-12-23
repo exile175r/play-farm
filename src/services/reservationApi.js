@@ -14,7 +14,7 @@ const safeJsonParse = (raw, fallback) => {
 };
 
 // (선택) 서버 베이스 URL. CRA 기준
-const API_BASE = process.env.REACT_APP_API_BASE_URL || "";
+const API_BASE = process.env.REACT_APP_API_URL || "";
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
@@ -65,7 +65,7 @@ export async function createReservation(payload) {
   // 같은 탭에서도 갱신 트리거(옵션)
   try {
     window.dispatchEvent(new StorageEvent("storage", { key: RESV_KEY }));
-  } catch {}
+  } catch { }
 
   return { success: true, data: reservation };
 }
@@ -145,9 +145,9 @@ export async function cancelReservation({ bookingId, userId }) {
     paymentStatus: wasPaid ? "REFUNDED" : target?.paymentStatus || "UNPAID",
     payment: wasPaid
       ? {
-          ...(target.payment || {}),
-          refundedAt: new Date().toISOString(),
-        }
+        ...(target.payment || {}),
+        refundedAt: new Date().toISOString(),
+      }
       : target.payment || null,
   };
 
@@ -158,7 +158,7 @@ export async function cancelReservation({ bookingId, userId }) {
 
   try {
     window.dispatchEvent(new StorageEvent("storage", { key: RESV_KEY }));
-  } catch {}
+  } catch { }
 
   return { success: true, data: nextTarget };
 }
@@ -197,7 +197,7 @@ export async function markReservationPaid({ bookingId, method = "CARD" }) {
 
   try {
     window.dispatchEvent(new StorageEvent("storage", { key: RESV_KEY }));
-  } catch {}
+  } catch { }
 
   return { success: true, data: nextTarget };
 }
@@ -227,7 +227,7 @@ export async function markReservationPaymentFailed({ bookingId }) {
 
   try {
     window.dispatchEvent(new StorageEvent("storage", { key: RESV_KEY }));
-  } catch {}
+  } catch { }
 
   return { success: true, data: nextTarget };
 }

@@ -7,6 +7,7 @@ import "./Mypage.css";
 import { listMyReservations, cancelReservation } from "../../services/reservationApi";
 import { getMyBookmarks } from "../../services/bookmarkApi";
 import { useBookmark } from "../../hooks/useBookmark";
+import { getMyReviews, updateReview, deleteReview } from '../../services/reviewApi';
 
 function Mypage() {
   const navigate = useNavigate();
@@ -65,19 +66,24 @@ function Mypage() {
   }, [userId]);
 
   // ===== reviews =====
-  const [myReviews, setMyReviews] = useState(() => {
-    const keys = Object.keys(localStorage).filter((k) => k.startsWith("reviews_program_"));
-    let merged = [];
-    keys.forEach((k) => {
-      try {
-        const list = JSON.parse(localStorage.getItem(k) || "[]");
-        if (Array.isArray(list)) merged = merged.concat(list);
-      } catch {}
-    });
-    return merged
-      .filter((r) => (r?.user || "").trim() === baseDisplayName)
-      .sort((a, b) => (b?.date || "").localeCompare(a?.date || ""));
-  });
+  const [myReviews, setMyReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+
+  // 내 후기 로드
+  useEffect(() => {
+    if (tab === 'reviews' && isLoggedIn) {
+      loadMyReviews();
+    }
+  }, [tab, isLoggedIn]);
+
+  const loadMyReviews = async () => {
+    setReviewsLoading(true);
+    const result = await getMyReviews();
+    if (result.success) {
+      setMyReviews(result.data || []);
+    }
+    setReviewsLoading(false);
+  };
 
   // ===== bookmarks =====
   const [bookmarks, setBookmarks] = useState([]);
@@ -243,50 +249,41 @@ function Mypage() {
     setEditingContent("");
   };
 
-  const saveEditReview = (reviewId) => {
+  const saveEditReview = async (reviewId) => {
     const nextContent = editingContent.trim();
     if (!nextContent) {
       alert("리뷰 내용을 입력해 주세요.");
       return;
     }
 
-    const keys = Object.keys(localStorage).filter((k) => k.startsWith("reviews_program_"));
-    keys.forEach((k) => {
-      try {
-        const list = JSON.parse(localStorage.getItem(k) || "[]");
-        if (!Array.isArray(list)) return;
+    // API로 수정 (이미지는 수정 시 재업로드 필요하지만, 여기서는 내용만 수정)
+    const review = myReviews.find(r => r.id === reviewId);
+    if (!review) return;
 
-        const next = list.map((r) => {
-          if (r.id !== reviewId) return r;
-          return { ...r, content: nextContent, editedAt: new Date().toISOString() };
-        });
-
-        localStorage.setItem(k, JSON.stringify(next));
-      } catch {}
+    const result = await updateReview(reviewId, {
+      rating: review.rating,
+      content: nextContent,
+      images: [], // 이미지는 수정하지 않음
     });
 
-    setMyReviews((prev) =>
-      prev.map((r) => (r.id === reviewId ? { ...r, content: nextContent, editedAt: new Date().toISOString() } : r))
-    );
-
-    cancelEditReview();
+    if (result.success) {
+      await loadMyReviews();
+      cancelEditReview();
+    } else {
+      alert(result.error || '후기 수정에 실패했습니다.');
+    }
   };
 
-  const deleteMyReview = (reviewId) => {
+  const deleteMyReview = async (reviewId) => {
     if (!window.confirm("리뷰를 삭제하시겠습니까?")) return;
 
-    const keys = Object.keys(localStorage).filter((k) => k.startsWith("reviews_program_"));
-    keys.forEach((k) => {
-      try {
-        const list = JSON.parse(localStorage.getItem(k) || "[]");
-        if (!Array.isArray(list)) return;
-        const next = list.filter((r) => r.id !== reviewId);
-        localStorage.setItem(k, JSON.stringify(next));
-      } catch {}
-    });
-
-    setMyReviews((prev) => prev.filter((r) => r.id !== reviewId));
-    if (editingReviewId === reviewId) cancelEditReview();
+    const result = await deleteReview(reviewId);
+    if (result.success) {
+      await loadMyReviews();
+      if (editingReviewId === reviewId) cancelEditReview();
+    } else {
+      alert(result.error || '후기 삭제에 실패했습니다.');
+    }
   };
 
   // ===== helpers =====
@@ -691,8 +688,12 @@ function Mypage() {
 
                           {Array.isArray(r.images) && r.images.length > 0 && (
                             <div className="pf-review-imgs">
-                              {r.images.slice(0, 6).map((src, idx) => (
-                                <img key={`${r.id}_${idx}`} src={src} alt={`review-${idx}`} />
+                              {r.images.map((src, idx) => (
+                                <img
+                                  key={`${r.id}_${idx}`}
+                                  src={`${process.env.REACT_APP_API_BASE || 'http://localhost:5000'}${src}`}
+                                  alt={`review-${idx}`}
+                                />
                               ))}
                             </div>
                           )}

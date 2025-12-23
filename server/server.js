@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 
 const app = express();
@@ -10,17 +11,22 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// 정적 파일 서빙 (이미지 파일)
+app.use('/images', express.static(path.join(__dirname, '../public/images')));
+
 // 라우트
 const programRouter = require('./routes/programs');
 const userRouter = require('./routes/users');
 const socialAuthRouter = require('./routes/socialAuth');
 const bookmarksRouter = require('./routes/bookmarks');
+const reviewsRouter = require('./routes/reviews');
 // const reservationRouter = require('./routes/reservations');
 
 app.use('/api/programs', programRouter);
 app.use('/api/users', userRouter);
 app.use('/api/social-auth', socialAuthRouter);
 app.use('/api/bookmarks', bookmarksRouter);
+app.use('/api/reviews', reviewsRouter);
 // app.use('/api/reservations', reservationRouter);
 
 // 기본 라우트

@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
-import { getProgramById } from "../../services/programApi";
 import "./ListDetail.css";
+import { getProgramById } from "../../services/programApi";
+import { createReview, getReviewsByProgram, deleteReview } from '../../services/reviewApi';
 import { getImagePath } from "../../utils/imagePath";
 import { useBookmark } from "../../hooks/useBookmark";
 import dayjs from "dayjs";
@@ -25,7 +26,7 @@ function ListDetail() {
   const [mapLoaded, setMapLoaded] = useState(false);
 
   // 로그인 여부
-  // const isLoggedIn = !!localStorage.getItem('token');
+  const isLoggedIn = !!localStorage.getItem('token');
 
   // 유저 정보
   const user = useMemo(() => {
@@ -44,7 +45,7 @@ function ListDetail() {
   const myUserId = user?.user_id || user?.id || user?.email || null;
 
   // ✅ 북마크 훅 사용 (단일 프로그램)
-  const { isBookmarked, toggleBookmark, loadBookmarkStatus, isLoggedIn } = useBookmark();
+  const { isBookmarked, toggleBookmark, loadBookmarkStatus } = useBookmark();
 
   // ✅ 프로그램 상세 로드 시 북마크 상태 확인
   useEffect(() => {
@@ -117,12 +118,12 @@ function ListDetail() {
   // }, []);
 
   // reviews
-  const storageKey = `reviews_program_${id}`;
   const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   // review form
   const [reviewRating, setReviewRating] = useState(5);
-  const [reviewContent, setReviewContent] = useState("");
+  const [reviewContent, setReviewContent] = useState('');
   const [reviewFiles, setReviewFiles] = useState([]);
   const [reviewPreviews, setReviewPreviews] = useState([]);
 
@@ -130,7 +131,7 @@ function ListDetail() {
     try {
       const result = await getProgramById(programId);
       if (result.success) {
-        const replaceText = { 체험: " 체험", 및: " 및 " };
+        const replaceText = { 체험: ' 체험', 및: ' 및 ' };
         try {
           result.data.program_nm = JSON.parse(result.data.program_nm)
             .map((v) => v.replace(/체험|및/g, (m) => replaceText[m]))
@@ -153,30 +154,22 @@ function ListDetail() {
   useEffect(() => {
     const openTab = location.state?.openTab;
     if (openTab) setActiveTab(openTab);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 후기 목록 로드
   useEffect(() => {
     if (!id) return;
-    try {
-      const raw = localStorage.getItem(storageKey);
-      const parsed = raw ? JSON.parse(raw) : [];
-      setReviews(Array.isArray(parsed) ? parsed : []);
-    } catch (e) {
-      console.error("리뷰 로드 실패:", e);
-      setReviews([]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadReviews();
   }, [id]);
 
-  useEffect(() => {
-    if (!id) return;
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(reviews));
-    } catch (e) {
-      console.error("리뷰 저장 실패:", e);
+  const loadReviews = async () => {
+    setReviewsLoading(true);
+    const result = await getReviewsByProgram(id);
+    if (result.success) {
+      setReviews(result.data || []);
     }
-  }, [reviews, id, storageKey]);
+    setReviewsLoading(false);
+  };
 
   // kakao map script
   useEffect(() => {
@@ -312,47 +305,42 @@ function ListDetail() {
     const content = reviewContent.trim();
     if (!content) return;
 
-    const toBase64 = (file) =>
-      new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+    // Base64 변환 제거하고 파일 그대로 전송
+    const result = await createReview({
+      program_id: id,
+      rating: reviewRating,
+      content: content,
+      images: reviewFiles,
+    });
 
-    let images = [];
-    try {
-      images = await Promise.all(reviewFiles.map((f) => toBase64(f)));
-    } catch (err) {
-      console.error("이미지 변환 실패:", err);
-      images = [];
+    if (result.success) {
+      // 성공 시 후기 목록 새로고침
+      await loadReviews();
+
+      // 폼 초기화
+      setReviewRating(5);
+      setReviewContent("");
+      setReviewFiles([]);
+      reviewPreviews.forEach((url) => URL.revokeObjectURL(url));
+      setReviewPreviews([]);
+    } else {
+      alert(result.error || '후기 등록에 실패했습니다.');
     }
-
-    const newReview = {
-      id: `${Date.now()}`,
-      user: displayName,
-      userId: myUserId,
-      rating: Number(reviewRating),
-      date: new Date().toISOString(),
-      content,
-      images,
-    };
-
-    setReviews((prev) => [newReview, ...prev]);
-
-    setReviewRating(5);
-    setReviewContent("");
-    setReviewFiles([]);
-    reviewPreviews.forEach((url) => URL.revokeObjectURL(url));
-    setReviewPreviews([]);
   };
 
-  const handleDeleteReview = (reviewId) => {
+  const handleDeleteReview = async (reviewId) => {
     const target = reviews.find((r) => r.id === reviewId);
     if (!target) return;
     if (!isMyReview(target)) return;
 
-    setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+    if (!window.confirm('후기를 삭제하시겠습니까?')) return;
+
+    const result = await deleteReview(reviewId);
+    if (result.success) {
+      await loadReviews();
+    } else {
+      alert(result.error || '후기 삭제에 실패했습니다.');
+    }
   };
 
   useEffect(() => {
@@ -537,9 +525,8 @@ function ListDetail() {
                 {hasLocation && (
                   <a
                     className="map-link"
-                    href={`https://map.kakao.com/link/map/${encodeURIComponent(data?.village_nm || "위치")},${
-                      data.refine_wgs84_lat
-                    },${data.refine_wgs84_logt}`}
+                    href={`https://map.kakao.com/link/map/${encodeURIComponent(data?.village_nm || "위치")},${data.refine_wgs84_lat
+                      },${data.refine_wgs84_logt}`}
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -612,7 +599,9 @@ function ListDetail() {
 
               {!isLoggedIn && <p className="muted">리뷰 작성은 로그인 후 이용할 수 있어.</p>}
 
-              {!reviews || reviews.length === 0 ? (
+              {reviewsLoading ? (
+                <p className="muted">후기를 불러오는 중...</p>
+              ) : !reviews || reviews.length === 0 ? (
                 <p className="muted">아직 등록된 후기가 없습니다.</p>
               ) : (
                 <ul className="review-list">
@@ -642,7 +631,11 @@ function ListDetail() {
                         {Array.isArray(r.images) && r.images.length > 0 && (
                           <div className="review-img-grid">
                             {r.images.map((src, idx) => (
-                              <img key={`${r.id}_${idx}`} src={src} alt={`review-${idx}`} />
+                              <img
+                                key={`${r.id}_${idx}`}
+                                src={`${process.env.REACT_APP_API_BASE || 'http://localhost:5000'}${src}`}
+                                alt={`review-${idx}`}
+                              />
                             ))}
                           </div>
                         )}
