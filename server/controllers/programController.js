@@ -146,7 +146,7 @@ exports.searchPrograms = async (req, res) => {
     const params = [];
 
     if (keyword) {
-      query += ` AND (p.program_nm LIKE ? OR p.village_nm LIKE ? OR p.cn LIKE ?)`;
+      query += ` AND (p.program_nm LIKE ? OR p.village_nm LIKE ? OR p.address LIKE ?)`;
       const keywordParam = `%${keyword}%`;
       params.push(keywordParam, keywordParam, keywordParam);
     }

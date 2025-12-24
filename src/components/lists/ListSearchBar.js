@@ -1,6 +1,7 @@
 // src/components/lists/ListSearchBar.js
 import React, { useState } from "react";
 import "./ListSearchBar.css";
+import { getApiBaseUrl } from '../../utils/apiConfig';
 
 function ListSearchBar({ setSearchData, setError }) {
   const [keyword, setKeyword] = useState("");
@@ -22,7 +23,8 @@ function ListSearchBar({ setSearchData, setError }) {
     try {
       // ✅ TODO: 너 서버 검색 라우트로 맞추기
       // 예: /programs/search, /api/programs/search, /api/search/programs 등
-      const res = await fetch(`/api/programs/search?q=${encodeURIComponent(q)}`);
+      const apiBaseUrl = getApiBaseUrl();
+      const res = await fetch(`${apiBaseUrl}/programs/search?keyword=${encodeURIComponent(q)}`);
       if (!res.ok) throw new Error("검색 API 응답 실패");
 
       const json = await res.json();
@@ -31,12 +33,12 @@ function ListSearchBar({ setSearchData, setError }) {
       const list = Array.isArray(json)
         ? json
         : Array.isArray(json?.data)
-        ? json.data
-        : Array.isArray(json?.result)
-        ? json.result
-        : Array.isArray(json?.data?.data)
-        ? json.data.data
-        : [];
+          ? json.data
+          : Array.isArray(json?.result)
+            ? json.result
+            : Array.isArray(json?.data?.data)
+              ? json.data.data
+              : [];
 
       setSearchData(list);
     } catch (err) {

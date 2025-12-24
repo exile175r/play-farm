@@ -105,6 +105,11 @@ export const fetchWithAuthAndRetry = async (url, options = {}, onLogout = null) 
             ...options.headers,
           },
         });
+
+        // 재시도 후에도 401이면 무한 루프 방지를 위해 에러 반환
+        if (response.status === 401) {
+          throw new Error('인증에 실패했습니다. 다시 로그인해주세요.');
+        }
       } else {
         // 로그아웃 선택 시 에러 반환
         throw new Error('로그아웃되었습니다.');

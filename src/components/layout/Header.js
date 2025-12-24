@@ -4,6 +4,7 @@ import { getImagePath } from "../../utils/imagePath";
 import { Link } from "react-router-dom";
 
 function Header({ isLoggedIn, onLogout }) {
+  console.log("🔍 ~ Header ~ play-farm/src/components/layout/Header.js:6 ~ isLoggedIn:", isLoggedIn);
   const handleLogoutClick = (e) => {
     e.preventDefault();
     if (window.confirm("로그아웃 하시겠습니까?")) {

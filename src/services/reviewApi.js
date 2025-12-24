@@ -60,6 +60,7 @@ axiosInstance.interceptors.response.use(
             // 새 토큰으로 재시도
             const token = localStorage.getItem('token');
             originalRequest.headers.Authorization = `Bearer ${token}`;
+            // 재시도 - 실패하면 자동으로 catch로 이동하므로 무한 루프 방지됨 (_retry 플래그로)
             return axiosInstance(originalRequest);
           } else {
             return Promise.reject(new Error('로그아웃되었습니다.'));

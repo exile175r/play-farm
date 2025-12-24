@@ -159,25 +159,25 @@ function ListDetail() {
     fetchProgramDetail(id);
   }, [id]);
 
-  useEffect(() => {
-    const openTab = location.state?.openTab;
-    if (openTab) setActiveTab(openTab);
-  }, []);
-
-  // 후기 목록 로드
-  useEffect(() => {
-    if (!id) return;
-    loadReviews();
-  }, [id]);
-
-  const loadReviews = async () => {
+  const loadReviews = useCallback(async () => {
     setReviewsLoading(true);
     const result = await getReviewsByProgram(id);
     if (result.success) {
       setReviews(result.data || []);
     }
     setReviewsLoading(false);
-  };
+  }, [id]);
+
+  useEffect(() => {
+    const openTab = location.state?.openTab;
+    if (openTab) setActiveTab(openTab);
+  }, [location.state?.openTab]);
+
+  // 후기 목록 로드
+  useEffect(() => {
+    if (!id) return;
+    loadReviews();
+  }, [id, loadReviews]);
 
   // ✅ 추가: 내 예약 로드 (체험 완료된 예약만 리뷰 작성 가능)
   useEffect(() => {
@@ -568,9 +568,8 @@ function ListDetail() {
                 {hasLocation && (
                   <a
                     className="map-link"
-                    href={`https://map.kakao.com/link/map/${encodeURIComponent(data?.village_nm || "위치")},${
-                      data.refine_wgs84_lat
-                    },${data.refine_wgs84_logt}`}
+                    href={`https://map.kakao.com/link/map/${encodeURIComponent(data?.village_nm || "위치")},${data.refine_wgs84_lat
+                      },${data.refine_wgs84_logt}`}
                     target="_blank"
                     rel="noreferrer"
                   >

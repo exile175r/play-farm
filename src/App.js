@@ -1,5 +1,5 @@
 // src/App.js
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import "./App.css";
 
@@ -43,18 +43,18 @@ function App() {
   const navigate = useNavigate();
 
   // 로그아웃
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     localStorage.removeItem("token");
     setIsLoggedIn(false);
     navigate("/");
-  };
+  }, [navigate]);
 
   // 전역 로그아웃 핸들러 설정
   useEffect(() => {
     setGlobalLogoutHandler(handleLogout);
     setReviewApiLogoutHandler(handleLogout);
     setReservationApiLogoutHandler(handleLogout);
-  }, []);
+  }, [handleLogout]);
 
   return (
     <div className="App">

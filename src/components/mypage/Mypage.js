@@ -1,17 +1,11 @@
 // src/components/mypage/Mypage.js
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import dayjs from "dayjs";
 import "./Mypage.css";
 
-import {
-  listMyReservations,
-  cancelReservation,
-  refundReservation,
-  normalizeReservationStatus,
-} from "../../services/reservationApi";
-import { getMyBookmarks } from "../../services/bookmarkApi";
-import { useBookmark } from "../../hooks/useBookmark";
+import { listMyReservations, cancelReservation, refundReservation, normalizeReservationStatus } from "../../services/reservationApi";
+import { getMyBookmarks, toggleBookmark as toggleBookmarkApi } from "../../services/bookmarkApi";
 import { getMyReviews, updateReview, deleteReview } from "../../services/reviewApi";
 
 // ✅ NEW: 스토어 주문내역
@@ -84,23 +78,37 @@ function Mypage() {
 
   // ===== reservations (localStorage 기반) =====
   const [reservations, setReservations] = useState([]);
+  const isLoadingReservationsRef = useRef(false);
 
   const fetchMyReservations = async () => {
-    const res = await listMyReservations({ userId });
-    if (!res?.success) {
-      setReservations([]);
+    // 이미 로딩 중이면 중복 요청 방지 (동기적으로 체크)
+    if (isLoadingReservationsRef.current) {
       return;
     }
 
-    const rawList = Array.isArray(res.data) ? res.data : [];
+    isLoadingReservationsRef.current = true;
+    try {
+      const res = await listMyReservations({ userId });
+      if (!res?.success) {
+        setReservations([]);
+        return;
+      }
 
-    // ✅ (선택) 예약일 "당일 포함 과거" BOOKED+PAID -> COMPLETED 자동 전환(포트폴리오용)
-    const { next, changed } = normalizeReservationStatus(rawList);
-    if (changed) {
-      localStorage.setItem("reservations_program", JSON.stringify(next));
+      const rawList = Array.isArray(res.data) ? res.data : [];
+
+      // ✅ (선택) 예약일 "당일 포함 과거" BOOKED+PAID -> COMPLETED 자동 전환(포트폴리오용)
+      const { next, changed } = normalizeReservationStatus(rawList);
+      if (changed) {
+        localStorage.setItem("reservations_program", JSON.stringify(next));
+      }
+
+      setReservations(next);
+    } catch (error) {
+      console.error('예약 목록 조회 실패:', error);
+      setReservations([]);
+    } finally {
+      isLoadingReservationsRef.current = false;
     }
-
-    setReservations(next);
   };
 
   useEffect(() => {
@@ -144,7 +152,7 @@ function Mypage() {
   const [bookmarks, setBookmarks] = useState([]);
 
   // 서버에서 북마크 목록 가져오기
-  const fetchMyBookmarks = async () => {
+  const fetchMyBookmarks = useCallback(async () => {
     if (!isLoggedIn) {
       setBookmarks([]);
       return;
@@ -178,54 +186,27 @@ function Mypage() {
       console.error("북마크 목록 조회 실패:", error);
       setBookmarks([]);
     }
-  };
+  }, [isLoggedIn]);
 
   // 북마크 탭이 열릴 때 목록 가져오기
   useEffect(() => {
     if (tab === "bookmarks" && isLoggedIn) {
       fetchMyBookmarks();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, isLoggedIn]);
-
-  // ✅ 북마크 훅 사용
-  // 북마크 목록에서 program_id 추출 (서버 응답 형식에 맞게 조정)
-  const programIds = useMemo(() => {
-    return bookmarks.map((b) => b.program_id || b.programId).filter(Boolean);
-  }, [bookmarks]);
-
-  // isBookmarked: 북마크 상태, toggleBookmark: 북마크 토글, isLoggedIn: 로그인 여부
-  const { isBookmarked, toggleBookmark } = useBookmark(programIds);
-
-  // ✅ 북마크 토글 핸들러
-  const handleToggleBookmark = useCallback(
-    async (bookmarkData) => {
-      if (!isLoggedIn) return;
-
-      const programId = bookmarkData.program_id || bookmarkData.programId;
-      if (!programId) return;
-
-      const result = await toggleBookmark(programId, bookmarkData);
-
-      if (result.success) {
-        // 북마크 목록 갱신
-        await fetchMyBookmarks();
-      } else if (result.requiresLogin) {
-        alert("북마크 기능을 사용하려면 로그인이 필요합니다.");
-      }
-    },
-    [toggleBookmark, isLoggedIn]
-  );
+  }, [tab, isLoggedIn, fetchMyBookmarks]);
 
   const removeBookmark = async (programId) => {
     if (!window.confirm("북마크를 해제하시겠습니까?")) return;
 
-    const result = await toggleBookmark(programId);
-    if (result.success) {
-      // 북마크 목록 갱신
-      await fetchMyBookmarks();
-    } else {
-      alert(result.message || "북마크 해제에 실패했습니다.");
+    try {
+      const result = await toggleBookmarkApi(programId);
+      if (result.success) {
+        await fetchMyBookmarks();
+      } else {
+        console.error(result.message || "북마크 해제에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error(error.message || "북마크 해제에 실패했습니다.");
     }
   };
 
@@ -356,10 +337,10 @@ function Mypage() {
   };
 
   // ===== helpers =====
-  const logout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
-  };
+  // const logout = () => {
+  //   localStorage.removeItem("token");
+  //   navigate("/");
+  // };
 
   const goWriteReview = (programId) => {
     navigate(`/list/${programId}`, { state: { openTab: "review", openComposer: true } });
@@ -1031,19 +1012,19 @@ function Mypage() {
                         o.status === "PAID"
                           ? "결제 완료"
                           : o.status === "CANCELLED"
-                          ? "취소"
-                          : o.status === "REFUNDED"
-                          ? "환불됨"
-                          : "처리중";
+                            ? "취소"
+                            : o.status === "REFUNDED"
+                              ? "환불됨"
+                              : "처리중";
 
                       const chipClass =
                         o.status === "PAID"
                           ? "is-ok"
                           : o.status === "REFUNDED"
-                          ? "is-fail"
-                          : o.status === "CANCELLED"
-                          ? "is-cancel"
-                          : "is-wait";
+                            ? "is-fail"
+                            : o.status === "CANCELLED"
+                              ? "is-cancel"
+                              : "is-wait";
 
                       return (
                         <div className="pf-item" key={o.orderId}>
@@ -1214,7 +1195,6 @@ function Mypage() {
                   <div className="pf-list">
                     {bookmarks.map((b) => {
                       const programId = b.program_id || b.programId;
-                      const bookmarked = isBookmarked(programId);
 
                       return (
                         <div className="pf-item" key={b.id || programId}>
@@ -1239,7 +1219,7 @@ function Mypage() {
                             </div>
                           </div>
 
-                          <span className={`pf-chip ${bookmarked ? "is-wait" : ""}`}>북마크</span>
+                          <span className="pf-chip is-wait">북마크</span>
                         </div>
                       );
                     })}

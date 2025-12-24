@@ -3,6 +3,10 @@ import { getApiBaseUrl } from './apiConfig';
 let isRefreshing = false;
 let refreshPromise = null;
 
+// 토큰 만료 처리 중복 호출 방지
+let isHandlingExpired = false;
+let expiredHandlerPromise = null;
+
 /**
  * 토큰 갱신 함수
  */
@@ -54,7 +58,24 @@ export const refreshToken = async () => {
  * @returns {Promise<boolean>} 연장 여부
  */
 export const handleTokenExpired = async (onExtend, onLogout) => {
-  return new Promise((resolve) => {
+  // 이미 처리 중인 경우 기존 Promise 반환
+  if (isHandlingExpired && expiredHandlerPromise) {
+    return expiredHandlerPromise;
+  }
+
+  // 토큰 갱신이 이미 진행 중이면 완료될 때까지 대기
+  if (isRefreshing && refreshPromise) {
+    try {
+      await refreshPromise;
+      // 토큰 갱신이 성공했으면 연장 성공으로 처리
+      return true;
+    } catch {
+      // 토큰 갱신 실패 시 아래 로직으로 진행
+    }
+  }
+
+  isHandlingExpired = true;
+  expiredHandlerPromise = new Promise((resolve) => {
     const userChoice = window.confirm(
       '로그인 세션이 만료되었습니다.\n\n' +
       '확인: 로그인 연장\n' +
@@ -66,17 +87,29 @@ export const handleTokenExpired = async (onExtend, onLogout) => {
       refreshToken()
         .then(() => {
           if (onExtend) onExtend();
+          isHandlingExpired = false;
+          expiredHandlerPromise = null;
           resolve(true);
         })
         .catch(() => {
           alert('토큰 갱신에 실패했습니다. 로그아웃됩니다.');
+          // 토큰 삭제
+          localStorage.removeItem('token');
           if (onLogout) onLogout();
+          isHandlingExpired = false;
+          expiredHandlerPromise = null;
           resolve(false);
         });
     } else {
       // 로그아웃 선택
+      // 토큰 삭제
+      localStorage.removeItem('token');
       if (onLogout) onLogout();
+      isHandlingExpired = false;
+      expiredHandlerPromise = null;
       resolve(false);
     }
   });
+
+  return expiredHandlerPromise;
 };
