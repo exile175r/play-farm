@@ -171,10 +171,10 @@
 
 /* 버튼 */
 .pf-checkout-actions {
-   display: flex;
+   display: grid;
    gap: 10px;
    align-items: center;
-   margin-top: 10px;
+   margin-top: 20px;
 }
 
 .pf-btn {
@@ -182,7 +182,6 @@
    border-radius: 12px;
    border: 1px solid rgba(0, 0, 0, 0.18);
    background: #fff;
-   font-weight: 800;
    cursor: pointer;
 }
 
@@ -200,7 +199,6 @@
    padding: 13px 14px;
    border-radius: 12px;
    border: none;
-   font-weight: 900;
    cursor: pointer;
    background: #3a8e87;
    color: #fff;
