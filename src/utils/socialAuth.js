@@ -1,5 +1,3 @@
-import { getApiBaseUrl } from './apiConfig';
-
 /**
  * 소셜 로그인 성공 후 처리
  */

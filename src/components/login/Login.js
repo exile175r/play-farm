@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Login.css";
-import { getImagePath } from "../../utils/imagePath";
 import { getApiBaseUrl } from "../../utils/apiConfig";
 import KakaoLogin from "./KakaoLogin";
 import GoogleLogin from "./GoogleLogin";
