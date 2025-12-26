@@ -1,6 +1,6 @@
 // src/App.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import './App.css';
 
 import Header from './components/layout/Header';
@@ -36,6 +36,9 @@ import { setReservationApiLogoutHandler } from './services/reservationApi';
 import AdminHome from './adim/components/AdminHome';
 import AdminLogin from './adim/components/AdminLogin';
 
+// ✅ Footer
+import Footer from './components/layout/Footer';
+
 function App() {
    const [isLoggedIn, setIsLoggedIn] = useState(() => {
       return !!localStorage.getItem('token');
@@ -45,6 +48,7 @@ function App() {
    const [searchData, setSearchData] = useState(null);
 
    const navigate = useNavigate();
+   const location = useLocation(); // ✅ 현재 경로 확인용
 
    // 로그아웃
    const handleLogout = useCallback(() => {
@@ -101,6 +105,9 @@ function App() {
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminHome />} />
          </Routes>
+
+         {/* ✅ 메인(/)에서만 푸터 노출 */}
+         {location.pathname === '/' && <Footer />}
 
          {/* 임시 Data Check 버튼 */}
          <button

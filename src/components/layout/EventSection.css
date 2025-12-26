@@ -1,117 +1,91 @@
-.event-section {
-  width: 100%;
-  margin: 60px auto 0;
-  padding: 0 240px;
+/* src/components/layout/EventSection.css */
+
+/* 메인 하단 이벤트 섹션 전체 */
+.home-event-section {
+   padding: 24px 0 0;
 }
 
-.event-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 28px;
+/* 헤더: 타이틀 + 전체보기 링크 */
+.home-event-head {
+   display: flex;
+   justify-content: space-between;
+   align-items: baseline;
+   margin-bottom: 16px;
 }
 
-.event-header h2 {
-  font-size: 26px;
-  font-weight: 700;
-  margin: 0;
+.home-event-eyebrow {
+   font-size: 12px;
+   color: var(--text-sub, #888);
+   margin: 0 0 4px;
 }
 
-.event-header p {
-  color: #666;
-  opacity: 0.9;
-  font-size: 14px;
-  margin: 0;
+.home-event-title {
+   margin: 0;
+   font-size: 20px;
+   font-weight: 800;
+   letter-spacing: -0.02em;
+   color: var(--text, #222);
 }
 
-.more-btn {
-  margin-left: auto;
-  border: none;
-  background: var(--color-primary);
-  color: #171d2f;
-  padding: 8px 14px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
+.home-event-link {
+   font-size: 13px;
+   color: var(--text-sub, #666);
+   text-decoration: none;
+   padding: 6px 10px;
+   border-radius: var(--r-pill, 999px);
+   transition: background 0.15s ease, transform 0.08s ease;
 }
 
-/* 카드 리스트 */
-.event-list {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 28px;
+.home-event-link:hover {
+   background: rgba(0, 0, 0, 0.04);
+   transform: translateY(-1px);
 }
 
-/* 카드 */
-.event-card {
-  border-radius: 18px;
-  padding: 24px 22px 28px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.06);
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.04);
+/* 카드 그리드: 메인에서는 3열 */
+.home-event-grid {
+   display: grid;
+   grid-template-columns: repeat(3, minmax(0, 1fr));
+   gap: 16px;
+   align-items: stretch;
 }
 
-.event-tag {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-primary);
-  background: rgba(243, 194, 0, 0.18);
-  padding: 4px 10px;
-  border-radius: 999px;
+/* 링크 전체를 클릭 영역으로 */
+.home-event-card-link {
+   text-decoration: none;
+   color: inherit;
 }
 
-.event-title {
-  font-size: 20px;
-  font-weight: 700;
-  margin: 16px 0 4px;
+/* 카드 = 곧 이미지 컨테이너 */
+.home-event-card {
+   border-radius: 24px;
+   overflow: hidden;
+   background: transparent;
+   box-shadow: var(--shadow-mid, 0 10px 24px rgba(0, 0, 0, 0.12));
+   transition: transform 0.16s ease, box-shadow 0.16s ease;
 }
 
-.event-sub {
-  font-size: 15px;
-  color: #444;
-  margin-bottom: 18px;
+/* hover 효과 */
+.home-event-card:hover {
+   transform: translateY(-3px);
+   box-shadow: var(--shadow-strong, 0 18px 40px rgba(0, 0, 0, 0.18));
 }
 
-.event-image {
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-  object-position: center;
-  border-radius: 12px;
-  margin-bottom: 16px;
+/* 이미지 = 카드 전체, 여백 없음 */
+.home-event-img {
+   display: block;
+   width: 100%;
+   height: auto; /* 배너 원본 비율 유지 */
 }
 
-.event-items {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+/* 반응형 */
+@media (max-width: 1024px) {
+   .home-event-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+   }
 }
 
-.event-items li {
-  display: flex;
-  justify-content: space-between;
-  padding: 5px 0;
-  font-size: 14px;
-  color: #333;
+@media (max-width: 720px) {
+   .home-event-grid {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+   }
 }
-
-.event-items strong {
-  font-weight: 700;
-  color: #222;
-}
-
-/*
-@media (max-width: 1056px) {
-  .event-list {
-      grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 726px) {
-  .event-list {
-      grid-template-columns: repeat(1, 1fr);
-  }
-}
-*/

@@ -123,7 +123,6 @@ function DashboardTab() {
          <div className="admin-section-header">
             <div>
                <h2 className="admin-section-title">대시보드</h2>
-               <p className="admin-section-desc">오늘/이번 달 예약, 매출, 인기 체험·상품 현황을 한 번에 확인합니다.</p>
             </div>
          </div>
 

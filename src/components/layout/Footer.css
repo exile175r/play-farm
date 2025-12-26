@@ -1,0 +1,38 @@
+.pf-footer-min {
+   background: var(--surface-soft);
+   color: var(--text);
+   border-top: 1px solid var(--border);
+}
+
+.pf-footer-min-inner {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   padding: 18px 0;
+}
+
+.pf-footer-min-left {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+}
+
+.pf-footer-min-logo {
+   width: 120px;
+   opacity: 0.95;
+}
+
+.pf-footer-min-copy {
+   font-size: 12px;
+   opacity: 0.65;
+}
+
+.pf-footer-min-links {
+   display: flex;
+   gap: 14px;
+}
+
+.pf-footer-min-links li {
+   font-size: 12px;
+   color: var(--text-sub);
+}

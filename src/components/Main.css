@@ -1,113 +1,302 @@
+/* src/components/Main.css */
+
 /* 메인 전체 */
 .main-wrap {
    padding-top: 40px;
    width: 100%;
+   background: var(--bg, #ffffff);
 }
 
-/* 슬라이더 */
-.slider-area {
-   /* border: 1px solid rebeccapurple; */
+/* ===== Hero 영역 ===== */
+
+/* 헤더 바로 아래 붙게: 섹션 자체 여백 제거 */
+.hero {
+   padding: 0;
+   border-bottom: 1px solid var(--border, #e8e2d0);
+   background: var(--bg, #ffffff);
+}
+
+/* 실제 배너 박스: 컨테이너 폭 + 배경이미지 */
+.hero-shell {
+   width: var(--container, 1200px);
+   max-width: 100%;
    margin: 0 auto;
-   /* width: 100%; */
-   width: max-content;
-   position: relative;
-   margin-top: 40px;
-   text-align: center;
+   padding: 28px var(--px, 16px);
+   box-sizing: border-box;
+   border-radius: 24px;
+
+   background-color: #fff7e0;
+   background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.96) 52%, rgba(255, 255, 255, 0.8) 65%, rgba(255, 255, 255, 0) 100%),
+      var(--hero-image);
+   background-repeat: no-repeat;
+   background-position: right center;
+   background-size: auto 100%;
 }
 
-/* 화살표 */
-.arrow {
-   background: transparent;
-   position: absolute;
-   top: 50%;
-   transform: translateY(-50%);
-   width: 46px;
-   height: 46px;
-   border-radius: 50%;
-   border: none;
-   font-size: 24px;
-   cursor: pointer;
-   z-index: 30;
-   color: var(--color-arrow);
+/* 안쪽 레이아웃 */
+.hero-inner {
+   display: flex;
+   align-items: center;
+   justify-content: flex-start;
 }
 
-.arrow.left {
-   /* left: 250px; */
-   left: -60px;
+.hero-left {
+   flex: 0 0 46%;
+   max-width: 480px;
 }
 
-.arrow.right {
-   /* right: 250px; */
-   right: -60px;
+.hero-right {
+   /* 지금은 안 써도 됨, 필요하면 재활용 */
+   flex: 1;
+   display: flex;
+   justify-content: flex-end;
 }
 
-/* 카드 배치 영역 */
-.slide-track {
-   position: relative;
-   /* width: 100%; */
-   width: 1340px;
-   height: 360px;
+/* 타이포 */
+.hero-eyebrow {
+   font-size: 12px;
+   letter-spacing: 0.12em;
+   text-transform: uppercase;
+   color: var(--text-sub, #777);
+   margin-bottom: 10px;
 }
 
-/* 카드 */
-.slide-item {
-   position: absolute;
-   top: 50%;
-   left: 50%;
-   width: 520px;
-   height: 330px;
-   border-radius: 14px;
+.hero-title {
+   font-size: 36px;
+   line-height: 1.25;
+   font-weight: 900;
+   letter-spacing: -0.02em;
+   color: var(--text, #222);
+   margin-bottom: 14px;
+}
+
+.hero-sub {
+   font-size: 14px;
+   color: var(--text-sub, #666);
+   margin-bottom: 26px;
+}
+
+/* 액션 버튼 영역 */
+.hero-actions {
+   display: flex;
+   gap: 10px;
+}
+
+/* 이미지 카드 (현재는 사용 안 함, 필요하면 재활용) */
+.hero-image-wrap {
+   max-width: 460px;
+   width: 100%;
+   border-radius: var(--r-xl, 24px);
    overflow: hidden;
-   background: var(--color-card-bg);
-   box-shadow: 0 24px 40px var(--color-shadow-mid);
-   transform: translate(-50%, -50%);
-   opacity: 0;
-   pointer-events: none;
-   transition: transform 0.4s ease, opacity 0.4s ease;
 }
 
-.slide-item img {
+.hero-image-wrap img {
    width: 100%;
    height: 100%;
+   display: block;
    object-fit: cover;
 }
 
-/* 중간 카드 */
-.slide-item.pos-center {
-   transform: translate(-50%, -60%) scale(1);
+/* ===== 공통 섹션 ===== */
+.home-section {
+   padding: 20px 0 28px;
+}
+
+.home-section-events {
+   border-top: 1px solid var(--border, #e8e2d0);
+}
+
+/* 아래 섹션용 아웃라인 패널 */
+.home-row-panel {
+   border-radius: 24px;
+   border: 1px solid var(--border, #e8e2d0);
+   background: var(--surface, #ffffff);
+   padding: 20px 18px 18px;
+   box-sizing: border-box;
+}
+
+/* 헤더 영역 (제목 + 링크) */
+.home-row-head {
+   display: flex;
+   justify-content: space-between;
+   align-items: baseline;
+   margin-bottom: 12px;
+}
+
+.home-row-eyebrow {
+   font-size: 12px;
+   color: var(--text-sub, #888);
+   margin: 0 0 4px;
+}
+
+.home-row-title {
+   margin: 0 0 4px;
+   font-size: 20px;
+   font-weight: 800;
+   letter-spacing: -0.02em;
+   color: var(--text, #222);
+}
+
+/* 우측 링크 버튼 */
+.home-link {
+   border: none;
+   background: transparent;
+   font-size: 13px;
+   color: var(--text-sub, #666);
+   cursor: pointer;
+   padding: 6px 10px;
+   border-radius: var(--r-pill, 999px);
+   transition: background 0.15s ease, transform 0.08s ease;
+}
+
+.home-link:hover {
+   background: rgba(0, 0, 0, 0.04);
+   transform: translateY(-1px);
+}
+
+/* 줄 전체 래퍼 (화살표 + 스크롤) */
+.home-row-shell {
+   position: relative;
+   overflow: visible;
+}
+
+/* 가로 스크롤 영역 */
+.home-row-scroll {
+   display: flex;
+   gap: 16px;
+   overflow-x: auto;
+   padding: 4px 8px 10px;
+   scroll-snap-type: x mandatory;
+   scroll-behavior: smooth;
+}
+
+.home-row-scroll::-webkit-scrollbar {
+   height: 0; /* 크롬 계열 */
+}
+.home-row-scroll::-webkit-scrollbar-thumb {
+   background: transparent;
+}
+.home-row-scroll {
+   scrollbar-width: none;
+   -ms-overflow-style: none;
+}
+
+/* 화살표 버튼 */
+.home-row-arrow {
+   position: absolute;
+   top: 50%;
+   transform: translateY(-50%);
+   width: 32px;
+   height: 32px;
+   border-radius: 50%;
+   border: none;
+   background: rgba(255, 255, 255, 0.96);
+   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   font-size: 18px;
+   cursor: pointer;
+   opacity: 0;
+   pointer-events: none;
+   transition: opacity 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+   color: var(--text, #222);
+   z-index: 5;
+}
+
+.home-row-shell:hover .home-row-arrow {
    opacity: 1;
-   z-index: 50;
-   box-shadow: 0 35px 70px var(--color-shadow-strong);
    pointer-events: auto;
 }
 
-/* 좌우 카드 */
-.slide-item.pos-left1 {
-   transform: translate(-100%, -50%) scale(0.9);
-   opacity: 1;
-   z-index: 40;
+.home-row-arrow--left {
+   left: -4px;
 }
 
-.slide-item.pos-left2 {
-   transform: translate(-135%, -48%) scale(0.8);
-   opacity: 0.7;
-   z-index: 30;
+.home-row-arrow--right {
+   right: -4px;
 }
 
-.slide-item.pos-right1 {
-   transform: translate(0%, -50%) scale(0.9);
-   opacity: 1;
-   z-index: 40;
+.home-row-arrow:hover {
+   transform: translateY(-50%) translateY(-1px);
+   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
 }
 
-.slide-item.pos-right2 {
-   transform: translate(35%, -48%) scale(0.8);
-   opacity: 0.7;
-   z-index: 30;
+/* 가로 카드 */
+.home-row-card {
+   min-width: 230px;
+   max-width: 240px;
+   border-radius: var(--r-lg, 18px);
+   overflow: hidden;
+   scroll-snap-align: start;
+   cursor: pointer;
 }
 
-/* 숨김 */
-.slide-item.pos-hidden {
-   opacity: 0;
-   z-index: 0;
+.home-row-thumb {
+   height: 140px;
+   border-radius: var(--r-lg, 18px) var(--r-lg, 18px) 0 0;
+   overflow: hidden;
+   background: var(--card-img-bg, #eaeaea);
+}
+
+.home-row-thumb img {
+   width: 100%;
+   height: 100%;
+   display: block;
+   object-fit: cover;
+}
+
+/* 이미지 없을 때 fallback 그라데이션 박스 */
+.home-row-thumb-fallback {
+   width: 100%;
+   height: 100%;
+}
+
+.home-row-thumb-fallback--spring {
+   background: linear-gradient(135deg, #ffe9f0, #ffe3c4);
+}
+
+.home-row-thumb-fallback--family {
+   background: linear-gradient(135deg, #e6f4ff, #daf5e9);
+}
+
+.home-row-thumb-fallback--night {
+   background: linear-gradient(135deg, #1f2933, #3a4a5e);
+}
+
+.home-row-thumb-fallback--vegi {
+   background: linear-gradient(135deg, #e6f4e8, #cdeccf);
+}
+
+.home-row-thumb-fallback--fruit {
+   background: linear-gradient(135deg, #ffe4e1, #ffe9b5);
+}
+
+.home-row-thumb-fallback--grain {
+   background: linear-gradient(135deg, #f4e6d4, #f7f0e5);
+}
+
+/* 카드 본문 */
+.home-row-body {
+   padding: 10px 12px 12px;
+}
+
+.home-row-card-title {
+   font-size: 14px;
+   font-weight: 700;
+   margin: 0 0 4px;
+   color: var(--text, #222);
+}
+
+.home-row-card-meta {
+   font-size: 12px;
+   color: var(--text-sub, #777);
+   margin: 0;
+}
+
+/* 비었을 때 문구 */
+.home-row-empty {
+   font-size: 13px;
+   color: var(--text-sub, #777);
+   padding: 12px 0;
 }
