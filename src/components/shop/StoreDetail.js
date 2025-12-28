@@ -3,9 +3,10 @@ import React, { useEffect, useMemo, useState, useCallback, useRef } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom";
 import "./StoreDetail.css";
 
-import shopData from "../data/StoreData";
-import { addToCart } from "../../utils/cartStorage";
-import { readOrders } from "../../utils/orderStorage";
+import { getProductById } from "../../services/productApi";
+import { addToCart as addToCartApi } from "../../services/cartApi";
+import { getMyOrders } from "../../services/orderApi";
+import CheckoutModal from "../checkout/CheckoutModal";
 
 function StoreDetail() {
   const { id } = useParams();
@@ -13,6 +14,9 @@ function StoreDetail() {
 
   // detail | buy | shipping | review
   const [activeTab, setActiveTab] = useState("detail");
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
 
   // 로그인 여부
   const isLoggedIn = !!localStorage.getItem("token");
@@ -29,9 +33,29 @@ function StoreDetail() {
 
   const displayName = user?.nickname || user?.name || user?.user_id || "익명";
 
-  // ===== 상품 찾기 =====
-  const product = useMemo(() => {
-    return shopData.find((p) => String(p.id) === String(id)) || null;
+  // ===== 상품 로드 =====
+  useEffect(() => {
+    const loadProduct = async () => {
+      setLoading(true);
+      try {
+        const result = await getProductById(id);
+        if (result.success) {
+          setProduct(result.data);
+        } else {
+          console.error("상품 조회 실패:", result.error);
+          setProduct(null);
+        }
+      } catch (error) {
+        console.error("상품 조회 오류:", error);
+        setProduct(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      loadProduct();
+    }
   }, [id]);
 
   // ===== 옵션/가격 =====
@@ -130,22 +154,34 @@ function StoreDetail() {
   }, [product]);
 
   // ===== ✅ 구매 여부(주문내역 기준): 구매 완료된 상품만 리뷰 작성 가능 =====
-  const hasPurchased = useMemo(() => {
-    try {
-      const orders = readOrders();
-      if (!Array.isArray(orders)) return false;
+  const [hasPurchased, setHasPurchased] = useState(false);
 
-      // ✅ status === "PAID" 인 주문 중,
-      // ✅ items[].productId 가 현재 상품 id 와 같으면 true
-      return orders.some((o) => {
-        if (o?.status !== "PAID") return false;
-        const items = Array.isArray(o.items) ? o.items : [];
-        return items.some((it) => String(it.productId) === String(id));
-      });
-    } catch {
-      return false;
-    }
-  }, [id]);
+  useEffect(() => {
+    const checkPurchase = async () => {
+      if (!isLoggedIn || !id) {
+        setHasPurchased(false);
+        return;
+      }
+
+      try {
+        const result = await getMyOrders();
+        if (result.success) {
+          const orders = result.data || [];
+          const purchased = orders.some((o) => {
+            if (o?.status !== "PAID") return false;
+            const items = Array.isArray(o.items) ? o.items : [];
+            return items.some((it) => String(it.productId) === String(id));
+          });
+          setHasPurchased(purchased);
+        }
+      } catch (error) {
+        console.error("주문 내역 조회 오류:", error);
+        setHasPurchased(false);
+      }
+    };
+
+    checkPurchase();
+  }, [isLoggedIn, id]);
 
   // ===== 리뷰 (로컬스토리지) =====
   const REVIEW_KEY = "reviews_store";
@@ -248,47 +284,64 @@ function StoreDetail() {
   };
 
   // ✅ 장바구니 담기
-  const handleAddCart = () => {
+  const handleAddCart = async () => {
     if (!product) return;
     if (!validateOption()) return;
+    if (!isLoggedIn) {
+      alert("로그인 후 장바구니에 담을 수 있습니다.");
+      return;
+    }
 
-    addToCart({
-      id: String(product.id),
-      name: product.name,
-      image: heroImg,
-      optionId: selectedOptionId ? String(selectedOptionId) : null,
-      // ✅ StoreData는 label이니까 name 대신 label 저장
-      optionName: selectedOption?.label || null,
-      price: Number(finalPrice || 0),
-      qty: Number(qty || 1),
-      // (선택) 옵션 정보 같이 저장해두면 나중에 결제/장바구니 표시 편함
-      optionAmount: selectedOption?.amount ?? null,
-      optionUnit: selectedOption?.unit ?? null,
-      unitPrice: selectedOption?.unitPrice ?? null,
-    });
+    try {
+      const result = await addToCartApi({
+        productId: String(product.id),
+        optionId: selectedOptionId || null,
+        quantity: Number(qty || 1),
+      });
 
-    alert("상품이 장바구니에 담겼습니다.");
+      if (result.success) {
+        alert("상품이 장바구니에 담겼습니다.");
+      } else {
+        alert(result.error?.message || "장바구니 담기에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("장바구니 담기 오류:", error);
+      alert("장바구니 담기에 실패했습니다.");
+    }
   };
 
-  // ✅ 구매하기: 담고 → 마이페이지 장바구니로 이동
+  // ✅ 구매하기: 결제 모달 열기
   const handleBuyNow = () => {
     if (!product) return;
     if (!validateOption()) return;
+    if (!isLoggedIn) {
+      alert("로그인 후 구매할 수 있습니다.");
+      return;
+    }
 
-    addToCart({
+    setCheckoutModalOpen(true);
+  };
+
+  // 결제 모달에서 사용할 상품 정보
+  const buyNowItem = useMemo(() => {
+    if (!product) return null;
+    return {
       id: String(product.id),
       name: product.name,
       image: heroImg,
-      optionId: selectedOptionId ? String(selectedOptionId) : null,
+      optionId: selectedOptionId || null,
       optionName: selectedOption?.label || null,
       price: Number(finalPrice || 0),
       qty: Number(qty || 1),
-      optionAmount: selectedOption?.amount ?? null,
-      optionUnit: selectedOption?.unit ?? null,
-      unitPrice: selectedOption?.unitPrice ?? null,
-    });
+    };
+  }, [product, heroImg, selectedOptionId, selectedOption, finalPrice, qty]);
 
-    navigate("/mypage", { state: { openTab: "cart" } });
+  // 결제 완료 후 처리
+  const handleCheckoutSuccess = () => {
+    // 임시 데이터 삭제 (혹시 있을 경우)
+    localStorage.removeItem('buyNow_temp');
+    // 마이페이지로 이동
+    navigate('/mypage', { state: { openTab: 'store_orders' } });
   };
 
   // ===== 탭 이동 (tabs 위치로 스크롤) =====
@@ -299,6 +352,16 @@ function StoreDetail() {
       tabsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   };
+
+  if (loading) {
+    return (
+      <section className="sd-wrap">
+        <div className="sd-inner">
+          <p className="sd-muted">상품 정보를 불러오는 중...</p>
+        </div>
+      </section>
+    );
+  }
 
   if (!product) {
     return (
@@ -663,6 +726,16 @@ function StoreDetail() {
           )}
         </div>
       </div>
+
+      {/* 결제 모달 */}
+      {checkoutModalOpen && buyNowItem && (
+        <CheckoutModal
+          open={checkoutModalOpen}
+          onClose={() => setCheckoutModalOpen(false)}
+          items={[buyNowItem]}
+          onSuccess={handleCheckoutSuccess}
+        />
+      )}
     </section>
   );
 }

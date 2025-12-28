@@ -1,121 +1,65 @@
 // src/adim/taps/DashboardTab.js
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import './Tabs.css';
-import { readOrders } from '../../utils/orderStorage';
-
-// ✅ 예약 로컬스토리지 키 (reservationApi.js와 맞춰서 사용)
-const RESV_KEY = 'reservations_program';
-
-const safeJsonParse = (raw, fallback) => {
-   try {
-      const parsed = JSON.parse(raw);
-      return parsed ?? fallback;
-   } catch {
-      return fallback;
-   }
-};
-
-const readAllReservations = () => {
-   const raw = localStorage.getItem(RESV_KEY);
-   const list = safeJsonParse(raw, []);
-   return Array.isArray(list) ? list : [];
-};
+import { getDashboardStats } from '../../services/adminApi';
 
 function DashboardTab() {
+   const [stats, setStats] = useState(null);
+   const [error, setError] = useState(null);
    const today = dayjs();
    const thisMonth = today.startOf('month');
 
-   // ✅ 예약 데이터
-   const reservations = useMemo(() => readAllReservations(), []);
+   useEffect(() => {
+      const loadStats = async () => {
+         try {
+            const result = await getDashboardStats();
+            if (result.success) {
+               setStats(result.data);
+               setError(null);
+            } else {
+               setError(result.error?.message || '통계 데이터를 불러오는데 실패했습니다.');
+            }
+         } catch (err) {
+            setError('통계 데이터를 불러오는데 실패했습니다.');
+            console.error('대시보드 통계 로드 실패:', err);
+         }
+      };
 
-   // ✅ 주문 데이터
-   const orders = useMemo(() => {
-      const list = readOrders() || [];
-      return Array.isArray(list) ? list : [];
+      loadStats();
    }, []);
 
-   // ----- 예약 통계 -----
-   const todayReservationsCount = useMemo(
-      () =>
-         reservations.filter((r) => {
-            const d = r.date || r.reservationDate || r.createdAt;
-            if (!d) return false;
-            return dayjs(d).isSame(today, 'day');
-         }).length,
-      [reservations, today]
-   );
+   if (error) {
+      return (
+         <div className="admin-section">
+            <div className="admin-section-header">
+               <h2 className="admin-section-title">대시보드</h2>
+            </div>
+            <div style={{ padding: '20px', color: '#b91c1c' }}>
+               {error}
+            </div>
+         </div>
+      );
+   }
 
-   const monthReservationsCount = useMemo(
-      () =>
-         reservations.filter((r) => {
-            const d = r.date || r.reservationDate || r.createdAt;
-            if (!d) return false;
-            return dayjs(d).isSame(thisMonth, 'month');
-         }).length,
-      [reservations, thisMonth]
-   );
+   if (!stats) {
+      return (
+         <div className="admin-section">
+            <div className="admin-section-header">
+               <h2 className="admin-section-title">대시보드</h2>
+            </div>
+            <div style={{ padding: '20px' }}>로딩 중...</div>
+         </div>
+      );
+   }
 
-   // ----- 주문/매출 통계 -----
-   const todaySalesAmount = useMemo(
-      () =>
-         orders
-            .filter((o) => {
-               const d = o.createdAt;
-               if (!d) return false;
-               return dayjs(d).isSame(today, 'day');
-            })
-            .reduce((sum, o) => sum + Number(o.amount || 0), 0),
-      [orders, today]
-   );
-
-   const monthSalesAmount = useMemo(
-      () =>
-         orders
-            .filter((o) => {
-               const d = o.createdAt;
-               if (!d) return false;
-               return dayjs(d).isSame(thisMonth, 'month');
-            })
-            .reduce((sum, o) => sum + Number(o.amount || 0), 0),
-      [orders, thisMonth]
-   );
-
-   const totalOrdersCount = orders.length;
-
-   // ----- 인기 체험 / 인기 상품 -----
-   const topProgram = useMemo(() => {
-      const counter = {};
-      reservations.forEach((r) => {
-         const key = r.programTitle || r.title || `프로그램 #${r.programId || '?'}`;
-         counter[key] = (counter[key] || 0) + 1;
-      });
-
-      const entries = Object.entries(counter);
-      if (entries.length === 0) return null;
-
-      entries.sort((a, b) => b[1] - a[1]);
-      const [name, count] = entries[0];
-      return { name, count };
-   }, [reservations]);
-
-   const topProduct = useMemo(() => {
-      const counter = {};
-      orders.forEach((o) => {
-         if (!Array.isArray(o.items)) return;
-         o.items.forEach((it) => {
-            const key = it.title || `상품 #${it.productId || '?'}`;
-            counter[key] = (counter[key] || 0) + Number(it.qty || 0);
-         });
-      });
-
-      const entries = Object.entries(counter);
-      if (entries.length === 0) return null;
-
-      entries.sort((a, b) => b[1] - a[1]);
-      const [name, qty] = entries[0];
-      return { name, qty };
-   }, [orders]);
+   const todayReservationsCount = stats.todayReservationsCount || 0;
+   const monthReservationsCount = stats.monthReservationsCount || 0;
+   const todaySalesAmount = stats.todaySalesAmount || 0;
+   const monthSalesAmount = stats.monthSalesAmount || 0;
+   const totalOrdersCount = stats.totalOrdersCount || 0;
+   const topProgram = stats.topProgram;
+   const topProduct = stats.topProduct;
 
    return (
       <div className="admin-section">

@@ -7,9 +7,9 @@ import './Mypage.css';
 import { listMyReservations, cancelReservation, refundReservation, normalizeReservationStatus } from '../../services/reservationApi';
 import { getMyBookmarks, toggleBookmark as toggleBookmarkApi } from '../../services/bookmarkApi';
 import { getMyReviews, updateReview, deleteReview } from '../../services/reviewApi';
-
-// ✅ NEW: 스토어 주문내역
-import { readOrders } from '../../utils/orderStorage';
+import { getMyOrders } from '../../services/orderApi';
+import { getMyPoints } from '../../services/pointApi';
+import { getMyCart, updateCartItem, removeCartItem, clearCart as clearCartApi } from '../../services/cartApi';
 
 function Mypage() {
    const navigate = useNavigate();
@@ -226,10 +226,10 @@ function Mypage() {
    };
 
    const filteredReservations = useMemo(() => {
-      if (resvFilter === 'BOOKED') return reservations.filter((r) => r.status === 'BOOKED');
+      if (resvFilter === 'BOOKED') return reservations.filter((r) => r.paymentStatus !== 'PAID');
 
       if (resvFilter === 'DONE') {
-         const done = reservations.filter((r) => r.status === 'COMPLETED' || r.status === 'CANCELLED');
+         const done = reservations.filter((r) => r.paymentStatus === 'PAID');
          return [...done].sort((a, b) => getDoneSortTime(b) - getDoneSortTime(a));
       }
 
@@ -412,43 +412,37 @@ function Mypage() {
       await fetchMyReservations();
    };
 
-   // ===== store cart (localStorage) =====
-   // ✅ StoreDetail에서 담기/구매 연결하면 여기로 들어오게 하면 됨
-   const CART_KEY = 'cart_store';
+   // ===== store cart (API 기반) =====
    const [cartItems, setCartItems] = useState([]);
+   const [cartLoading, setCartLoading] = useState(false);
 
-   const readCart = useCallback(() => {
-      try {
-         const raw = localStorage.getItem(CART_KEY);
-         const parsed = raw ? JSON.parse(raw) : [];
-         return Array.isArray(parsed) ? parsed : [];
-      } catch {
-         return [];
+   const loadCart = useCallback(async () => {
+      if (!isLoggedIn) {
+         setCartItems([]);
+         return;
       }
-   }, []);
-
-   const writeCart = useCallback((next) => {
-      localStorage.setItem(CART_KEY, JSON.stringify(next));
-   }, []);
-
-   const loadCart = useCallback(() => {
-      const list = readCart();
-      setCartItems(list);
-   }, [readCart]);
+      setCartLoading(true);
+      try {
+         const result = await getMyCart();
+         if (result.success) {
+            setCartItems(Array.isArray(result.data) ? result.data : []);
+         } else {
+            console.error('장바구니 조회 실패:', result.error);
+            setCartItems([]);
+         }
+      } catch (error) {
+         console.error('장바구니 조회 오류:', error);
+         setCartItems([]);
+      } finally {
+         setCartLoading(false);
+      }
+   }, [isLoggedIn]);
 
    useEffect(() => {
-      // 로그인 상태에서만 보여주는 페이지라 로드해도 무방
-      loadCart();
-   }, [loadCart]);
-
-   useEffect(() => {
-      const onStorage = (e) => {
-         if (e.key !== CART_KEY) return;
+      if (tab === 'cart' && isLoggedIn) {
          loadCart();
-      };
-      window.addEventListener('storage', onStorage);
-      return () => window.removeEventListener('storage', onStorage);
-   }, [loadCart]);
+      }
+   }, [tab, isLoggedIn, loadCart]);
 
    const calcCartItemTotal = (it) => {
       const price = Number(it.price || 0);
@@ -458,31 +452,51 @@ function Mypage() {
 
    const cartTotal = useMemo(() => {
       return cartItems.reduce((sum, it) => sum + calcCartItemTotal(it), 0);
-   }, [cartItems]);
+    }, [cartItems]);
 
-   const updateCartQty = (id, optionId, nextQty) => {
+    const updateCartQty = async (cartItemId, nextQty) => {
       const qty = Math.max(1, Number(nextQty || 1));
-      const next = cartItems.map((it) => {
-         if (String(it.id) === String(id) && String(it.optionId || '') === String(optionId || '')) {
-            return { ...it, qty };
-         }
-         return it;
-      });
-      setCartItems(next);
-      writeCart(next);
+      try {
+        const result = await updateCartItem(cartItemId, { quantity: qty });
+        if (result.success) {
+          await loadCart(); // API에서 다시 조회
+        } else {
+          alert(result.error?.message || '수량 수정에 실패했습니다.');
+        }
+      } catch (error) {
+        console.error('수량 수정 오류:', error);
+        alert('수량 수정에 실패했습니다.');
+      }
    };
 
-   const removeCartItem = (id, optionId) => {
+   const removeCartItemHandler = async (cartItemId) => {
       if (!window.confirm('장바구니에서 삭제하시겠습니까?')) return;
-      const next = cartItems.filter((it) => !(String(it.id) === String(id) && String(it.optionId || '') === String(optionId || '')));
-      setCartItems(next);
-      writeCart(next);
+      try {
+        const result = await removeCartItem(cartItemId);
+        if (result.success) {
+          await loadCart(); // API에서 다시 조회
+        } else {
+          alert(result.error?.message || '삭제에 실패했습니다.');
+        }
+      } catch (error) {
+        console.error('삭제 오류:', error);
+        alert('삭제에 실패했습니다.');
+      }
    };
 
-   const clearCart = () => {
+   const clearCart = async () => {
       if (!window.confirm('장바구니를 비우시겠습니까?')) return;
-      setCartItems([]);
-      writeCart([]);
+      try {
+        const result = await clearCartApi();
+        if (result.success) {
+          await loadCart(); // API에서 다시 조회
+        } else {
+          alert(result.error?.message || '장바구니 비우기에 실패했습니다.');
+        }
+      } catch (error) {
+        console.error('장바구니 비우기 오류:', error);
+        alert('장바구니 비우기에 실패했습니다.');
+      }
    };
 
    const goShop = () => {
@@ -492,19 +506,37 @@ function Mypage() {
    // ✅ 스토어 결제하기 → CheckoutPage(shop)
    const goStoreCheckout = () => {
       if (cartItems.length === 0) {
-         alert('장바구니가 비어 있습니다.');
-         return;
+        alert('장바구니가 비어 있습니다.');
+        return;
       }
-      navigate('/checkout/cart?type=shop');
+      navigate('/checkout?type=shop');
    };
 
-   // ===== store orders (localStorage) =====
+   // ===== store orders (API) =====
    const [storeOrders, setStoreOrders] = useState([]);
+   const [storeOrdersLoading, setStoreOrdersLoading] = useState(false);
 
-   const loadStoreOrders = useCallback(() => {
-      const list = readOrders();
-      setStoreOrders(Array.isArray(list) ? list : []);
-   }, []);
+   const loadStoreOrders = useCallback(async () => {
+      if (!isLoggedIn) {
+         setStoreOrders([]);
+         return;
+      }
+      setStoreOrdersLoading(true);
+      try {
+         const result = await getMyOrders();
+         if (result.success) {
+            setStoreOrders(Array.isArray(result.data) ? result.data : []);
+         } else {
+            console.error('주문 내역 조회 실패:', result.error);
+            setStoreOrders([]);
+         }
+      } catch (error) {
+         console.error('주문 내역 조회 오류:', error);
+         setStoreOrders([]);
+      } finally {
+         setStoreOrdersLoading(false);
+      }
+   }, [isLoggedIn]);
 
    useEffect(() => {
       if (tab === 'store_orders' && isLoggedIn) {
@@ -512,14 +544,35 @@ function Mypage() {
       }
    }, [tab, isLoggedIn, loadStoreOrders]);
 
+   // ===== points =====
+   const [points, setPoints] = useState(0);
+   const [pointsLoading, setPointsLoading] = useState(false);
+
+   const loadPoints = useCallback(async () => {
+      if (!isLoggedIn) {
+         setPoints(0);
+         return;
+      }
+      setPointsLoading(true);
+      try {
+         const result = await getMyPoints();
+         if (result.success) {
+            setPoints(Number(result.data?.points || 0));
+         } else {
+            console.error('포인트 조회 실패:', result.error);
+         }
+      } catch (error) {
+         console.error('포인트 조회 오류:', error);
+      } finally {
+         setPointsLoading(false);
+      }
+   }, [isLoggedIn]);
+
    useEffect(() => {
-      const onStorage = (e) => {
-         if (e.key !== 'orders_store') return;
-         loadStoreOrders();
-      };
-      window.addEventListener('storage', onStorage);
-      return () => window.removeEventListener('storage', onStorage);
-   }, [loadStoreOrders]);
+      if (isLoggedIn) {
+         loadPoints();
+      }
+   }, [isLoggedIn, loadPoints]);
 
    // ===== not logged in =====
    if (!isLoggedIn) {
@@ -570,6 +623,11 @@ function Mypage() {
                      <div className="pf-profile-meta">
                         <p className="pf-profile-name">{baseDisplayName}</p>
                         <p className="pf-profile-id">{displayId ? `ID: ${displayId}` : `회원번호: ${userId || '-'}`}</p>
+                        {!pointsLoading && (
+                           <p className="pf-profile-points" style={{ marginTop: '4px', color: '#666', fontSize: '14px' }}>
+                              보유 포인트: {points.toLocaleString()}P
+                           </p>
+                        )}
                      </div>
                   </div>
 
@@ -810,80 +868,84 @@ function Mypage() {
                            <h3 className="pf-panel-title">장바구니</h3>
 
                            <div className="pf-cart-head-actions">
-                              <button type="button" className={`pf-ghost ${cartItems.length === 0 ? 'is-disabled' : ''}`} onClick={clearCart} disabled={cartItems.length === 0}>
-                                 비우기
-                              </button>
-                              <button type="button" className="pf-ghost" onClick={goShop}>
-                                 스토어 가기
-                              </button>
+                           <button type="button" className={`pf-ghost ${cartItems.length === 0 ? 'is-disabled' : ''}`} onClick={clearCart} disabled={cartItems.length === 0 || cartLoading}>
+                              비우기
+                           </button>
+                           <button type="button" className="pf-ghost" onClick={goShop}>
+                              스토어 가기
+                           </button>
                            </div>
                         </div>
 
-                        {cartItems.length === 0 ? (
+                        {cartLoading ? (
                            <div className="pf-empty">
-                              <p className="pf-empty-title">장바구니가 비어 있습니다</p>
-                              <p className="pf-empty-desc">스토어에서 상품을 담아 보세요.</p>
-                              <button type="button" className="pf-ghost" onClick={goShop}>
-                                 스토어 보러가기
-                              </button>
+                           <p className="pf-empty-title">장바구니를 불러오는 중...</p>
+                           </div>
+                        ) : cartItems.length === 0 ? (
+                           <div className="pf-empty">
+                           <p className="pf-empty-title">장바구니가 비어 있습니다</p>
+                           <p className="pf-empty-desc">스토어에서 상품을 담아 보세요.</p>
+                           <button type="button" className="pf-ghost" onClick={goShop}>
+                              스토어 보러가기
+                           </button>
                            </div>
                         ) : (
                            <>
-                              <div className="pf-list">
-                                 {cartItems.map((it) => {
-                                    const lineTotal = calcCartItemTotal(it);
-                                    return (
-                                       <div className="pf-item" key={`${it.id}_${it.optionId || 'noopt'}`}>
-                                          <div className="pf-item-main">
-                                             <p className="pf-item-title">{it.name || it.title || `상품 #${it.id}`}</p>
+                           <div className="pf-list">
+                              {cartItems.map((it) => {
+                                 const lineTotal = calcCartItemTotal(it);
+                                 return (
+                                 <div className="pf-item" key={it.cartItemId}>
+                                    <div className="pf-item-main">
+                                       <p className="pf-item-title">{it.name || it.title || `상품 #${it.id}`}</p>
 
-                                             <p className="pf-item-sub">
-                                                {it.optionName ? `옵션: ${it.optionName} · ` : ''}
-                                                단가 {Number(it.price || 0).toLocaleString()}원 · 합계 {Number(lineTotal).toLocaleString()}원
-                                             </p>
+                                       <p className="pf-item-sub">
+                                       {it.optionName ? `옵션: ${it.optionName} · ` : ''}
+                                       단가 {Number(it.price || 0).toLocaleString()}원 · 합계 {Number(lineTotal).toLocaleString()}원
+                                       </p>
 
-                                             <div className="pf-item-actions">
-                                                <button type="button" className="pf-linkbtn" onClick={() => navigate(`/shop/${it.id}`)}>
-                                                   상세
-                                                </button>
+                                       <div className="pf-item-actions">
+                                       <button type="button" className="pf-linkbtn" onClick={() => navigate(`/shop/${it.id}`)}>
+                                          상세
+                                       </button>
 
-                                                <div className="pf-qty">
-                                                   <button type="button" className="pf-qty-btn" onClick={() => updateCartQty(it.id, it.optionId, Number(it.qty || 1) - 1)}>
-                                                      −
-                                                   </button>
-                                                   <input
-                                                      className="pf-qty-input"
-                                                      value={Number(it.qty || 1)}
-                                                      onChange={(e) => updateCartQty(it.id, it.optionId, e.target.value)}
-                                                      inputMode="numeric"
-                                                   />
-                                                   <button type="button" className="pf-qty-btn" onClick={() => updateCartQty(it.id, it.optionId, Number(it.qty || 1) + 1)}>
-                                                      +
-                                                   </button>
-                                                </div>
-
-                                                <button type="button" className="pf-linkbtn" onClick={() => removeCartItem(it.id, it.optionId)}>
-                                                   삭제
-                                                </button>
-                                             </div>
-                                          </div>
-
-                                          <span className="pf-chip is-wait">스토어</span>
+                                       <div className="pf-qty">
+                                          <button type="button" className="pf-qty-btn" onClick={() => updateCartQty(it.cartItemId, Number(it.qty || 1) - 1)}>
+                                             −
+                                          </button>
+                                          <input
+                                             className="pf-qty-input"
+                                             value={Number(it.qty || 1)}
+                                             onChange={(e) => updateCartQty(it.cartItemId, e.target.value)}
+                                             inputMode="numeric"
+                                          />
+                                          <button type="button" className="pf-qty-btn" onClick={() => updateCartQty(it.cartItemId, Number(it.qty || 1) + 1)}>
+                                             +
+                                          </button>
                                        </div>
-                                    );
-                                 })}
-                              </div>
 
-                              <div className="pf-cart-summary">
-                                 <div className="pf-cart-sum-row">
-                                    <span className="k">총 결제 금액</span>
-                                    <span className="v">{cartTotal.toLocaleString()}원</span>
+                                       <button type="button" className="pf-linkbtn" onClick={() => removeCartItemHandler(it.cartItemId)}>
+                                          삭제
+                                       </button>
+                                       </div>
+                                    </div>
+
+                                    <span className="pf-chip is-wait">스토어</span>
                                  </div>
+                                 );
+                              })}
+                           </div>
 
-                                 <button type="button" className="pf-cta" onClick={goStoreCheckout}>
-                                    결제하기
-                                 </button>
+                           <div className="pf-cart-summary">
+                              <div className="pf-cart-sum-row">
+                                 <span className="k">총 결제 금액</span>
+                                 <span className="v">{cartTotal.toLocaleString()}원</span>
                               </div>
+
+                              <button type="button" className="pf-cta" onClick={goStoreCheckout}>
+                                 결제하기
+                              </button>
+                           </div>
                            </>
                         )}
                      </div>
@@ -899,7 +961,11 @@ function Mypage() {
                            </button>
                         </div>
 
-                        {storeOrders.length === 0 ? (
+                        {storeOrdersLoading ? (
+                           <div className="pf-empty">
+                              <p className="pf-empty-title">주문내역을 불러오는 중...</p>
+                           </div>
+                        ) : storeOrders.length === 0 ? (
                            <div className="pf-empty">
                               <p className="pf-empty-title">주문내역이 없습니다</p>
                               <p className="pf-empty-desc">스토어에서 결제한 주문이 이곳에 표시됩니다.</p>
@@ -911,7 +977,7 @@ function Mypage() {
                            <div className="pf-list">
                               {storeOrders.map((o) => {
                                  const items = Array.isArray(o.items) ? o.items : [];
-                                 const firstTitle = items[0]?.title || '상품';
+                                 const firstTitle = items[0]?.productTitle || '상품';
                                  const count = items.length;
 
                                  // ✅ 상태 표시 강화: PAID/CANCELLED/REFUNDED 반영
@@ -930,8 +996,8 @@ function Mypage() {
                                           <p className="pf-item-sub">
                                              주문번호: {o.orderId}
                                              {' · '}주문일: {o.createdAt ? dayjs(o.createdAt).format('YYYY.MM.DD HH:mm') : '-'}
-                                             {' · '}결제수단: {o.payMethod || '-'}
-                                             {' · '}결제금액: {Number(o.amount || 0).toLocaleString()}원
+                                             {' · '}결제수단: {o.payment?.method || '-'}
+                                             {' · '}결제금액: {Number(o.totalAmount || 0).toLocaleString()}원
                                           </p>
 
                                           {/* ✅ NEW: 주문 상세로 이동 */}

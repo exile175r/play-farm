@@ -21,6 +21,12 @@ const socialAuthRouter = require('./routes/socialAuth');
 const bookmarksRouter = require('./routes/bookmarks');
 const reviewsRouter = require('./routes/reviews');
 const reservationRouter = require('./routes/reservations');
+const productRouter = require('./routes/products');
+const cartRouter = require('./routes/cart');
+const orderRouter = require('./routes/orders');
+const pointRouter = require('./routes/points');
+const adminRouter = require('./routes/admin');
+const eventRouter = require('./routes/events');
 
 app.use('/api/programs', programRouter);
 app.use('/api/users', userRouter);
@@ -28,6 +34,12 @@ app.use('/api/social-auth', socialAuthRouter);
 app.use('/api/bookmarks', bookmarksRouter);
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/reservations', reservationRouter);
+app.use('/api/products', productRouter);
+app.use('/api/cart', cartRouter);
+app.use('/api/orders', orderRouter);
+app.use('/api/points', pointRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/events', eventRouter);
 
 // 기본 라우트
 app.get('/', (req, res) => {

@@ -30,6 +30,40 @@ const Login = ({ setIsLoggedIn }) => {
 
    const handleSubmit = async (e) => {
       e.preventDefault();
+
+      // ✅ 관리자 계정 체크 (서버에서 관리하지만, 먼저 관리자 로그인 API 시도)
+      const isAdminAccount = ADMIN_IDS.includes(formData.user_id);
+      
+      if (isAdminAccount) {
+         // 관리자 로그인 API 호출
+         try {
+            const response = await fetch(`${getApiBaseUrl()}/admin/login`, {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(formData),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+               alert(data.message || '관리자 로그인 실패');
+               return;
+            }
+
+            // ✅ 관리자 토큰 저장
+            localStorage.setItem('token', data.data.token);
+            localStorage.setItem('isAdmin', 'true');
+            setIsLoggedIn(true);
+            alert('관리자 로그인에 성공했습니다.');
+            navigate('/admin');
+            return;
+         } catch (error) {
+            console.error('관리자 로그인 실패:', error);
+            alert('관리자 로그인 중 오류가 발생했습니다.');
+            return;
+         }
+      }
+
+      // 일반 사용자 로그인
       try {
          const response = await fetch(`${getApiBaseUrl()}/users/login`, {
             method: 'POST',
@@ -48,17 +82,8 @@ const Login = ({ setIsLoggedIn }) => {
          // ✅ 토큰 저장
          localStorage.setItem('token', data.data.token);
          setIsLoggedIn(true);
-
-         // ✅ 여러 관리자 계정 지원: ADMIN_IDS 안에 있으면 관리자
-         const isAdminUser = ADMIN_IDS.includes(formData.user_id);
-
-         if (isAdminUser) {
-            localStorage.setItem('isAdmin', 'true');
-            navigate('/admin');
-         } else {
-            localStorage.removeItem('isAdmin');
-            navigate('/');
-         }
+         localStorage.removeItem('isAdmin');
+         navigate('/');
       } catch (error) {
          console.error('로그인 실패:', error);
          alert('로그인 중 오류가 발생했습니다.');

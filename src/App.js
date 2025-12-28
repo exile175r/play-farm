@@ -20,7 +20,6 @@ import StoreDetail from './components/shop/StoreDetail'; // ✅ 추가
 
 import SupportPage from './components/SupportPage';
 import Mypage from './components/mypage/Mypage';
-import DataCheck from './components/DataCheck';
 
 import CheckoutPage from './components/checkout/CheckoutPage';
 import CheckoutResult from './components/checkout/CheckoutResult';
@@ -99,7 +98,6 @@ function App() {
             {/* etc */}
             <Route path="/support" element={<SupportPage />} />
             <Route path="/mypage" element={<Mypage />} />
-            <Route path="/data" element={<DataCheck />} />
 
             {/* ✅ NEW: 관리자 */}
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -108,26 +106,6 @@ function App() {
 
          {/* ✅ 메인(/)에서만 푸터 노출 */}
          {location.pathname === '/' && <Footer />}
-
-         {/* 임시 Data Check 버튼 */}
-         <button
-            style={{
-               padding: '5px 10px',
-               width: '70px',
-               backgroundColor: '#3a8e87',
-               borderRadius: '10px',
-               boxShadow: '2px 3px 0 0 #007c60',
-               textAlign: 'center',
-               color: '#f6ce44',
-               fontSize: '16px',
-               fontWeight: '700',
-               position: 'absolute',
-               top: '99px',
-               right: '20px',
-            }}
-            onClick={() => navigate('/data?page=1&limit=20')}>
-            Data Check
-         </button>
       </div>
    );
 }

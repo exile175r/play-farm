@@ -1,34 +1,8 @@
 // src/adim/taps/EventsTab.js
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './Tabs.css';
 import AdminModal from '../components/AdminModal';
-
-const INITIAL_EVENTS = [
-   {
-      id: 1,
-      title: '봄맞이 체험 할인 이벤트',
-      position: '메인 배너', // 노출 위치
-      startDate: '2025-03-01',
-      endDate: '2025-03-31',
-      status: 'ONGOING', // SCHEDULED | ONGOING | ENDED
-   },
-   {
-      id: 2,
-      title: '감귤 수확 시즌 한정 이벤트',
-      position: '이벤트 페이지',
-      startDate: '2025-02-01',
-      endDate: '2025-02-28',
-      status: 'SCHEDULED',
-   },
-   {
-      id: 3,
-      title: '겨울 방학 농촌 체험 패키지',
-      position: '메인 배너',
-      startDate: '2024-12-20',
-      endDate: '2025-01-15',
-      status: 'ENDED',
-   },
-];
+import { getAllEvents, deleteEvent } from '../../services/adminApi';
 
 const emptyForm = {
    title: '',
@@ -39,23 +13,56 @@ const emptyForm = {
 };
 
 function EventsTab() {
-   const [events, setEvents] = useState(INITIAL_EVENTS);
-   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL | SCHEDULED | ONGOING | ENDED
+   const [events, setEvents] = useState([]);
+   const [statusFilter, setStatusFilter] = useState('ALL');
    const [keyword, setKeyword] = useState('');
+   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
+   const [currentPage, setCurrentPage] = useState(1);
+   const [error, setError] = useState(null);
 
    const [isModalOpen, setIsModalOpen] = useState(false);
    const [editingEvent, setEditingEvent] = useState(null);
    const [form, setForm] = useState(emptyForm);
 
-   const filteredEvents = useMemo(() => {
-      return events.filter((e) => {
-         if (statusFilter !== 'ALL' && e.status !== statusFilter) return false;
+   // 이벤트 목록 로드
+   const loadEvents = async (page = 1) => {
+      try {
+         setError(null);
+         const result = await getAllEvents({
+            page,
+            limit: 20,
+            keyword: keyword.trim(),
+            status: statusFilter
+         });
 
-         if (!keyword.trim()) return true;
-         const q = keyword.trim().toLowerCase();
-         return e.title.toLowerCase().includes(q) || e.position.toLowerCase().includes(q);
-      });
-   }, [events, statusFilter, keyword]);
+         if (result.success) {
+            setEvents(result.data || []);
+            setPagination(result.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 });
+            setCurrentPage(page);
+         } else {
+            setError(result.error?.message || '이벤트 목록을 불러오는데 실패했습니다.');
+            setEvents([]);
+         }
+      } catch (err) {
+         setError('이벤트 목록을 불러오는데 실패했습니다.');
+         setEvents([]);
+         console.error('이벤트 목록 로드 실패:', err);
+      }
+   };
+
+   // 초기 로딩 및 필터 변경 시 재로딩
+   useEffect(() => {
+      loadEvents(1);
+   }, [statusFilter]);
+
+   // 검색어 변경 시 디바운스 처리
+   useEffect(() => {
+      const timer = setTimeout(() => {
+         loadEvents(1);
+      }, 500);
+
+      return () => clearTimeout(timer);
+   }, [keyword]);
 
    // ===== 모달 열기/닫기 =====
    const openCreateModal = () => {
@@ -104,46 +111,33 @@ function EventsTab() {
          return;
       }
 
-      if (editingEvent) {
-         // 수정 모드
-         setEvents((prev) =>
-            prev.map((e) =>
-               e.id === editingEvent.id
-                  ? {
-                       ...e,
-                       title: form.title.trim(),
-                       position: form.position.trim(),
-                       startDate: form.startDate,
-                       endDate: form.endDate,
-                       status: form.status,
-                    }
-                  : e
-            )
-         );
-         alert('이벤트 정보가 수정되었습니다. (지금은 메모리 상에서만 적용)');
-      } else {
-         // 생성 모드
-         const maxId = events.reduce((max, e) => Math.max(max, e.id), 0);
-         const newEvent = {
-            id: maxId + 1,
-            title: form.title.trim(),
-            position: form.position.trim(),
-            startDate: form.startDate,
-            endDate: form.endDate,
-            status: form.status,
-         };
-         setEvents((prev) => [...prev, newEvent]);
-         alert('새 이벤트가 추가되었습니다. (지금은 메모리 상에서만 적용)');
-      }
-
+      alert('이벤트 생성/수정 기능은 이미지 업로드 구현 후 추가됩니다.');
       setIsModalOpen(false);
    };
 
    // ===== 삭제 =====
-   const handleDelete = (id) => {
-      if (window.confirm(`이벤트 ID ${id} 를 삭제하시겠습니까?`)) {
-         setEvents((prev) => prev.filter((e) => e.id !== id));
-         alert('현재는 메모리 상에서만 삭제되었습니다.');
+   const handleDelete = async (id) => {
+      if (!window.confirm(`이벤트 ID ${id} 를 삭제하시겠습니까?`)) {
+         return;
+      }
+
+      try {
+         const result = await deleteEvent(id);
+         if (result.success) {
+            alert('이벤트가 삭제되었습니다.');
+            loadEvents(currentPage);
+         } else {
+            alert(result.error?.message || '이벤트 삭제에 실패했습니다.');
+         }
+      } catch (err) {
+         alert('이벤트 삭제 중 오류가 발생했습니다.');
+         console.error('이벤트 삭제 실패:', err);
+      }
+   };
+
+   const handlePageChange = (newPage) => {
+      if (newPage >= 1 && newPage <= pagination.totalPages) {
+         loadEvents(newPage);
       }
    };
 
@@ -190,6 +184,12 @@ function EventsTab() {
             </div>
          </div>
 
+         {error && (
+            <div style={{ padding: '10px', color: '#b91c1c', marginBottom: '10px' }}>
+               {error}
+            </div>
+         )}
+
          {/* 테이블 */}
          <div className="admin-table-wrapper">
             <table className="admin-table">
@@ -204,20 +204,20 @@ function EventsTab() {
                   </tr>
                </thead>
                <tbody>
-                  {filteredEvents.length === 0 ? (
+                  {events.length === 0 ? (
                      <tr>
                         <td colSpan={6} className="admin-table-empty">
-                           조건에 맞는 이벤트가 없습니다.
+                           {error ? '이벤트 목록을 불러올 수 없습니다.' : '조건에 맞는 이벤트가 없습니다.'}
                         </td>
                      </tr>
                   ) : (
-                     filteredEvents.map((e) => (
+                     events.map((e) => (
                         <tr key={e.id}>
                            <td>{e.id}</td>
                            <td>{e.title}</td>
                            <td>{e.position}</td>
                            <td>
-                              {e.startDate} ~ {e.endDate}
+                              {e.startDate ? `${e.startDate} ~ ${e.endDate || ''}` : '-'}
                            </td>
                            <td>{renderStatusBadge(e.status)}</td>
                            <td>
@@ -236,6 +236,29 @@ function EventsTab() {
                </tbody>
             </table>
          </div>
+
+         {/* 페이지네이션 */}
+         {pagination.totalPages > 1 && (
+            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px', alignItems: 'center' }}>
+               <button
+                  type="button"
+                  className="admin-secondary-btn"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}>
+                  이전
+               </button>
+               <span>
+                  {currentPage} / {pagination.totalPages} (총 {pagination.total}건)
+               </span>
+               <button
+                  type="button"
+                  className="admin-secondary-btn"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === pagination.totalPages}>
+                  다음
+               </button>
+            </div>
+         )}
 
          {/* 모달 */}
          {isModalOpen && (

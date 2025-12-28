@@ -1,42 +1,8 @@
 // src/adim/taps/ProductsTab.js
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './Tabs.css';
 import AdminModal from '../components/AdminModal';
-
-const INITIAL_PRODUCTS = [
-   {
-      id: 1,
-      name: '유기농 감자 5kg',
-      category: '채소',
-      stock: 120,
-      price: 26000,
-      status: 'ACTIVE', // ACTIVE | INACTIVE | SOLD_OUT
-   },
-   {
-      id: 2,
-      name: '제주 감귤 3kg',
-      category: '과일',
-      stock: 0,
-      price: 18000,
-      status: 'SOLD_OUT',
-   },
-   {
-      id: 3,
-      name: '현미 10kg',
-      category: '곡물',
-      stock: 45,
-      price: 33000,
-      status: 'ACTIVE',
-   },
-   {
-      id: 4,
-      name: '건조 아몬드 500g',
-      category: '견과류',
-      stock: 10,
-      price: 15000,
-      status: 'INACTIVE',
-   },
-];
+import { getAllProducts, deleteProduct } from '../../services/adminApi';
 
 const emptyForm = {
    name: '',
@@ -47,23 +13,56 @@ const emptyForm = {
 };
 
 function ProductsTab() {
-   const [products, setProducts] = useState(INITIAL_PRODUCTS);
-   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL | ACTIVE | INACTIVE | SOLD_OUT
+   const [products, setProducts] = useState([]);
+   const [statusFilter, setStatusFilter] = useState('ALL');
    const [keyword, setKeyword] = useState('');
+   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
+   const [currentPage, setCurrentPage] = useState(1);
+   const [error, setError] = useState(null);
 
    const [isModalOpen, setIsModalOpen] = useState(false);
    const [editingProduct, setEditingProduct] = useState(null);
    const [form, setForm] = useState(emptyForm);
 
-   const filteredProducts = useMemo(() => {
-      return products.filter((p) => {
-         if (statusFilter !== 'ALL' && p.status !== statusFilter) return false;
+   // 상품 목록 로드
+   const loadProducts = async (page = 1) => {
+      try {
+         setError(null);
+         const result = await getAllProducts({
+            page,
+            limit: 20,
+            keyword: keyword.trim(),
+            status: statusFilter
+         });
 
-         if (!keyword.trim()) return true;
-         const q = keyword.trim().toLowerCase();
-         return p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
-      });
-   }, [products, statusFilter, keyword]);
+         if (result.success) {
+            setProducts(result.data || []);
+            setPagination(result.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 });
+            setCurrentPage(page);
+         } else {
+            setError(result.error?.message || '상품 목록을 불러오는데 실패했습니다.');
+            setProducts([]);
+         }
+      } catch (err) {
+         setError('상품 목록을 불러오는데 실패했습니다.');
+         setProducts([]);
+         console.error('상품 목록 로드 실패:', err);
+      }
+   };
+
+   // 초기 로딩 및 필터 변경 시 재로딩
+   useEffect(() => {
+      loadProducts(1);
+   }, [statusFilter]);
+
+   // 검색어 변경 시 디바운스 처리
+   useEffect(() => {
+      const timer = setTimeout(() => {
+         loadProducts(1);
+      }, 500);
+
+      return () => clearTimeout(timer);
+   }, [keyword]);
 
    // ===== 모달 열기/닫기 =====
    const openCreateModal = () => {
@@ -120,46 +119,33 @@ function ProductsTab() {
          return;
       }
 
-      // 수정 모드
-      if (editingProduct) {
-         setProducts((prev) =>
-            prev.map((p) =>
-               p.id === editingProduct.id
-                  ? {
-                       ...p,
-                       name: form.name.trim(),
-                       category: form.category.trim(),
-                       stock: stockNumber,
-                       price: priceNumber,
-                       status: form.status,
-                    }
-                  : p
-            )
-         );
-         alert('상품 정보가 수정되었습니다. (지금은 메모리 상에서만 적용)');
-      } else {
-         // 생성 모드
-         const maxId = products.reduce((max, p) => Math.max(max, p.id), 0);
-         const newProduct = {
-            id: maxId + 1,
-            name: form.name.trim(),
-            category: form.category.trim(),
-            stock: stockNumber,
-            price: priceNumber,
-            status: form.status,
-         };
-         setProducts((prev) => [...prev, newProduct]);
-         alert('새 상품이 추가되었습니다. (지금은 메모리 상에서만 적용)');
-      }
-
+      alert('상품 생성/수정 기능은 이미지 업로드 구현 후 추가됩니다.');
       setIsModalOpen(false);
    };
 
    // ===== 삭제 =====
-   const handleDelete = (id) => {
-      if (window.confirm(`상품 ID ${id} 를 삭제하시겠습니까?`)) {
-         setProducts((prev) => prev.filter((p) => p.id !== id));
-         alert('현재는 메모리 상에서만 삭제되었습니다.');
+   const handleDelete = async (id) => {
+      if (!window.confirm(`상품 ID ${id} 를 삭제하시겠습니까?`)) {
+         return;
+      }
+
+      try {
+         const result = await deleteProduct(id);
+         if (result.success) {
+            alert('상품이 삭제되었습니다.');
+            loadProducts(currentPage);
+         } else {
+            alert(result.error?.message || '상품 삭제에 실패했습니다.');
+         }
+      } catch (err) {
+         alert('상품 삭제 중 오류가 발생했습니다.');
+         console.error('상품 삭제 실패:', err);
+      }
+   };
+
+   const handlePageChange = (newPage) => {
+      if (newPage >= 1 && newPage <= pagination.totalPages) {
+         loadProducts(newPage);
       }
    };
 
@@ -206,6 +192,12 @@ function ProductsTab() {
             </div>
          </div>
 
+         {error && (
+            <div style={{ padding: '10px', color: '#b91c1c', marginBottom: '10px' }}>
+               {error}
+            </div>
+         )}
+
          {/* 테이블 */}
          <div className="admin-table-wrapper">
             <table className="admin-table">
@@ -221,14 +213,14 @@ function ProductsTab() {
                   </tr>
                </thead>
                <tbody>
-                  {filteredProducts.length === 0 ? (
+                  {products.length === 0 ? (
                      <tr>
                         <td colSpan={7} className="admin-table-empty">
-                           조건에 맞는 상품이 없습니다.
+                           {error ? '상품 목록을 불러올 수 없습니다.' : '조건에 맞는 상품이 없습니다.'}
                         </td>
                      </tr>
                   ) : (
-                     filteredProducts.map((p) => (
+                     products.map((p) => (
                         <tr key={p.id}>
                            <td>{p.id}</td>
                            <td>{p.name}</td>
@@ -252,6 +244,29 @@ function ProductsTab() {
                </tbody>
             </table>
          </div>
+
+         {/* 페이지네이션 */}
+         {pagination.totalPages > 1 && (
+            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px', alignItems: 'center' }}>
+               <button
+                  type="button"
+                  className="admin-secondary-btn"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}>
+                  이전
+               </button>
+               <span>
+                  {currentPage} / {pagination.totalPages} (총 {pagination.total}건)
+               </span>
+               <button
+                  type="button"
+                  className="admin-secondary-btn"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === pagination.totalPages}>
+                  다음
+               </button>
+            </div>
+         )}
 
          {/* 모달 */}
          {isModalOpen && (

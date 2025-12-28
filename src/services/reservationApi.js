@@ -1,6 +1,6 @@
-import { fetchWithAuthAndRetry } from "../utils/apiConfig";
+import { fetchWithAuthAndRetry, getApiBaseUrl } from "../utils/apiConfig";
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const API_BASE = getApiBaseUrl();
 
 // 전역 로그아웃 핸들러 (App.js에서 설정됨)
 let onLogout = null;
@@ -94,7 +94,7 @@ export async function cancelReservation({ bookingId, userId }) {
 /**
  * 결제 성공 처리 (서버에서 예약 검토 후 승인/취소 결정)
  */
-export async function markReservationPaid({ bookingId, method = "CARD" }) {
+export async function markReservationPaid({ bookingId, method = "CARD", buyerName, buyerPhone, buyerEmail }) {
   try {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/reservations/${bookingId}/payment`,
@@ -103,7 +103,12 @@ export async function markReservationPaid({ bookingId, method = "CARD" }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ method }),
+        body: JSON.stringify({ 
+          method,
+          buyerName,
+          buyerPhone,
+          buyerEmail
+        }),
       },
       onLogout
     );

@@ -139,10 +139,11 @@ exports.createReservation = async (req, res) => {
 
 // 내 예약 목록 조회
 exports.getMyReservations = async (req, res) => {
+  const connection = await db.getConnection();
   try {
     const userId = req.userId;
 
-    const [reservations] = await db.query(
+    const [reservations] = await connection.query(
       `SELECT 
         r.id,
         r.user_id,
@@ -165,23 +166,28 @@ exports.getMyReservations = async (req, res) => {
     );
 
     // 프론트엔드 형식에 맞게 변환
-    const formatted = reservations.map(r => ({
-      bookingId: String(r.id),
-      programId: String(r.program_id),
-      userId: String(r.user_id),
-      title: r.title,
-      date: r.date,
-      time: r.time,
-      people: r.people,
-      price: Number(r.price),
-      status: mapStatusToFrontend(r.status),
-      paymentStatus: getPaymentStatus(r.status, r.memo), // 결제 상태 확인
-      payment: getPaymentInfo(r.memo), // 결제 정보 파싱
-      createdAt: r.createdAt,
-      cancelledAt: r.cancelledAt,
-      updatedAt: r.updatedAt,
-      memo: r.memo,
-      cancelReason: getCancelReason(r.memo) // 취소 사유 추출
+    const formatted = await Promise.all(reservations.map(async r => {
+      const paymentStatus = await getPaymentStatus(connection, r.id, r.status);
+      const payment = await getPaymentInfo(connection, r.id);
+      
+      return {
+        bookingId: String(r.id),
+        programId: String(r.program_id),
+        userId: String(r.user_id),
+        title: r.title,
+        date: r.date,
+        time: r.time,
+        people: r.people,
+        price: Number(r.price),
+        status: mapStatusToFrontend(r.status),
+        paymentStatus: paymentStatus,
+        payment: payment,
+        createdAt: r.createdAt,
+        cancelledAt: r.cancelledAt,
+        updatedAt: r.updatedAt,
+        memo: r.memo,
+        cancelReason: getCancelReason(r.memo)
+      };
     }));
 
     res.status(200).json({
@@ -195,16 +201,19 @@ exports.getMyReservations = async (req, res) => {
       success: false,
       message: '예약 목록 조회 중 오류가 발생했습니다.'
     });
+  } finally {
+    connection.release();
   }
 };
 
 // 예약 상세 조회
 exports.getReservationById = async (req, res) => {
+  const connection = await db.getConnection();
   try {
     const userId = req.userId;
     const reservationId = req.params.id;
 
-    const [reservations] = await db.query(
+    const [reservations] = await connection.query(
       `SELECT 
         r.id,
         r.user_id,
@@ -232,6 +241,8 @@ exports.getReservationById = async (req, res) => {
     }
 
     const reservation = reservations[0];
+    const paymentStatus = await getPaymentStatus(connection, reservationId, reservation.status);
+    const payment = await getPaymentInfo(connection, reservationId);
 
     const response = {
       bookingId: String(reservation.id),
@@ -243,8 +254,8 @@ exports.getReservationById = async (req, res) => {
       people: reservation.people,
       price: Number(reservation.price),
       status: mapStatusToFrontend(reservation.status),
-      paymentStatus: getPaymentStatus(reservation.status, reservation.memo),
-      payment: getPaymentInfo(reservation.memo),
+      paymentStatus: paymentStatus,
+      payment: payment,
       createdAt: reservation.createdAt,
       cancelledAt: reservation.cancelledAt,
       memo: reservation.memo,
@@ -262,6 +273,8 @@ exports.getReservationById = async (req, res) => {
       success: false,
       message: '예약 조회 중 오류가 발생했습니다.'
     });
+  } finally {
+    connection.release();
   }
 };
 
@@ -376,7 +389,7 @@ exports.cancelReservation = async (req, res) => {
   }
 };
 
-// 결제 처리 (예약 정보 검토 후 승인/취소 결정)
+// 결제 처리 (payments 테이블 사용)
 exports.markPayment = async (req, res) => {
   const connection = await db.getConnection();
   try {
@@ -384,7 +397,7 @@ exports.markPayment = async (req, res) => {
 
     const userId = req.userId;
     const reservationId = req.params.id;
-    const { method = 'CARD' } = req.body;
+    const { method = 'CARD', buyerName, buyerPhone, buyerEmail } = req.body;
 
     // 예약 조회 및 권한 확인
     const [reservations] = await connection.query(
@@ -408,11 +421,25 @@ exports.markPayment = async (req, res) => {
 
     const confirmedReservation = reservations[0];
 
-    // 예약 상태 확인 (pending만 결제 가능)
+    // 예약 상태 확인
     if (confirmedReservation.status !== 'pending') {
       return res.status(400).json({
         success: false,
         message: `결제 가능한 상태가 아닙니다. (현재 상태: ${confirmedReservation.status})`
+      });
+    }
+
+    // 이미 결제 완료 확인
+    const [existingPayments] = await connection.query(
+      `SELECT id FROM payments 
+       WHERE reservation_id = ? AND status = 'PAID'`,
+      [reservationId]
+    );
+
+    if (existingPayments.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: '이미 결제가 완료된 예약입니다.'
       });
     }
 
@@ -479,33 +506,66 @@ exports.markPayment = async (req, res) => {
       });
     }
 
-    // ===== 검증 성공: 예약 확정 및 결제 처리 =====
-
-    // 상태를 confirmed로 변경 (예약 확정)
+    // 검증 성공: 예약 확정 및 결제 처리
     await connection.query(
       `UPDATE reservations SET status = 'confirmed' WHERE id = ?`,
       [reservationId]
     );
 
-    // 결제 정보 저장 (메모 필드에 저장 - 실제 결제 시스템 연동 시 별도 테이블 사용 권장)
-    const paymentInfo = {
-      method,
-      paidAt: new Date().toISOString(),
-      paymentId: `PAY-${Date.now()}`,
-      amount: Number(confirmedReservation.total_price)
-    };
-
-    const paymentMemo = `[결제정보] ${JSON.stringify(paymentInfo)}`;
-    await connection.query(
-      `UPDATE reservations 
-       SET memo = COALESCE(CONCAT(COALESCE(memo, ''), '\n', ?), ?) 
-       WHERE id = ?`,
-      [paymentMemo, paymentMemo, reservationId]
+    // 결제 정보를 payments 테이블에 저장
+    const paymentId = `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const [paymentResult] = await connection.query(
+      `INSERT INTO payments (
+        payment_type, reservation_id, order_id, payment_id,
+        method, amount, status, buyer_name, buyer_phone, buyer_email, paid_at
+      ) VALUES ('RESERVATION', ?, NULL, ?, ?, ?, 'PAID', ?, ?, ?, NOW())`,
+      [
+        reservationId,
+        paymentId,
+        method,
+        Number(confirmedReservation.total_price),
+        buyerName || null,
+        buyerPhone || null,
+        buyerEmail || null
+      ]
     );
+
+    // 포인트 적립 (결제 금액의 5%)
+    const paymentAmount = Number(confirmedReservation.total_price);
+    const earnedPoints = Math.floor(paymentAmount * 0.05); // 5% 적립
+    
+    if (earnedPoints > 0) {
+      // 사용자 포인트 업데이트
+      await connection.query(
+        `UPDATE users SET points = points + ? WHERE id = ?`,
+        [earnedPoints, userId]
+      );
+
+      // 현재 포인트 잔액 조회
+      const [userResult] = await connection.query(
+        `SELECT points FROM users WHERE id = ?`,
+        [userId]
+      );
+      const balanceAfter = userResult[0].points;
+
+      // 포인트 거래 내역 저장
+      await connection.query(
+        `INSERT INTO point_transactions (
+          user_id, type, amount, balance_after, source_type, source_id, description, expires_at
+        ) VALUES (?, 'EARNED', ?, ?, 'RESERVATION', ?, ?, DATE_ADD(NOW(), INTERVAL 1 YEAR))`,
+        [
+          userId,
+          earnedPoints,
+          balanceAfter,
+          reservationId,
+          `예약 결제 포인트 적립 (${paymentAmount.toLocaleString()}원의 5%)`
+        ]
+      );
+    }
 
     await connection.commit();
 
-    // 업데이트된 예약 조회
+    // 업데이트된 예약 및 결제 정보 조회
     const [updated] = await connection.query(
       `SELECT 
         r.id,
@@ -526,7 +586,25 @@ exports.markPayment = async (req, res) => {
       [reservationId]
     );
 
+    const [payments] = await connection.query(
+      `SELECT * FROM payments WHERE id = ?`,
+      [paymentResult.insertId]
+    );
+
     const reservation = updated[0];
+    const payment = payments[0];
+
+    const paymentInfo = {
+      id: payment.id,
+      paymentId: payment.payment_id,
+      method: payment.method,
+      amount: Number(payment.amount),
+      status: payment.status,
+      paidAt: payment.paid_at,
+      buyerName: payment.buyer_name,
+      buyerPhone: payment.buyer_phone,
+      buyerEmail: payment.buyer_email
+    };
 
     const response = {
       bookingId: String(reservation.id),
@@ -537,7 +615,7 @@ exports.markPayment = async (req, res) => {
       time: reservation.time,
       people: reservation.people,
       price: Number(reservation.price),
-      status: mapStatusToFrontend(reservation.status), // 'confirmed' -> 'BOOKED'
+      status: mapStatusToFrontend(reservation.status),
       paymentStatus: 'PAID',
       payment: paymentInfo,
       createdAt: reservation.createdAt,
@@ -782,41 +860,72 @@ function mapStatusToFrontend(dbStatus) {
   return statusMap[dbStatus] || 'BOOKED';
 }
 
-// 결제 상태 확인 함수
-function getPaymentStatus(status, memo) {
+// 결제 상태 확인 함수 (payments 테이블 기준)
+async function getPaymentStatus(connection, reservationId, status) {
   if (status === 'cancelled') {
-    // 취소 사유에 환불 정보가 있으면 REFUNDED
-    if (memo && memo.includes('[환불정보]')) {
+    const [refundedPayments] = await connection.query(
+      `SELECT status FROM payments 
+       WHERE reservation_id = ? AND status = 'REFUNDED'`,
+      [reservationId]
+    );
+    if (refundedPayments.length > 0) {
       return 'REFUNDED';
     }
     return 'UNPAID';
   }
 
-  if (memo && memo.includes('[결제정보]')) {
-    return 'PAID';
+  const [payments] = await connection.query(
+    `SELECT status FROM payments 
+     WHERE reservation_id = ? 
+     ORDER BY created_at DESC 
+     LIMIT 1`,
+    [reservationId]
+  );
+
+  if (payments.length === 0) {
+    return 'UNPAID';
   }
 
-  if (memo && memo.includes('[결제실패]')) {
-    return 'FAILED';
-  }
-
+  const paymentStatus = payments[0].status;
+  if (paymentStatus === 'PAID') return 'PAID';
+  if (paymentStatus === 'FAILED') return 'FAILED';
+  if (paymentStatus === 'REFUNDED') return 'REFUNDED';
+  
   return 'UNPAID';
 }
 
-// 결제 정보 파싱 함수
-function getPaymentInfo(memo) {
-  if (!memo) return null;
+// 결제 정보 파싱 함수 (payments 테이블 기준)
+async function getPaymentInfo(connection, reservationId) {
+  const [payments] = await connection.query(
+    `SELECT 
+      id, payment_id, method, amount, status,
+      buyer_name, buyer_phone, buyer_email,
+      paid_at, refunded_at, refund_reason
+     FROM payments 
+     WHERE reservation_id = ? 
+     ORDER BY created_at DESC 
+     LIMIT 1`,
+    [reservationId]
+  );
 
-  try {
-    const match = memo.match(/\[결제정보\]\s*(.+)/);
-    if (match) {
-      return JSON.parse(match[1]);
-    }
-  } catch (e) {
-    console.error('결제 정보 파싱 실패:', e);
+  if (payments.length === 0) {
+    return null;
   }
 
-  return null;
+  const payment = payments[0];
+  return {
+    id: payment.id,
+    paymentId: payment.payment_id,
+    method: payment.method,
+    amount: Number(payment.amount),
+    status: payment.status,
+    buyerName: payment.buyer_name,
+    buyerPhone: payment.buyer_phone,
+    buyerEmail: payment.buyer_email,
+    paidAt: payment.paid_at,
+    refundedAt: payment.refunded_at,
+    refundReason: payment.refund_reason
+  };
 }
 
 // 취소 사유 추출 함수

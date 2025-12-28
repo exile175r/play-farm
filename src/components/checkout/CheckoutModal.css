@@ -1,0 +1,205 @@
+/* CheckoutModal.css - 기존 ReservationModal.css 스타일 확장 */
+
+.checkout-modal {
+  width: 500px;
+  max-width: calc(100% - 32px);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.checkout-modal-body {
+  max-height: calc(90vh - 140px);
+  overflow-y: auto;
+}
+
+/* 상품 정보 */
+.checkout-items {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.checkout-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.checkout-item-info {
+  flex: 1;
+  display: grid;
+  gap: 4px;
+}
+
+.checkout-item-name {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--color-list-title);
+}
+
+.checkout-item-option {
+  font-size: 12px;
+  color: var(--color-list-sub);
+}
+
+.checkout-item-qty {
+  font-size: 12px;
+  color: var(--color-list-sub);
+}
+
+.checkout-item-price {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--color-list-title);
+  white-space: nowrap;
+}
+
+/* 결제 금액 요약 */
+.checkout-summary {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.checkout-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--color-list-sub);
+}
+
+.checkout-summary-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--color-border);
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--color-list-title);
+}
+
+.checkout-summary-total strong {
+  font-size: 16px;
+  font-weight: 1000;
+  color: var(--color-header-bg);
+}
+
+/* 결제 수단 */
+.checkout-payment-method {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.checkout-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--color-list-sub);
+  margin-bottom: 8px;
+}
+
+.checkout-method-options {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.checkout-method-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--color-list-title);
+}
+
+.checkout-method-option input[type="radio"] {
+  cursor: pointer;
+}
+
+.checkout-method-option:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 카드 결제 폼 */
+.checkout-card-form {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.checkout-form-row {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkout-form-row .checkout-label {
+  margin-bottom: 0;
+}
+
+/* 결제자 정보 */
+.checkout-buyer-form {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* 약관 동의 */
+.checkout-agree {
+  margin-bottom: 8px;
+}
+
+.checkout-agree label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--color-list-title);
+}
+
+.checkout-agree input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.checkout-agree:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 반응형 */
+@media (max-width: 480px) {
+  .checkout-modal {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0;
+    max-height: 100vh;
+  }
+
+  .checkout-form-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .checkout-form-row .checkout-label {
+    margin-bottom: 4px;
+  }
+}
+

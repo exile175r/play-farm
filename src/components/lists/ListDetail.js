@@ -68,59 +68,6 @@ function ListDetail() {
     }
   }, [data, id, toggleBookmark, isLoggedIn]);
 
-  // =========================
-  // ✅ 북마크(찜) - List/Mypage와 동일 키로 동기화
-  // =========================
-  // const BOOKMARK_KEY = 'bookmarks_program';
-
-  // const [bookmarks, setBookmarks] = useState(() => {
-  //   try {
-  //     return JSON.parse(localStorage.getItem(BOOKMARK_KEY) || '[]');
-  //   } catch {
-  //     return [];
-  //   }
-  // });
-
-  // const bookmarked = useMemo(() => {
-  //   return bookmarks.some((b) => String(b.programId) === String(id));
-  // }, [bookmarks, id]);
-
-  // const toggleBookmark = () => {
-  //   if (!data || !id) return;
-
-  //   const exists = bookmarks.some((b) => String(b.programId) === String(id));
-
-  //   const next = exists
-  //     ? bookmarks.filter((b) => String(b.programId) !== String(id))
-  //     : [
-  //       {
-  //         programId: id,
-  //         title: data.program_nm,
-  //         image: data.images?.[0] ? getImagePath(data.images[0]) : '',
-  //         savedAt: new Date().toISOString(),
-  //       },
-  //       ...bookmarks,
-  //     ];
-
-  //   setBookmarks(next);
-  //   localStorage.setItem(BOOKMARK_KEY, JSON.stringify(next));
-  // };
-
-  // 다른 탭/페이지에서 localStorage 변경 시 동기화(같은 탭에서는 storage 이벤트 미발생하는 게 정상이라, 안전용)
-  // useEffect(() => {
-  //   const onStorage = (e) => {
-  //     if (e.key !== BOOKMARK_KEY) return;
-  //     try {
-  //       const next = JSON.parse(e.newValue || '[]');
-  //       setBookmarks(Array.isArray(next) ? next : []);
-  //     } catch {
-  //       setBookmarks([]);
-  //     }
-  //   };
-  //   window.addEventListener('storage', onStorage);
-  //   return () => window.removeEventListener('storage', onStorage);
-  // }, []);
-
   // reviews
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);

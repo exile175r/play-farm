@@ -85,7 +85,7 @@ function AdminHome() {
             </aside>
 
             {/* 오른쪽 콘텐츠: 선택된 탭 내용만 렌더링 */}
-            <section className="admin-content">{renderTab()}</section>
+            <section className={`admin-content ${activeTab}`}>{renderTab()}</section>
          </div>
       </main>
    );

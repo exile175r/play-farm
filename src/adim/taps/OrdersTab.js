@@ -1,43 +1,61 @@
 // src/adim/taps/OrdersTab.js
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import './Tabs.css';
-import { readOrders } from '../../utils/orderStorage';
+import { getAllOrders, refundOrder } from '../../services/adminApi';
 
 function OrdersTab() {
    const [statusFilter, setStatusFilter] = useState('ALL');
    const [keyword, setKeyword] = useState('');
-   const [orders, setOrders] = useState([]); // ✅ 실제 주문 목록
+   const [orders, setOrders] = useState([]);
+   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
+   const [currentPage, setCurrentPage] = useState(1);
+   const [error, setError] = useState(null);
    const navigate = useNavigate();
 
-   // 초기 로딩
+   // 주문 목록 로드
+   const loadOrders = async (page = 1) => {
+      try {
+         setError(null);
+         const result = await getAllOrders({
+            page,
+            limit: 20,
+            keyword: keyword.trim(),
+            status: statusFilter
+         });
+
+         if (result.success) {
+            setOrders(result.data || []);
+            setPagination(result.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 });
+            setCurrentPage(page);
+         } else {
+            setError(result.error?.message || '주문 목록을 불러오는데 실패했습니다.');
+            setOrders([]);
+         }
+      } catch (err) {
+         setError('주문 목록을 불러오는데 실패했습니다.');
+         setOrders([]);
+         console.error('주문 목록 로드 실패:', err);
+      }
+   };
+
+   // 초기 로딩 및 필터 변경 시 재로딩
    useEffect(() => {
-      const list = readOrders() || [];
-      setOrders(Array.isArray(list) ? list : []);
-   }, []);
+      loadOrders(1);
+   }, [statusFilter]);
 
-   const filteredOrders = useMemo(() => {
-      return orders.filter((o) => {
-         const status = o.status || 'PENDING';
+   // 검색어 변경 시 디바운스 처리
+   useEffect(() => {
+      const timer = setTimeout(() => {
+         loadOrders(1);
+      }, 500);
 
-         if (statusFilter !== 'ALL' && status !== statusFilter) return false;
-
-         if (!keyword.trim()) return true;
-         const q = keyword.trim().toLowerCase();
-
-         const id = (o.orderId || '').toLowerCase();
-         const buyerName = (o.buyer?.name || '').toLowerCase();
-         const firstItemTitle = (o.items?.[0]?.title || '').toLowerCase();
-
-         return id.includes(q) || buyerName.includes(q) || firstItemTitle.includes(q);
-      });
-   }, [orders, statusFilter, keyword]);
+      return () => clearTimeout(timer);
+   }, [keyword]);
 
    const handleRefresh = () => {
-      const list = readOrders() || [];
-      setOrders(Array.isArray(list) ? list : []);
-      alert('주문 목록을 다시 불러왔습니다. (지금은 localStorage 기준)');
+      loadOrders(currentPage);
    };
 
    // ✅ 관리자 진입 플래그 전달
@@ -47,9 +65,28 @@ function OrdersTab() {
       });
    };
 
-   const handleRefund = (id) => {
-      if (window.confirm(`주문번호 ${id} 를 환불 처리하시겠습니까?`)) {
-         alert('현재는 관리자 화면에서 별도 환불 로직은 연결되어 있지 않습니다.');
+   const handleRefund = async (id) => {
+      if (!window.confirm(`주문번호 ${id} 를 환불 처리하시겠습니까?`)) {
+         return;
+      }
+
+      try {
+         const result = await refundOrder(id, '관리자 환불 처리');
+         if (result.success) {
+            alert('환불 처리가 완료되었습니다.');
+            loadOrders(currentPage);
+         } else {
+            alert(result.error?.message || '환불 처리에 실패했습니다.');
+         }
+      } catch (err) {
+         alert('환불 처리 중 오류가 발생했습니다.');
+         console.error('환불 처리 실패:', err);
+      }
+   };
+
+   const handlePageChange = (newPage) => {
+      if (newPage >= 1 && newPage <= pagination.totalPages) {
+         loadOrders(newPage);
       }
    };
 
@@ -98,6 +135,12 @@ function OrdersTab() {
             </div>
          </div>
 
+         {error && (
+            <div style={{ padding: '10px', color: '#b91c1c', marginBottom: '10px' }}>
+               {error}
+            </div>
+         )}
+
          <div className="admin-table-wrapper">
             <table className="admin-table">
                <thead>
@@ -112,14 +155,14 @@ function OrdersTab() {
                   </tr>
                </thead>
                <tbody>
-                  {filteredOrders.length === 0 ? (
+                  {orders.length === 0 ? (
                      <tr>
                         <td colSpan={7} className="admin-table-empty">
-                           조건에 맞는 주문이 없습니다.
+                           {error ? '주문 목록을 불러올 수 없습니다.' : '조건에 맞는 주문이 없습니다.'}
                         </td>
                      </tr>
                   ) : (
-                     filteredOrders.map((o) => {
+                     orders.map((o) => {
                         const orderId = o.orderId || '(ID 없음)';
                         const buyerName = o.buyer?.name || '-';
                         const firstItem = o.items?.[0];
@@ -159,6 +202,29 @@ function OrdersTab() {
                </tbody>
             </table>
          </div>
+
+         {/* 페이지네이션 */}
+         {pagination.totalPages > 1 && (
+            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px', alignItems: 'center' }}>
+               <button
+                  type="button"
+                  className="admin-secondary-btn"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}>
+                  이전
+               </button>
+               <span>
+                  {currentPage} / {pagination.totalPages} (총 {pagination.total}건)
+               </span>
+               <button
+                  type="button"
+                  className="admin-secondary-btn"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === pagination.totalPages}>
+                  다음
+               </button>
+            </div>
+         )}
       </div>
    );
 }

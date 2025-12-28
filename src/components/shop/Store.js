@@ -1,21 +1,43 @@
 // src/components/shop/Store.js
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Store.css";
 
-import shopData from "../data/StoreData";
+import { getProducts } from "../../services/productApi";
 import ShopSearchBar from "./ShopSearchBar";
 
 function Store() {
   const navigate = useNavigate();
-  const products = shopData;
-
-  // ✅ 검색은 "확정값"만 필터에 사용
-  const [appliedKeyword, setAppliedKeyword] = useState("");
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // ✅ 필터/정렬 상태
   const [category, setCategory] = useState("전체");
   const [sort, setSort] = useState("recommend"); // recommend | priceAsc | priceDesc | nameAsc
+  const [keyword, setKeyword] = useState("");
+
+  // 상품 목록 로드
+  useEffect(() => {
+    const loadProducts = async () => {
+      setLoading(true);
+      try {
+        const result = await getProducts({ category: category !== "전체" ? category : null, keyword });
+        if (result.success) {
+          setProducts(result.data || []);
+        } else {
+          console.error("상품 목록 조회 실패:", result.error);
+          setProducts([]);
+        }
+      } catch (error) {
+        console.error("상품 목록 조회 오류:", error);
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, [category, keyword]);
 
   // ✅ 카테고리 자동 생성 (데이터 기반)
   const categories = useMemo(() => {
@@ -33,19 +55,8 @@ function Store() {
   };
 
   const filteredProducts = useMemo(() => {
-    const k = (appliedKeyword ?? "").trim().toLowerCase();
-    const isAll = category === "전체";
-
-    let list = products.filter((item) => {
-      const matchCategory = isAll ? true : item.category === category;
-      if (!matchCategory) return false;
-
-      if (!k) return true;
-
-      // name + desc + category까지 검색되게
-      const hay = `${item.name ?? ""} ${item.desc ?? ""} ${item.category ?? ""}`.toLowerCase();
-      return hay.includes(k);
-    });
+    // API에서 이미 필터링된 데이터를 받아오므로, 클라이언트에서는 정렬만 수행
+    let list = [...products];
 
     // 정렬
     if (sort === "priceAsc") list.sort((a, b) => getDisplayPrice(a) - getDisplayPrice(b));
@@ -53,12 +64,16 @@ function Store() {
     if (sort === "nameAsc") list.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "", "ko"));
 
     return list;
-  }, [products, appliedKeyword, category, sort]);
+  }, [products, sort]);
 
   const resetFilters = () => {
-    setAppliedKeyword("");
+    setKeyword("");
     setCategory("전체");
     setSort("recommend");
+  };
+
+  const handleSearch = (searchKeyword) => {
+    setKeyword(searchKeyword);
   };
 
   // ✅ 이미지 필드 여러 케이스 대응 (src까지 포함)
@@ -83,14 +98,16 @@ function Store() {
           onCategoryChange={setCategory}
           sort={sort}
           onSortChange={setSort}
-          onSearch={setAppliedKeyword}
+          onSearch={handleSearch}
           onReset={resetFilters}
           resultCount={filteredProducts.length}
-          appliedKeyword={appliedKeyword}
+          appliedKeyword={keyword}
         />
 
         <div className="list-grid store-grid">
-          {filteredProducts.length === 0 ? (
+          {loading ? (
+            <div className="store-empty">상품을 불러오는 중...</div>
+          ) : filteredProducts.length === 0 ? (
             <div className="store-empty">검색 결과가 없습니다.</div>
           ) : (
             filteredProducts.map((item) => {

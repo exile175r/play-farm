@@ -6,8 +6,8 @@ import './Checkout.css';
 import { listMyReservations, markReservationPaid, markReservationPaymentFailed } from '../../services/reservationApi';
 
 // ✅ NEW: 스토어 결제용
-import { readCart, writeCart } from '../../utils/cartStorage';
-import { addOrder } from '../../utils/orderStorage';
+import { getMyCart, clearCart } from '../../services/cartApi';
+import { createOrder, payOrder } from '../../services/orderApi';
 
 function CheckoutPage() {
    const navigate = useNavigate();
@@ -16,6 +16,7 @@ function CheckoutPage() {
 
    const sp = useMemo(() => new URLSearchParams(location.search), [location.search]);
    const type = sp.get('type') || location.state?.type || 'program'; // program | shop
+   const isBuyNow = sp.get('buyNow') === 'true'; // 바로 구매하기 플래그
 
    const user = useMemo(() => {
       try {
@@ -79,20 +80,53 @@ function CheckoutPage() {
    const fetchCart = async () => {
       setLoading(true);
       try {
-         const list = readCart();
-         setCartItems(Array.isArray(list) ? list : []);
+         // ✅ URL에서 바로 구매하기 플래그 확인
+         const currentIsBuyNow = new URLSearchParams(location.search).get('buyNow') === 'true';
+         
+         // ✅ 바로 구매하기인 경우 로컬 스토리지에서 불러오기
+         if (currentIsBuyNow) {
+            try {
+               const buyNowData = localStorage.getItem('buyNow_temp');
+               if (buyNowData) {
+                  const items = JSON.parse(buyNowData);
+                  if (Array.isArray(items) && items.length > 0) {
+                     setCartItems(items);
+                     setLoading(false);
+                     return;
+                  }
+               }
+            } catch (error) {
+               console.error('바로 구매하기 데이터 읽기 오류:', error);
+            }
+            // 데이터가 없으면 장바구니로 리다이렉트
+            alert('구매할 상품 정보를 찾을 수 없습니다.');
+            navigate('/mypage', { state: { openTab: 'cart' } });
+            return;
+         }
+   
+         // 기존: 장바구니에서 불러오기 (API)
+         const result = await getMyCart();
+         if (result.success) {
+            setCartItems(Array.isArray(result.data) ? result.data : []);
+         } else {
+            console.error('장바구니 조회 실패:', result.error);
+            setCartItems([]);
+         }
+      } catch (error) {
+         console.error('장바구니 조회 오류:', error);
+         setCartItems([]);
       } finally {
          setLoading(false);
       }
    };
 
    useEffect(() => {
-      // ✅ shop 결제: /checkout/cart?type=shop
+      // ✅ shop 결제: /checkout?type=shop 또는 /checkout?type=shop&buyNow=true
       if (type === 'shop') {
          fetchCart();
          return;
       }
-
+   
       // ✅ program 결제: 기존 로직 유지
       if (!bookingId) {
          navigate('/mypage', { state: { openTab: 'reservations' } });
@@ -100,7 +134,7 @@ function CheckoutPage() {
       }
       fetchReservation();
       // eslint-disable-next-line react-hooks/exhaustive-deps
-   }, [bookingId, type]);
+   }, [bookingId, type, isBuyNow]);
 
    // ===== 입력 포맷 helpers =====
    const formatCardNumber = (v) =>
@@ -174,31 +208,64 @@ function CheckoutPage() {
          // ✅ SHOP 결제
          // =========================
          if (type === 'shop') {
-            if (isFail) {
-               alert('결제가 실패했습니다. 결제 정보를 확인하신 뒤 다시 시도해 주세요.');
-               return;
-            }
-
-            // ✅ 주문 저장 (orderStorage.js 구조: orderId, status, createdAt 유지)
-            addOrder({
-               type: 'shop',
-               buyer: { name: buyerName, phone: buyerPhone, email: buyerEmail },
-               amount: shopTotal,
-               payMethod,
+            // 1. 주문 생성
+            const orderResult = await createOrder({
                items: cartItems.map((it) => ({
-                  productId: String(it.id), // ✅ StoreDetail addToCart 기준
+                  productId: String(it.id),
                   title: it.name || it.title || `상품 #${it.id}`,
                   image: it.image || '',
                   optionId: it.optionId || null,
                   optionName: it.optionName || null,
-                  unitPrice: Number(it.price || 0), // ✅ cartStorage는 price가 단가
+                  unitPrice: Number(it.price || 0),
                   qty: Number(it.qty || 0),
                })),
+               buyer: { name: buyerName, phone: buyerPhone, email: buyerEmail },
+               amount: shopTotal,
+               payMethod,
             });
 
-            // ✅ 장바구니 비우기 (cartStorage exports: readCart, writeCart 기준)
-            writeCart([]);
+            if (!orderResult?.success) {
+               alert('주문 생성에 실패했습니다. 다시 시도해 주세요.');
+               setSubmitting(false);
+               return;
+            }
 
+            if (isFail) {
+               alert('결제가 실패했습니다. 결제 정보를 확인하신 뒤 다시 시도해 주세요.');
+               setSubmitting(false);
+               return;
+            }
+
+            // 2. 결제 처리
+            const paymentResult = await payOrder({
+               orderId: orderResult.data.orderId,
+               method: payMethod,
+               buyerName,
+               buyerPhone,
+               buyerEmail,
+            });
+
+            if (!paymentResult?.success) {
+               alert('결제 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+               setSubmitting(false);
+               return;
+            }
+
+            // 3. 장바구니 비우기
+            const currentIsBuyNow = new URLSearchParams(location.search).get('buyNow') === 'true';
+      
+            if (currentIsBuyNow) {
+               // 바로 구매하기인 경우 임시 데이터만 삭제
+               localStorage.removeItem('buyNow_temp');
+            } else {
+               // 장바구니에서 구매한 경우 장바구니 비우기
+               try {
+                  await clearCart();
+               } catch (error) {
+                  console.error('장바구니 비우기 오류:', error);
+               }
+            }
+      
             alert('결제가 정상적으로 완료되었습니다.');
             navigate('/mypage', { state: { openTab: 'store_orders' } });
             return;
@@ -219,7 +286,13 @@ function CheckoutPage() {
             return;
          }
 
-         const res = await markReservationPaid({ bookingId, method: payMethod });
+         const res = await markReservationPaid({ 
+            bookingId, 
+            method: payMethod,
+            buyerName,
+            buyerPhone,
+            buyerEmail
+         });
          if (!res?.success) {
             alert('결제 완료 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.');
             return;

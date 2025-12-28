@@ -1,85 +1,69 @@
 // src/adim/taps/ReservationsTab.js
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import dayjs from 'dayjs';
 import './Tabs.css';
 import AdminModal from '../components/AdminModal';
-
-// 데모용 더미 데이터 (나중에 서버/DB로 교체)
-const INITIAL_RESERVATIONS = [
-   {
-      id: 101,
-      programTitle: '감자 캐기 체험',
-      userName: '홍길동',
-      userPhone: '010-1111-2222',
-      date: '2025-03-10',
-      timeSlot: '오전 10:00',
-      people: 4,
-      totalPrice: 60000,
-      createdAt: '2025-02-20 14:32',
-      paymentMethod: '카드',
-      status: 'CONFIRMED', // PENDING | CONFIRMED | CANCELLED | REFUNDED
-   },
-   {
-      id: 102,
-      programTitle: '감귤 따기 주말 체험',
-      userName: '이영희',
-      userPhone: '010-3333-4444',
-      date: '2025-02-15',
-      timeSlot: '오후 14:00',
-      people: 2,
-      totalPrice: 40000,
-      createdAt: '2025-02-01 09:10',
-      paymentMethod: '카드',
-      status: 'PENDING',
-   },
-   {
-      id: 103,
-      programTitle: '트랙터 타고 둘러보기',
-      userName: '박민수',
-      userPhone: '010-5555-6666',
-      date: '2024-12-20',
-      timeSlot: '오후 16:00',
-      people: 3,
-      totalPrice: 30000,
-      createdAt: '2024-12-10 19:45',
-      paymentMethod: '계좌이체',
-      status: 'CANCELLED',
-   },
-   {
-      id: 104,
-      programTitle: '감자 캐기 체험',
-      userName: '정우성',
-      userPhone: '010-7777-8888',
-      date: '2025-03-21',
-      timeSlot: '오전 11:00',
-      people: 1,
-      totalPrice: 15000,
-      createdAt: '2025-02-25 11:20',
-      paymentMethod: '카드',
-      status: 'REFUNDED',
-   },
-];
+import { getAllReservations } from '../../services/adminApi';
 
 function ReservationsTab() {
-   const [reservations] = useState(INITIAL_RESERVATIONS);
+   const [reservations, setReservations] = useState([]);
    const [statusFilter, setStatusFilter] = useState('ALL');
    const [keyword, setKeyword] = useState('');
+   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
+   const [currentPage, setCurrentPage] = useState(1);
+   const [error, setError] = useState(null);
 
    const [detailModalOpen, setDetailModalOpen] = useState(false);
    const [selectedReservation, setSelectedReservation] = useState(null);
 
-   const filteredReservations = useMemo(() => {
-      return reservations.filter((r) => {
-         if (statusFilter !== 'ALL' && r.status !== statusFilter) return false;
+   // 예약 목록 로드
+   const loadReservations = async (page = 1) => {
+      try {
+         setError(null);
+         const result = await getAllReservations({
+            page,
+            limit: 20,
+            keyword: keyword.trim(),
+            status: statusFilter
+         });
 
-         if (!keyword.trim()) return true;
-         const q = keyword.trim().toLowerCase();
-         return r.programTitle.toLowerCase().includes(q) || r.userName.toLowerCase().includes(q);
-      });
-   }, [reservations, statusFilter, keyword]);
+         if (result.success) {
+            setReservations(result.data || []);
+            setPagination(result.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 });
+            setCurrentPage(page);
+         } else {
+            setError(result.error?.message || '예약 목록을 불러오는데 실패했습니다.');
+            setReservations([]);
+         }
+      } catch (err) {
+         setError('예약 목록을 불러오는데 실패했습니다.');
+         setReservations([]);
+         console.error('예약 목록 로드 실패:', err);
+      }
+   };
+
+   // 초기 로딩 및 필터 변경 시 재로딩
+   useEffect(() => {
+      loadReservations(1);
+   }, [statusFilter]);
+
+   // 검색어 변경 시 디바운스 처리
+   useEffect(() => {
+      const timer = setTimeout(() => {
+         loadReservations(1);
+      }, 500);
+
+      return () => clearTimeout(timer);
+   }, [keyword]);
 
    const handleRefresh = () => {
-      // 나중에 서버 붙이면 여기서 API 다시 호출
-      alert('지금은 더미 데이터입니다. 서버 연결 후 예약 목록을 새로고침하도록 변경해 주세요.');
+      loadReservations(currentPage);
+   };
+
+   const handlePageChange = (newPage) => {
+      if (newPage >= 1 && newPage <= pagination.totalPages) {
+         loadReservations(newPage);
+      }
    };
 
    const handleViewDetail = (reservation) => {
@@ -149,6 +133,12 @@ function ReservationsTab() {
             </div>
          </div>
 
+         {error && (
+            <div style={{ padding: '10px', color: '#b91c1c', marginBottom: '10px' }}>
+               {error}
+            </div>
+         )}
+
          {/* 테이블 */}
          <div className="admin-table-wrapper">
             <table className="admin-table">
@@ -165,19 +155,19 @@ function ReservationsTab() {
                   </tr>
                </thead>
                <tbody>
-                  {filteredReservations.length === 0 ? (
+                  {reservations.length === 0 ? (
                      <tr>
                         <td colSpan={8} className="admin-table-empty">
-                           조건에 맞는 예약이 없습니다.
+                           {error ? '예약 목록을 불러올 수 없습니다.' : '조건에 맞는 예약이 없습니다.'}
                         </td>
                      </tr>
                   ) : (
-                     filteredReservations.map((r) => (
+                     reservations.map((r) => (
                         <tr key={r.id}>
                            <td>{r.id}</td>
                            <td>{r.programTitle}</td>
                            <td>{r.userName}</td>
-                           <td>{r.date}</td>
+                           <td>{dayjs(r.date).format('YYYY-MM-DD')}</td>
                            <td>{r.people}명</td>
                            <td>{r.totalPrice.toLocaleString()}원</td>
                            <td>{renderStatusBadge(r.status)}</td>
@@ -194,6 +184,29 @@ function ReservationsTab() {
                </tbody>
             </table>
          </div>
+
+         {/* 페이지네이션 */}
+         {pagination.totalPages > 1 && (
+            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px', alignItems: 'center' }}>
+               <button
+                  type="button"
+                  className="admin-secondary-btn"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}>
+                  이전
+               </button>
+               <span>
+                  {currentPage} / {pagination.totalPages} (총 {pagination.total}건)
+               </span>
+               <button
+                  type="button"
+                  className="admin-secondary-btn"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === pagination.totalPages}>
+                  다음
+               </button>
+            </div>
+         )}
 
          {/* 상세 모달 */}
          {detailModalOpen && selectedReservation && (

@@ -1,67 +1,103 @@
 // src/adim/taps/ProgramsTab.js
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './Tabs.css';
-
-const DUMMY_PROGRAMS = [
-   {
-      id: 1,
-      title: '감자 캐기 체험',
-      category: '농작물 수확',
-      status: 'OPEN', // OPEN | CLOSED
-      startDate: '2025-03-01',
-      endDate: '2025-03-31',
-      price: 15000,
-   },
-   {
-      id: 2,
-      title: '감귤 따기 주말 체험',
-      category: '과수원',
-      status: 'OPEN',
-      startDate: '2025-02-01',
-      endDate: '2025-02-28',
-      price: 20000,
-   },
-   {
-      id: 3,
-      title: '트랙터 타고 둘러보기',
-      category: '농장 투어',
-      status: 'CLOSED',
-      startDate: '2024-12-01',
-      endDate: '2024-12-31',
-      price: 10000,
-   },
-];
+import { getAllPrograms, deleteProgram } from '../../services/adminApi';
 
 function ProgramsTab() {
-   const [statusFilter, setStatusFilter] = useState('ALL'); // ALL | OPEN | CLOSED
+   const [programs, setPrograms] = useState([]);
+   const [statusFilter, setStatusFilter] = useState('ALL');
    const [keyword, setKeyword] = useState('');
+   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
+   const [currentPage, setCurrentPage] = useState(1);
+   const [error, setError] = useState(null);
 
-   const filteredPrograms = useMemo(() => {
-      return DUMMY_PROGRAMS.filter((p) => {
-         // 상태 필터
-         if (statusFilter !== 'ALL' && p.status !== statusFilter) return false;
+   // 프로그램 목록 로드
+   const loadPrograms = async (page = 1) => {
+      try {
+         setError(null);
+         const result = await getAllPrograms({
+            page,
+            limit: 20,
+            keyword: keyword.trim(),
+            status: statusFilter
+         });
 
-         // 검색어 (제목 + 카테고리)
-         if (!keyword.trim()) return true;
-         const q = keyword.trim().toLowerCase();
-         return p.title.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
-      });
-   }, [statusFilter, keyword]);
+         if (result.success) {
+            console.log(result.data);
+            const replaceText = { 체험: " 체험", 및: " 및 " };
+            setPrograms(result.data.map((item) => {
+               const newItem = { ...item };
+               try {
+                 if (typeof newItem.title === "string" && newItem.title.includes(" 체험")) {
+                   return newItem;
+                 }
+                 newItem.title = JSON.parse(newItem.title)
+                   .map((v) => v.replace(/체험|및/g, (match) => replaceText[match] || match))
+                   .join(", ");
+               } catch (error) {
+                 if (typeof newItem.title === "string" && !newItem.title.includes(" 체험")) {
+                   newItem.title = newItem.title.replace(/체험|및/g, (match) => replaceText[match] || match);
+                 }
+               }
+               return newItem;
+             }).sort((a, b) => b.id - a.id));
+            setPagination(result.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 });
+            setCurrentPage(page);
+         } else {
+            setError(result.error?.message || '프로그램 목록을 불러오는데 실패했습니다.');
+            setPrograms([]);
+         }
+      } catch (err) {
+         setError('프로그램 목록을 불러오는데 실패했습니다.');
+         setPrograms([]);
+         console.error('프로그램 목록 로드 실패:', err);
+      }
+   };
+
+   // 초기 로딩 및 필터 변경 시 재로딩
+   useEffect(() => {
+      loadPrograms(1);
+   }, [statusFilter]);
+
+   // 검색어 변경 시 디바운스 처리
+   useEffect(() => {
+      const timer = setTimeout(() => {
+         loadPrograms(1);
+      }, 500);
+
+      return () => clearTimeout(timer);
+   }, [keyword]);
 
    const handleCreate = () => {
-      // TODO: 나중에 모달 열어서 생성 폼 띄우기
-      alert('새 체험 생성 폼(모달) 여는 자리');
+      alert('새 체험 생성 기능은 이미지 업로드 구현 후 추가됩니다.');
    };
 
    const handleEdit = (id) => {
-      // TODO: 나중에 상세 수정 모달/페이지 연결
-      alert(`체험 ID ${id} 수정 폼 여는 자리`);
+      alert(`체험 ID ${id} 수정 기능은 이미지 업로드 구현 후 추가됩니다.`);
    };
 
-   const handleDelete = (id) => {
-      // TODO: 실제 삭제 로직 나중에 서버 붙일 때 구현
-      if (window.confirm(`체험 ID ${id} 를 삭제하시겠습니까?`)) {
-         alert('지금은 더미라 실제 삭제는 안 됨');
+   const handleDelete = async (id) => {
+      if (!window.confirm(`체험 ID ${id} 를 삭제하시겠습니까?`)) {
+         return;
+      }
+
+      try {
+         const result = await deleteProgram(id);
+         if (result.success) {
+            alert('체험이 삭제되었습니다.');
+            loadPrograms(currentPage);
+         } else {
+            alert(result.error?.message || '체험 삭제에 실패했습니다.');
+         }
+      } catch (err) {
+         alert('체험 삭제 중 오류가 발생했습니다.');
+         console.error('체험 삭제 실패:', err);
+      }
+   };
+
+   const handlePageChange = (newPage) => {
+      if (newPage >= 1 && newPage <= pagination.totalPages) {
+         loadPrograms(newPage);
       }
    };
 
@@ -95,6 +131,12 @@ function ProgramsTab() {
             </div>
          </div>
 
+         {error && (
+            <div style={{ padding: '10px', color: '#b91c1c', marginBottom: '10px' }}>
+               {error}
+            </div>
+         )}
+
          {/* 테이블 */}
          <div className="admin-table-wrapper">
             <table className="admin-table">
@@ -110,22 +152,22 @@ function ProgramsTab() {
                   </tr>
                </thead>
                <tbody>
-                  {filteredPrograms.length === 0 ? (
+                  {programs.length === 0 ? (
                      <tr>
                         <td colSpan={7} className="admin-table-empty">
-                           조건에 맞는 체험이 없습니다.
+                           {error ? '프로그램 목록을 불러올 수 없습니다.' : '조건에 맞는 체험이 없습니다.'}
                         </td>
                      </tr>
                   ) : (
-                     filteredPrograms.map((p) => (
+                     programs.map((p) => (
                         <tr key={p.id}>
                            <td>{p.id}</td>
                            <td>{p.title}</td>
                            <td>{p.category}</td>
                            <td>
-                              {p.startDate} ~ {p.endDate}
+                              {p.startDate ? `${p.startDate} ~ ${p.endDate || ''}` : '-'}
                            </td>
-                           <td>{p.price.toLocaleString()}원</td>
+                           <td>{p.price ? p.price.toLocaleString() + '원' : '-'}</td>
                            <td>{p.status === 'OPEN' ? <span className="badge badge-open">OPEN</span> : <span className="badge badge-closed">CLOSED</span>}</td>
                            <td>
                               <div className="admin-row-actions">
@@ -143,6 +185,29 @@ function ProgramsTab() {
                </tbody>
             </table>
          </div>
+
+         {/* 페이지네이션 */}
+         {pagination.totalPages > 1 && (
+            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px', alignItems: 'center' }}>
+               <button
+                  type="button"
+                  className="admin-secondary-btn"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}>
+                  이전
+               </button>
+               <span>
+                  {currentPage} / {pagination.totalPages} (총 {pagination.total}건)
+               </span>
+               <button
+                  type="button"
+                  className="admin-secondary-btn"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === pagination.totalPages}>
+                  다음
+               </button>
+            </div>
+         )}
       </div>
    );
 }
