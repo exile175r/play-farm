@@ -1,4 +1,5 @@
-import { fetchWithAuthAndRetry, getApiBaseUrl } from '../utils/apiConfig';
+// src/services/adminApi.js
+import { fetchWithAuthAndRetry, getApiBaseUrl } from "../utils/apiConfig";
 
 const API_BASE = getApiBaseUrl();
 
@@ -14,9 +15,9 @@ export async function getDashboardStats() {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/dashboard/stats`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       },
       onLogout
@@ -24,7 +25,7 @@ export async function getDashboardStats() {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '대시보드 통계 조회 실패');
+      throw new Error(error.message || "대시보드 통계 조회 실패");
     }
 
     const data = await res.json();
@@ -35,7 +36,7 @@ export async function getDashboardStats() {
 }
 
 // 전체 주문 목록 조회
-export async function getAllOrders({ page = 1, limit = 20, keyword = '', status = 'ALL' }) {
+export async function getAllOrders({ page = 1, limit = 20, keyword = "", status = "ALL" }) {
   try {
     const params = new URLSearchParams({
       page: String(page),
@@ -47,9 +48,9 @@ export async function getAllOrders({ page = 1, limit = 20, keyword = '', status 
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/orders?${params.toString()}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       },
       onLogout
@@ -57,7 +58,7 @@ export async function getAllOrders({ page = 1, limit = 20, keyword = '', status 
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '주문 목록 조회 실패');
+      throw new Error(error.message || "주문 목록 조회 실패");
     }
 
     const data = await res.json();
@@ -68,14 +69,14 @@ export async function getAllOrders({ page = 1, limit = 20, keyword = '', status 
 }
 
 // 주문 환불 처리
-export async function refundOrder(orderId, reason = '관리자 환불 처리') {
+export async function refundOrder(orderId, reason = "관리자 환불 처리") {
   try {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/orders/${encodeURIComponent(orderId)}/refund`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ reason }),
       },
@@ -84,7 +85,7 @@ export async function refundOrder(orderId, reason = '관리자 환불 처리') {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '환불 처리 실패');
+      throw new Error(error.message || "환불 처리 실패");
     }
 
     const data = await res.json();
@@ -95,7 +96,7 @@ export async function refundOrder(orderId, reason = '관리자 환불 처리') {
 }
 
 // 전체 프로그램 목록 조회
-export async function getAllPrograms({ page = 1, limit = 20, keyword = '', status = 'ALL' }) {
+export async function getAllPrograms({ page = 1, limit = 20, keyword = "", status = "ALL" }) {
   try {
     const params = new URLSearchParams({
       page: String(page),
@@ -107,9 +108,9 @@ export async function getAllPrograms({ page = 1, limit = 20, keyword = '', statu
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/programs?${params.toString()}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       },
       onLogout
@@ -117,7 +118,7 @@ export async function getAllPrograms({ page = 1, limit = 20, keyword = '', statu
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '프로그램 목록 조회 실패');
+      throw new Error(error.message || "프로그램 목록 조회 실패");
     }
 
     const data = await res.json();
@@ -127,13 +128,13 @@ export async function getAllPrograms({ page = 1, limit = 20, keyword = '', statu
   }
 }
 
-// 프로그램 생성
+// 프로그램 생성 (이미지 포함)
 export async function createProgram(formData) {
   try {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/programs`,
       {
-        method: 'POST',
+        method: "POST",
         body: formData, // FormData (이미지 포함)
       },
       onLogout
@@ -141,7 +142,7 @@ export async function createProgram(formData) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '프로그램 생성 실패');
+      throw new Error(error.message || "프로그램 생성 실패");
     }
 
     const data = await res.json();
@@ -151,13 +152,13 @@ export async function createProgram(formData) {
   }
 }
 
-// 프로그램 수정
+// 프로그램 수정 (이미지 포함)
 export async function updateProgram(id, formData) {
   try {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/programs/${encodeURIComponent(id)}`,
       {
-        method: 'PUT',
+        method: "PUT",
         body: formData, // FormData (이미지 포함)
       },
       onLogout
@@ -165,7 +166,7 @@ export async function updateProgram(id, formData) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '프로그램 수정 실패');
+      throw new Error(error.message || "프로그램 수정 실패");
     }
 
     const data = await res.json();
@@ -181,9 +182,9 @@ export async function deleteProgram(id) {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/programs/${encodeURIComponent(id)}`,
       {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       },
       onLogout
@@ -191,7 +192,7 @@ export async function deleteProgram(id) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '프로그램 삭제 실패');
+      throw new Error(error.message || "프로그램 삭제 실패");
     }
 
     const data = await res.json();
@@ -202,7 +203,7 @@ export async function deleteProgram(id) {
 }
 
 // 전체 예약 목록 조회
-export async function getAllReservations({ page = 1, limit = 20, keyword = '', status = 'ALL' }) {
+export async function getAllReservations({ page = 1, limit = 20, keyword = "", status = "ALL" }) {
   try {
     const params = new URLSearchParams({
       page: String(page),
@@ -214,9 +215,9 @@ export async function getAllReservations({ page = 1, limit = 20, keyword = '', s
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/reservations?${params.toString()}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       },
       onLogout
@@ -224,7 +225,7 @@ export async function getAllReservations({ page = 1, limit = 20, keyword = '', s
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '예약 목록 조회 실패');
+      throw new Error(error.message || "예약 목록 조회 실패");
     }
 
     const data = await res.json();
@@ -240,9 +241,9 @@ export async function updateReservationStatus(reservationId, status) {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/reservations/${encodeURIComponent(reservationId)}/status`,
       {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ status }),
       },
@@ -251,7 +252,7 @@ export async function updateReservationStatus(reservationId, status) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '예약 상태 변경 실패');
+      throw new Error(error.message || "예약 상태 변경 실패");
     }
 
     const data = await res.json();
@@ -262,7 +263,7 @@ export async function updateReservationStatus(reservationId, status) {
 }
 
 // 전체 상품 목록 조회
-export async function getAllProducts({ page = 1, limit = 20, keyword = '', status = 'ALL' }) {
+export async function getAllProducts({ page = 1, limit = 20, keyword = "", status = "ALL" }) {
   try {
     const params = new URLSearchParams({
       page: String(page),
@@ -274,9 +275,9 @@ export async function getAllProducts({ page = 1, limit = 20, keyword = '', statu
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/products?${params.toString()}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       },
       onLogout
@@ -284,7 +285,7 @@ export async function getAllProducts({ page = 1, limit = 20, keyword = '', statu
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '상품 목록 조회 실패');
+      throw new Error(error.message || "상품 목록 조회 실패");
     }
 
     const data = await res.json();
@@ -294,13 +295,13 @@ export async function getAllProducts({ page = 1, limit = 20, keyword = '', statu
   }
 }
 
-// 상품 생성
+// 상품 생성 (이미지 포함)
 export async function createProduct(formData) {
   try {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/products`,
       {
-        method: 'POST',
+        method: "POST",
         body: formData, // FormData (이미지 포함)
       },
       onLogout
@@ -308,7 +309,7 @@ export async function createProduct(formData) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '상품 생성 실패');
+      throw new Error(error.message || "상품 생성 실패");
     }
 
     const data = await res.json();
@@ -318,13 +319,13 @@ export async function createProduct(formData) {
   }
 }
 
-// 상품 수정
+// 상품 수정 (이미지 포함)
 export async function updateProduct(id, formData) {
   try {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/products/${encodeURIComponent(id)}`,
       {
-        method: 'PUT',
+        method: "PUT",
         body: formData, // FormData (이미지 포함)
       },
       onLogout
@@ -332,7 +333,7 @@ export async function updateProduct(id, formData) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '상품 수정 실패');
+      throw new Error(error.message || "상품 수정 실패");
     }
 
     const data = await res.json();
@@ -348,9 +349,9 @@ export async function deleteProduct(id) {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/products/${encodeURIComponent(id)}`,
       {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       },
       onLogout
@@ -358,7 +359,7 @@ export async function deleteProduct(id) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '상품 삭제 실패');
+      throw new Error(error.message || "상품 삭제 실패");
     }
 
     const data = await res.json();
@@ -369,7 +370,7 @@ export async function deleteProduct(id) {
 }
 
 // 전체 사용자 목록 조회
-export async function getAllUsers({ page = 1, limit = 20, keyword = '', role = 'ALL', status = 'ALL' }) {
+export async function getAllUsers({ page = 1, limit = 20, keyword = "", role = "ALL", status = "ALL" }) {
   try {
     const params = new URLSearchParams({
       page: String(page),
@@ -382,9 +383,9 @@ export async function getAllUsers({ page = 1, limit = 20, keyword = '', role = '
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/users?${params.toString()}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       },
       onLogout
@@ -392,7 +393,7 @@ export async function getAllUsers({ page = 1, limit = 20, keyword = '', role = '
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '사용자 목록 조회 실패');
+      throw new Error(error.message || "사용자 목록 조회 실패");
     }
 
     const data = await res.json();
@@ -408,9 +409,9 @@ export async function updateUserStatus(userId, status) {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/users/${encodeURIComponent(userId)}/status`,
       {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ status }),
       },
@@ -419,7 +420,7 @@ export async function updateUserStatus(userId, status) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '사용자 상태 변경 실패');
+      throw new Error(error.message || "사용자 상태 변경 실패");
     }
 
     const data = await res.json();
@@ -429,8 +430,12 @@ export async function updateUserStatus(userId, status) {
   }
 }
 
+// =========================
+// 이벤트 (관리자) API
+// =========================
+
 // 전체 이벤트 목록 조회
-export async function getAllEvents({ page = 1, limit = 20, keyword = '', status = 'ALL' }) {
+export async function getAllEvents({ page = 1, limit = 20, keyword = "", status = "ALL" }) {
   try {
     const params = new URLSearchParams({
       page: String(page),
@@ -440,11 +445,11 @@ export async function getAllEvents({ page = 1, limit = 20, keyword = '', status 
     });
 
     const res = await fetchWithAuthAndRetry(
-      `${API_BASE}/events?${params.toString()}`,
+      `${API_BASE}/admin/events?${params.toString()}`,
       {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       },
       onLogout
@@ -452,7 +457,7 @@ export async function getAllEvents({ page = 1, limit = 20, keyword = '', status 
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '이벤트 목록 조회 실패');
+      throw new Error(error.message || "이벤트 목록 조회 실패");
     }
 
     const data = await res.json();
@@ -462,13 +467,13 @@ export async function getAllEvents({ page = 1, limit = 20, keyword = '', status 
   }
 }
 
-// 이벤트 생성
+// 이벤트 생성 (이미지 포함)
 export async function createEvent(formData) {
   try {
     const res = await fetchWithAuthAndRetry(
-      `${API_BASE}/events`,
+      `${API_BASE}/admin/events`,
       {
-        method: 'POST',
+        method: "POST",
         body: formData, // FormData (이미지 포함)
       },
       onLogout
@@ -476,7 +481,7 @@ export async function createEvent(formData) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '이벤트 생성 실패');
+      throw new Error(error.message || "이벤트 생성 실패");
     }
 
     const data = await res.json();
@@ -486,13 +491,13 @@ export async function createEvent(formData) {
   }
 }
 
-// 이벤트 수정
+// 이벤트 수정 (이미지 포함)
 export async function updateEvent(id, formData) {
   try {
     const res = await fetchWithAuthAndRetry(
-      `${API_BASE}/events/${encodeURIComponent(id)}`,
+      `${API_BASE}/admin/events/${encodeURIComponent(id)}`,
       {
-        method: 'PUT',
+        method: "PUT",
         body: formData, // FormData (이미지 포함)
       },
       onLogout
@@ -500,7 +505,7 @@ export async function updateEvent(id, formData) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '이벤트 수정 실패');
+      throw new Error(error.message || "이벤트 수정 실패");
     }
 
     const data = await res.json();
@@ -514,11 +519,11 @@ export async function updateEvent(id, formData) {
 export async function deleteEvent(id) {
   try {
     const res = await fetchWithAuthAndRetry(
-      `${API_BASE}/events/${encodeURIComponent(id)}`,
+      `${API_BASE}/admin/events/${encodeURIComponent(id)}`,
       {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       },
       onLogout
@@ -526,7 +531,7 @@ export async function deleteEvent(id) {
 
     if (!res.ok) {
       const error = await res.json();
-      throw new Error(error.message || '이벤트 삭제 실패');
+      throw new Error(error.message || "이벤트 삭제 실패");
     }
 
     const data = await res.json();
@@ -535,4 +540,3 @@ export async function deleteEvent(id) {
     return { success: false, error: e };
   }
 }
-
