@@ -2,12 +2,7 @@
 import React, { useEffect, useState } from "react";
 import "./Tabs.css";
 import AdminModal from "../components/AdminModal";
-import {
-  getAllEvents,
-  deleteEvent,
-  createEvent, // ✅ 추가
-  updateEvent, // ✅ 추가
-} from "../../services/adminApi";
+import { getAllEvents, deleteEvent, createEvent, updateEvent } from "../../services/adminApi";
 
 const emptyForm = {
   title: "",
@@ -18,6 +13,7 @@ const emptyForm = {
 };
 
 function EventsTab() {
+  // 상태
   const [events, setEvents] = useState([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [keyword, setKeyword] = useState("");
@@ -33,8 +29,8 @@ function EventsTab() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const [form, setForm] = useState(emptyForm);
-  const [imageFile, setImageFile] = useState(null); // ✅ 새로 추가
-  const [imagePreview, setImagePreview] = useState(""); // ✅ 새로 추가
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
 
   // 이벤트 목록 로드
   const loadEvents = async (page = 1) => {
@@ -69,13 +65,13 @@ function EventsTab() {
     }
   };
 
-  // 초기 로딩 및 필터 변경 시 재로딩
+  // 필터 변경 시 재로딩
   useEffect(() => {
     loadEvents(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
-  // 검색어 변경 시 디바운스 처리
+  // 검색 디바운스
   useEffect(() => {
     const timer = setTimeout(() => {
       loadEvents(1);
@@ -85,7 +81,7 @@ function EventsTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keyword]);
 
-  // ===== 모달 열기/닫기 =====
+  // 모달 열기/닫기
   const openCreateModal = () => {
     setEditingEvent(null);
     setForm(emptyForm);
@@ -112,7 +108,7 @@ function EventsTab() {
     setIsModalOpen(false);
   };
 
-  // ===== 폼 입력 =====
+  // 폼 입력
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({
@@ -128,7 +124,7 @@ function EventsTab() {
     setImagePreview(URL.createObjectURL(file));
   };
 
-  // ===== 저장 (생성/수정 공통) =====
+  // 저장 (생성/수정)
   const handleSubmit = async () => {
     if (!form.title.trim()) {
       alert("이벤트 제목을 입력해 주세요.");
@@ -147,7 +143,7 @@ function EventsTab() {
       formData.append("status", form.status);
 
       if (imageFile) {
-        formData.append("image", imageFile); // 🔥 서버에서 single('image')로 받음
+        formData.append("image", imageFile);
       }
 
       let result;
@@ -170,7 +166,7 @@ function EventsTab() {
     }
   };
 
-  // ===== 삭제 =====
+  // 삭제
   const handleDelete = async (id) => {
     if (!window.confirm(`이벤트 ID ${id} 를 삭제하시겠습니까?`)) {
       return;
@@ -190,12 +186,14 @@ function EventsTab() {
     }
   };
 
+  // 페이지네이션
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
       loadEvents(newPage);
     }
   };
 
+  // 상태 뱃지
   const renderStatusBadge = (status) => {
     switch (status) {
       case "SCHEDULED":
@@ -209,9 +207,10 @@ function EventsTab() {
     }
   };
 
+  // 렌더
   return (
-    <div className="admin-section">
-      {/* 상단 영역 */}
+    <div className="admin-section events">
+      {/* 상단 */}
       <div className="admin-section-header">
         <div>
           <h2 className="admin-section-title">이벤트 관리</h2>
@@ -367,7 +366,6 @@ function EventsTab() {
               </select>
             </div>
 
-            {/* ✅ 이미지 업로드 */}
             <div className="admin-form-row">
               <label className="admin-form-label">대표 이미지</label>
               <input type="file" accept="image/*" onChange={handleImageChange} />

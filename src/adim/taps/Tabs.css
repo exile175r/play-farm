@@ -1,8 +1,4 @@
-/* =========================
- * 1. Admin 페이지 외곽 레이아웃
- * ========================= */
-
-/* /admin 전체 카드 래퍼 */
+/* 1. Admin 레이아웃 */
 .admin-page {
   max-width: 1200px;
   margin: 40px auto;
@@ -22,31 +18,25 @@
   font-weight: 700;
 }
 
-/* 몸통 영역: 왼쪽 메뉴 + 오른쪽 콘텐츠 */
 .admin-body {
   display: flex;
   gap: 24px;
   margin-top: 16px;
 }
 
-/* 왼쪽 사이드바 */
 .admin-sidebar {
   width: 220px;
   border-right: 1px solid #e5e7eb;
   padding-right: 16px;
 }
 
-/* 오른쪽 내용 영역 */
 .admin-content {
   flex: 1;
   min-height: 400px;
   padding-left: 8px;
 }
 
-/* =========================
- * 2. 세로 탭 메뉴 (트위터/인스타 느낌)
- * ========================= */
-
+/* 2. 사이드 탭 메뉴 */
 .admin-tabs {
   display: flex;
   flex-direction: column;
@@ -75,10 +65,7 @@
   font-weight: 600;
 }
 
-/* =========================
- * 3. 모달 공통 스타일
- * ========================= */
-
+/* 3. 모달 공통 */
 .admin-modal-overlay {
   position: fixed;
   inset: 0;
@@ -124,7 +111,6 @@
   padding: 8px 0 12px;
 }
 
-/* 하단 버튼 영역 – 기존 버튼 스타일 재사용 */
 .admin-modal-footer {
   display: flex;
   justify-content: flex-end;
@@ -132,18 +118,13 @@
   margin-top: 8px;
 }
 
-/* =========================
- * 4. 각 탭 공통 섹션 / 테이블 / 폼
- * ========================= */
-
-/* 섹션 공통 */
+/* 4. 섹션 / 테이블 / 폼 */
 .admin-section {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-/* 상단 타이틀 + 버튼 */
 .admin-section-header {
   display: flex;
   align-items: center;
@@ -162,7 +143,6 @@
   color: #6b7280;
 }
 
-/* 필터 영역 */
 .admin-filters {
   display: flex;
   gap: 16px;
@@ -190,7 +170,6 @@
   font-size: 13px;
 }
 
-/* 테이블 */
 .admin-table-wrapper {
   border-radius: 12px;
   border: 1px solid #e5e7eb;
@@ -240,7 +219,7 @@
   color: #9ca3af;
 }
 
-/* 버튼 공통 */
+/* 버튼 */
 .admin-primary-btn,
 .admin-secondary-btn,
 .admin-danger-btn {
@@ -287,13 +266,19 @@
   color: #6b7280;
 }
 
-/* 행 내 액션 버튼 묶음 */
+/* 행 액션 버튼 */
 .admin-row-actions {
   display: flex;
   gap: 4px;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
 }
 
-/* 모달 폼 레이아웃 */
+.admin-row-actions button {
+  white-space: nowrap;
+}
+
+/* 모달 폼 */
 .admin-form-grid {
   display: flex;
   flex-direction: column;
@@ -330,7 +315,7 @@
   box-sizing: border-box;
 }
 
-/* 상세 보기(예약 상세 모달 등) */
+/* 상세 보기 */
 .admin-detail-grid {
   display: flex;
   flex-direction: column;
@@ -357,10 +342,7 @@
   word-break: break-all;
 }
 
-/* =========================
- * 5. 대시보드 카드
- * ========================= */
-
+/* 5. 대시보드 카드/위젯 */
 .admin-dashboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -392,7 +374,6 @@
   color: #9ca3af;
 }
 
-/* 인기 위젯 */
 .admin-dashboard-bottom {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -432,4 +413,11 @@
 .admin-widget-empty {
   font-size: 12px;
   color: #9ca3af;
+}
+
+/* 6. 체험 관리 관리 컬럼 */
+.programs .admin-table th:last-child,
+.programs .admin-table td:last-child {
+  width: 130px;
+  white-space: nowrap;
 }
