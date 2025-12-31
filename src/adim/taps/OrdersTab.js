@@ -9,7 +9,7 @@ function OrdersTab() {
    const [statusFilter, setStatusFilter] = useState('ALL');
    const [keyword, setKeyword] = useState('');
    const [orders, setOrders] = useState([]);
-   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
+   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 });
    const [currentPage, setCurrentPage] = useState(1);
    const [error, setError] = useState(null);
    const navigate = useNavigate();
@@ -20,14 +20,14 @@ function OrdersTab() {
          setError(null);
          const result = await getAllOrders({
             page,
-            limit: 20,
+            limit: 10,
             keyword: keyword.trim(),
             status: statusFilter
          });
 
          if (result.success) {
             setOrders(result.data || []);
-            setPagination(result.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 });
+            setPagination(result.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
             setCurrentPage(page);
          } else {
             setError(result.error?.message || '주문 목록을 불러오는데 실패했습니다.');

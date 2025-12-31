@@ -61,14 +61,16 @@ export async function getDashboardStats() {
 }
 
 // 전체 주문 목록 조회
-export async function getAllOrders({ page = 1, limit = 20, keyword = "", status = "ALL" }) {
+export async function getAllOrders({ page = 1, limit, keyword = "", status = "ALL" }) {
   try {
     const params = new URLSearchParams({
       page: String(page),
-      limit: String(limit),
       keyword: keyword,
       status: status,
     });
+    if (limit !== undefined) {
+      params.append('limit', String(limit));
+    }
 
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/orders?${params.toString()}`,
@@ -113,14 +115,16 @@ export async function refundOrder(orderId, reason = "관리자 환불 처리") {
 }
 
 // 전체 프로그램 목록 조회
-export async function getAllPrograms({ page = 1, limit = 20, keyword = "", status = "ALL" }) {
+export async function getAllPrograms({ page = 1, limit, keyword = "", status = "ALL" }) {
   try {
     const params = new URLSearchParams({
       page: String(page),
-      limit: String(limit),
       keyword: keyword,
       status: status,
     });
+    if (limit !== undefined) {
+      params.append('limit', String(limit));
+    }
 
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/programs?${params.toString()}`,
@@ -204,14 +208,16 @@ export async function deleteProgram(id) {
 }
 
 // 전체 예약 목록 조회
-export async function getAllReservations({ page = 1, limit = 20, keyword = "", status = "ALL" }) {
+export async function getAllReservations({ page = 1, limit, keyword = "", status = "ALL" }) {
   try {
     const params = new URLSearchParams({
       page: String(page),
-      limit: String(limit),
       keyword: keyword,
       status: status,
     });
+    if (limit !== undefined) {
+      params.append('limit', String(limit));
+    }
 
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/reservations?${params.toString()}`,
@@ -256,14 +262,16 @@ export async function updateReservationStatus(reservationId, status) {
 }
 
 // 전체 상품 목록 조회
-export async function getAllProducts({ page = 1, limit = 20, keyword = "", status = "ALL" }) {
+export async function getAllProducts({ page = 1, limit, keyword = "", status = "ALL" }) {
   try {
     const params = new URLSearchParams({
       page: String(page),
-      limit: String(limit),
       keyword: keyword,
       status: status,
     });
+    if (limit !== undefined) {
+      params.append('limit', String(limit));
+    }
 
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/products?${params.toString()}`,
@@ -347,15 +355,17 @@ export async function deleteProduct(id) {
 }
 
 // 전체 사용자 목록 조회
-export async function getAllUsers({ page = 1, limit = 20, keyword = "", role = "ALL", status = "ALL" }) {
+export async function getAllUsers({ page = 1, limit, keyword = "", role = "ALL", status = "ALL" }) {
   try {
     const params = new URLSearchParams({
       page: String(page),
-      limit: String(limit),
       keyword: keyword,
       role: role,
       status: status,
     });
+    if (limit !== undefined) {
+      params.append('limit', String(limit));
+    }
 
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/users?${params.toString()}`,
@@ -404,14 +414,16 @@ export async function updateUserStatus(userId, status) {
 // =========================
 
 // 전체 이벤트 목록 조회
-export async function getAllEvents({ page = 1, limit = 20, keyword = "", status = "ALL" }) {
+export async function getAllEvents({ page = 1, limit, keyword = "", status = "ALL" }) {
   try {
     const params = new URLSearchParams({
       page: String(page),
-      limit: String(limit),
       keyword: keyword,
       status: status,
     });
+    if (limit !== undefined) {
+      params.append('limit', String(limit));
+    }
 
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/admin/events?${params.toString()}`,

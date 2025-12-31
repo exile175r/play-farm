@@ -19,7 +19,7 @@ function EventsTab() {
   const [keyword, setKeyword] = useState("");
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 20,
+    limit: 10,
     total: 0,
     totalPages: 0,
   });
@@ -38,7 +38,7 @@ function EventsTab() {
       setError(null);
       const result = await getAllEvents({
         page,
-        limit: 20,
+        limit: 10,
         keyword: keyword.trim(),
         status: statusFilter,
       });
@@ -48,7 +48,7 @@ function EventsTab() {
         setPagination(
           result.pagination || {
             page: 1,
-            limit: 20,
+            limit: 10,
             total: 0,
             totalPages: 0,
           }

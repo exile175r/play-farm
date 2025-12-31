@@ -8,7 +8,7 @@ function UsersTab() {
    const [roleFilter, setRoleFilter] = useState('ALL');
    const [statusFilter, setStatusFilter] = useState('ALL');
    const [keyword, setKeyword] = useState('');
-   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 0 });
+   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 });
    const [currentPage, setCurrentPage] = useState(1);
    const [error, setError] = useState(null);
 
@@ -18,7 +18,7 @@ function UsersTab() {
          setError(null);
          const result = await getAllUsers({
             page,
-            limit: 20,
+            limit: 10,
             keyword: keyword.trim(),
             role: roleFilter,
             status: statusFilter
@@ -26,7 +26,7 @@ function UsersTab() {
 
          if (result.success) {
             setUsers(result.data || []);
-            setPagination(result.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 });
+            setPagination(result.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
             setCurrentPage(page);
          } else {
             setError(result.error?.message || '사용자 목록을 불러오는데 실패했습니다.');

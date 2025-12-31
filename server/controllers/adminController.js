@@ -143,7 +143,7 @@ exports.getDashboardStats = async (req, res) => {
 // 전체 주문 목록 조회 (검색/필터링 + 페이지네이션)
 exports.getAllOrders = async (req, res) => {
   try {
-    const { page = 1, limit = 10, keyword = '', status = 'ALL' } = req.query;
+    const { page = 1, limit = 20, keyword = '', status = 'ALL' } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
 
     let query = `
@@ -319,7 +319,7 @@ exports.refundOrder = async (req, res) => {
 // 전체 프로그램 목록 조회 (검색/필터링 + 페이지네이션)
 exports.getAllPrograms = async (req, res) => {
   try {
-    const { page = 1, limit = 10, keyword = '', status = 'ALL' } = req.query;
+    const { page = 1, limit = 20, keyword = '', status = 'ALL' } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
 
     // 기본 쿼리 (GROUP BY 제외)
@@ -429,7 +429,7 @@ exports.deleteProgram = async (req, res) => {
 // 전체 예약 목록 조회 (검색/필터링 + 페이지네이션)
 exports.getAllReservations = async (req, res) => {
   try {
-    const { page = 1, limit = 10, keyword = '', status = 'ALL' } = req.query;
+    const { page = 1, limit = 20, keyword = '', status = 'ALL' } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
 
     let query = `
@@ -550,7 +550,7 @@ exports.updateReservationStatus = async (req, res) => {
 // 전체 상품 목록 조회 (검색/필터링 + 페이지네이션)
 exports.getAllProducts = async (req, res) => {
   try {
-    const { page = 1, limit = 10, keyword = '', status = 'ALL' } = req.query;
+    const { page = 1, limit = 20, keyword = '', status = 'ALL' } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
 
     let query = `
@@ -664,7 +664,7 @@ exports.deleteProduct = async (req, res) => {
 // 전체 사용자 목록 조회 (검색/필터링 + 페이지네이션)
 exports.getAllUsers = async (req, res) => {
   try {
-    const { page = 1, limit = 10, keyword = '', role = 'ALL', status = 'ALL' } = req.query;
+    const { page = 1, limit = 20, keyword = '', role = 'ALL', status = 'ALL' } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
 
     let query = `

@@ -20,7 +20,7 @@ function ProgramsTab() {
   const [keyword, setKeyword] = useState("");
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 20,
+    limit: 10,
     total: 0,
     totalPages: 0,
   });
@@ -39,7 +39,7 @@ function ProgramsTab() {
       setError(null);
       const result = await getAllPrograms({
         page,
-        limit: 20,
+        limit: 10,
         keyword: keyword.trim(),
         status: statusFilter,
       });
@@ -66,7 +66,7 @@ function ProgramsTab() {
             })
             .sort((a, b) => b.id - a.id)
         );
-        setPagination(result.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 });
+        setPagination(result.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
         setCurrentPage(page);
       } else {
         setError(result.error?.message || "프로그램 목록을 불러오는데 실패했습니다.");
