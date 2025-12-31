@@ -3,7 +3,7 @@ const db = require('../config/db');
 // 전체 이벤트 목록 조회 (검색/필터링 + 페이지네이션)
 exports.getAllEvents = async (req, res) => {
   try {
-    const { page = 1, limit = 20, keyword = '', status = 'ALL' } = req.query;
+    const { page = 1, limit = 10, keyword = '', status = 'ALL' } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
 
     let query = `
