@@ -2,6 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const adminController = require("../controllers/adminController");
+const eventController = require("../controllers/eventController");
 const { authenticateToken } = require("../middleware/auth");
 const {
   uploadProductImage,
@@ -29,10 +30,10 @@ router.put("/programs/:id", uploadProgramImage, adminController.updateProgram);
 router.delete("/programs/:id", adminController.deleteProgram);
 
 // ✅ 이벤트 관리
-router.get("/events", adminController.getAllEvents);
-router.post("/events", uploadEventImage, adminController.createEvent);
-router.put("/events/:id", uploadEventImage, adminController.updateEvent);
-router.delete("/events/:id", adminController.deleteEvent);
+router.get("/events", eventController.getAllEvents);
+router.post("/events", uploadEventImage, eventController.createEvent);
+router.put("/events/:id", uploadEventImage, eventController.updateEvent);
+router.delete("/events/:id", eventController.deleteEvent);
 
 // 예약 관리
 router.get("/reservations", adminController.getAllReservations);
