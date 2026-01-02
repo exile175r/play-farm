@@ -22,7 +22,7 @@ function OrdersTab() {
             page,
             limit: 10,
             keyword: keyword.trim(),
-            status: statusFilter
+            status: statusFilter,
          });
 
          if (result.success) {
@@ -135,11 +135,7 @@ function OrdersTab() {
             </div>
          </div>
 
-         {error && (
-            <div style={{ padding: '10px', color: '#b91c1c', marginBottom: '10px' }}>
-               {error}
-            </div>
-         )}
+         {error && <div style={{ padding: '10px', color: '#b91c1c', marginBottom: '10px' }}>{error}</div>}
 
          <div className="admin-table-wrapper">
             <table className="admin-table">
@@ -206,21 +202,13 @@ function OrdersTab() {
          {/* 페이지네이션 */}
          {pagination.totalPages > 1 && (
             <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px', alignItems: 'center' }}>
-               <button
-                  type="button"
-                  className="admin-secondary-btn"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}>
+               <button type="button" className="admin-secondary-btn" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>
                   이전
                </button>
                <span>
                   {currentPage} / {pagination.totalPages} (총 {pagination.total}건)
                </span>
-               <button
-                  type="button"
-                  className="admin-secondary-btn"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === pagination.totalPages}>
+               <button type="button" className="admin-secondary-btn" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === pagination.totalPages}>
                   다음
                </button>
             </div>
