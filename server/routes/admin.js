@@ -6,7 +6,9 @@ const eventController = require("../controllers/eventController");
 const { authenticateToken } = require("../middleware/auth");
 const {
   uploadProductImage,
+  uploadProductImages, // ✅ 대표 이미지 + 상세 이미지 여러 개
   uploadProgramImage,
+  uploadProgramImages, // ✅ 대표 이미지 + 상세 이미지 여러 개
   uploadEventImage, // ✅ 이벤트 이미지 업로드 추가
 } = require("../middleware/upload");
 
@@ -25,8 +27,9 @@ router.post("/orders/:id/refund", adminController.refundOrder);
 
 // 체험 관리
 router.get("/programs", adminController.getAllPrograms);
-router.post("/programs", uploadProgramImage, adminController.createProgram);
-router.put("/programs/:id", uploadProgramImage, adminController.updateProgram);
+router.get("/program-types", adminController.getAllProgramTypes);
+router.post("/programs", uploadProgramImages, adminController.createProgram);
+router.put("/programs/:id", uploadProgramImages, adminController.updateProgram);
 router.delete("/programs/:id", adminController.deleteProgram);
 
 // ✅ 이벤트 관리
@@ -41,8 +44,8 @@ router.put("/reservations/:id/status", adminController.updateReservationStatus);
 
 // 상품 관리
 router.get("/products", adminController.getAllProducts);
-router.post("/products", uploadProductImage, adminController.createProduct);
-router.put("/products/:id", uploadProductImage, adminController.updateProduct);
+router.post("/products", uploadProductImages, adminController.createProduct);
+router.put("/products/:id", uploadProductImages, adminController.updateProduct);
 router.delete("/products/:id", adminController.deleteProduct);
 
 // 회원 관리

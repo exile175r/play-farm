@@ -67,6 +67,11 @@ export const setGlobalLogoutHandler = (handler) => {
 export const fetchWithAuthAndRetry = async (url, options = {}, onLogout = null) => {
   const headers = getAuthHeaders();
 
+  // FormData인 경우 Content-Type 헤더 제거 (브라우저가 자동으로 설정)
+  if (options.body instanceof FormData) {
+    delete headers['Content-Type'];
+  }
+
   let response = await fetch(url, {
     ...options,
     headers: {
@@ -98,6 +103,12 @@ export const fetchWithAuthAndRetry = async (url, options = {}, onLogout = null) 
       // 연장 성공 시 원래 요청 재시도
       if (extended) {
         const newHeaders = getAuthHeaders();
+
+        // 재시도 시에도 FormData 체크
+        if (options.body instanceof FormData) {
+          delete newHeaders['Content-Type'];
+        }
+
         response = await fetch(url, {
           ...options,
           headers: {

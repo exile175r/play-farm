@@ -8,8 +8,24 @@ const PORT = process.env.PORT || 5000;
 
 // 미들웨어
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// body 파서 설정 (multipart는 제외)
+app.use((req, res, next) => {
+  const contentType = req.headers['content-type'] || '';
+
+  // multipart/form-data 요청은 body 파서 건너뛰기
+  if (contentType.includes('multipart/form-data')) {
+    return next();
+  }
+
+  // JSON 요청 처리
+  if (contentType.includes('application/json')) {
+    return express.json()(req, res, next);
+  }
+
+  // 기타 요청은 urlencoded 처리
+  return express.urlencoded({ extended: true })(req, res, next);
+});
 
 // 정적 파일 서빙 (이미지 파일)
 app.use('/images', express.static(path.join(__dirname, '../public/images')));

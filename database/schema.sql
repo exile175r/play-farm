@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS `programs` (
   `cn` TEXT COMMENT '세부사항',
   `reqst_bgnde` DATE COMMENT '신청시작일',
   `reqst_endde` DATE COMMENT '신청종료일',
+  `status` ENUM('OPEN', 'CLOSED') DEFAULT 'OPEN' COMMENT '체험 상태',
   `use_time` VARCHAR(100) COMMENT '이용시간',
   `hmpg_addr` VARCHAR(500) COMMENT '홈페이지주소',
   `max_personnel` INT COMMENT '최대인원',
@@ -35,6 +36,7 @@ CREATE TABLE IF NOT EXISTS `programs` (
   INDEX `idx_village_nm` (`village_nm`),
   INDEX `idx_reqst_bgnde` (`reqst_bgnde`),
   INDEX `idx_reqst_endde` (`reqst_endde`),
+  INDEX `idx_status` (`status`),
   INDEX `idx_location` (`refine_wgs84_lat`, `refine_wgs84_logt`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='체험 프로그램 메인 테이블';
 
@@ -83,6 +85,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
   `last_login_at` TIMESTAMP NULL COMMENT '마지막 로그인 일시',
   `is_active` BOOLEAN DEFAULT TRUE COMMENT '계정 활성화 여부',
+  `points` INT DEFAULT 0 COMMENT '보유 포인트',
   INDEX `idx_phone` (`phone`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='회원 정보 테이블';
 
@@ -167,7 +170,18 @@ CREATE TABLE IF NOT EXISTS `products` (
   INDEX `idx_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='상품 정보 테이블';
 
--- 11. product_options 테이블 (상품 옵션)
+-- 11. product_images 테이블 (상품 이미지)
+CREATE TABLE IF NOT EXISTS `product_images` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `product_id` INT NOT NULL COMMENT '상품 ID',
+  `image_url` VARCHAR(500) NOT NULL COMMENT '이미지 URL 경로',
+  `display_order` INT NOT NULL DEFAULT 0 COMMENT '표시 순서',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '생성일시',
+  FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE,
+  INDEX `idx_product_display_order` (`product_id`, `display_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='상품 이미지 테이블';
+
+-- 12. product_options 테이블 (상품 옵션)
 CREATE TABLE IF NOT EXISTS `product_options` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `product_id` INT NOT NULL COMMENT '상품 ID',
@@ -186,7 +200,7 @@ CREATE TABLE IF NOT EXISTS `product_options` (
   INDEX `idx_display_order` (`product_id`, `display_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='상품 옵션 테이블';
 
--- 12. cart 테이블 (장바구니)
+-- 13. cart 테이블 (장바구니)
 CREATE TABLE IF NOT EXISTS `cart` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT NOT NULL COMMENT '회원 ID',
@@ -202,7 +216,7 @@ CREATE TABLE IF NOT EXISTS `cart` (
   INDEX `idx_product_id` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='장바구니 테이블';
 
--- 13. orders 테이블 (상품 주문 정보)
+-- 14. orders 테이블 (상품 주문 정보)
 CREATE TABLE IF NOT EXISTS `orders` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT NOT NULL COMMENT '회원 ID',
@@ -220,7 +234,7 @@ CREATE TABLE IF NOT EXISTS `orders` (
   INDEX `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='상품 주문 정보 테이블';
 
--- 14. order_items 테이블 (주문 상품 상세)
+-- 15. order_items 테이블 (주문 상품 상세)
 CREATE TABLE IF NOT EXISTS `order_items` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `order_id` INT NOT NULL COMMENT '주문 ID',
@@ -238,7 +252,7 @@ CREATE TABLE IF NOT EXISTS `order_items` (
   INDEX `idx_product_id` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='주문 상품 상세 테이블';
 
--- 15. payments 테이블 (통합 결제 정보 - 예약/상품 공통)
+-- 16. payments 테이블 (통합 결제 정보 - 예약/상품 공통)
 CREATE TABLE IF NOT EXISTS `payments` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `payment_type` ENUM('RESERVATION', 'ORDER') NOT NULL COMMENT '결제 유형',
@@ -266,13 +280,7 @@ CREATE TABLE IF NOT EXISTS `payments` (
   INDEX `idx_paid_at` (`paid_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='통합 결제 정보 테이블';
 
--- 참고: MySQL 8.0.16 이상에서 CHECK 제약조건 지원
--- 이전 버전이면 애플리케이션 레벨에서 검증 필요
-
--- 16. users 테이블에 포인트 컬럼 추가 (ALTER TABLE)
-ALTER TABLE `users` ADD COLUMN `points` INT DEFAULT 0 COMMENT '보유 포인트' AFTER `is_active`;
-
--- 17. point_transactions 테이블 (포인트 적립/사용 내역)
+-- 16. point_transactions 테이블 (포인트 적립/사용 내역)
 CREATE TABLE IF NOT EXISTS `point_transactions` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT NOT NULL COMMENT '회원 ID',

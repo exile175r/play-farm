@@ -1,6 +1,9 @@
 const db = require('../config/db');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const path = require('path');
+const fs = require('fs');
+const { addressToCoordinates } = require('../utils/geocoding');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
@@ -26,10 +29,10 @@ exports.adminLogin = async (req, res) => {
 
     // JWT 토큰 생성 (관리자용)
     const token = jwt.sign(
-      { 
-        id: user_id, 
+      {
+        id: user_id,
         role: 'admin',
-        isAdmin: true 
+        isAdmin: true
       },
       JWT_SECRET,
       { expiresIn: '24h' } // 관리자는 24시간 유효
@@ -340,6 +343,13 @@ exports.getAllPrograms = async (req, res) => {
       countParams.push(searchKeyword, searchKeyword);
     }
 
+    // 상태 필터
+    if (status && status !== 'ALL') {
+      baseQuery += ` AND p.status = ?`;
+      params.push(status);
+      countParams.push(status);
+    }
+
     // 총 개수 조회 (DISTINCT로 중복 제거)
     const countQuery = `SELECT COUNT(DISTINCT p.id) as total ${baseQuery}`;
     const [countResult] = await db.query(countQuery, countParams);
@@ -347,7 +357,18 @@ exports.getAllPrograms = async (req, res) => {
 
     // 데이터 조회 쿼리
     let dataQuery = `
-      SELECT p.*,
+      SELECT 
+        p.id,
+        p.program_nm,
+        p.village_nm,
+        p.chrge,
+        p.reqst_bgnde,
+        p.reqst_endde,
+        p.status,
+        p.address,
+        p.min_personnel,
+        p.max_personnel,
+        p.use_time,
         GROUP_CONCAT(DISTINCT pt.type_name) as program_types,
         (SELECT GROUP_CONCAT(pi2.image_url ORDER BY pi2.display_order)
         FROM program_images pi2
@@ -368,17 +389,28 @@ exports.getAllPrograms = async (req, res) => {
       return match ? Number(match[0]) : null;
     };
 
-    const formattedPrograms = programs.map(program => ({
-      id: program.id,
-      title: program.program_nm,
-      category: program.village_nm || '',
-      status: 'OPEN', // 기본값, 실제 상태 컬럼이 있으면 수정
-      startDate: program.reqst_bgnde ? program.reqst_bgnde.toISOString().split('T')[0] : null,
-      endDate: program.reqst_endde ? program.reqst_endde.toISOString().split('T')[0] : null,
-      price: parsePrice(program.chrge) || null, // VARCHAR이므로 문자열 그대로 반환 (필요시 숫자 파싱)
-      program_types: program.program_types ? program.program_types.split(',') : [],
-      images: program.images ? program.images.split(',') : []
-    }));
+    const formattedPrograms = programs.map(program => {
+      // 첫 번째 이미지를 대표 이미지로 사용
+      const images = program.images ? program.images.split(',') : [];
+      const imageUrl = images.length > 0 ? images[0] : null;
+
+      return {
+        id: program.id,
+        title: program.program_nm,
+        category: program.village_nm || '',
+        status: program.status || 'OPEN', // DB의 status 컬럼 사용
+        startDate: program.reqst_bgnde ? program.reqst_bgnde.toISOString().split('T')[0] : null,
+        endDate: program.reqst_endde ? program.reqst_endde.toISOString().split('T')[0] : null,
+        price: parsePrice(program.chrge) || null,
+        imageUrl: imageUrl, // 대표 이미지 URL
+        address: program.address || null,
+        minPersonnel: program.min_personnel || null,
+        maxPersonnel: program.max_personnel || null,
+        useTime: program.use_time || null,
+        program_types: program.program_types ? program.program_types.split(',') : [],
+        images: images
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -401,29 +433,522 @@ exports.getAllPrograms = async (req, res) => {
 
 // 프로그램 생성
 exports.createProgram = async (req, res) => {
-  // TODO: 이미지 업로드 미들웨어 추가 후 구현
-  res.status(501).json({
-    success: false,
-    message: '아직 구현되지 않았습니다.'
-  });
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const { title, category, price, startDate, endDate, status, address, minPersonnel, maxPersonnel, useTime } = req.body;
+
+    // FormData에서 programTypes 배열 추출
+    // multer는 같은 이름의 필드가 여러 개일 때 배열로 처리하지 않을 수 있으므로
+    // req.body.programTypes가 문자열이거나 배열일 수 있음
+    let programTypes = [];
+    if (req.body.programTypes) {
+      if (Array.isArray(req.body.programTypes)) {
+        programTypes = req.body.programTypes;
+      } else {
+        // 문자열인 경우 (단일 값 또는 쉼표로 구분된 값)
+        programTypes = String(req.body.programTypes).split(',').map(t => t.trim()).filter(t => t);
+      }
+    }
+
+    // fields 방식: 대표 이미지와 상세 이미지 구분
+    const mainImage = req.files?.image?.[0]; // 대표 이미지
+    const detailImages = req.files?.detailImages || []; // 상세 이미지들
+
+    // 필수 필드 검증
+    if (!title || !title.trim()) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: '체험명을 입력해 주세요.'
+      });
+    }
+
+    // 주소가 있으면 좌표 변환
+    let latitude = null;
+    let longitude = null;
+    if (address && address.trim()) {
+      console.log('[createProgram] 주소 좌표 변환 시작:', address.trim());
+      const coordinates = await addressToCoordinates(address.trim());
+      if (coordinates) {
+        latitude = coordinates.lat;
+        longitude = coordinates.lng;
+        console.log('[createProgram] 좌표 변환 완료 - 위도:', latitude, '경도:', longitude);
+      } else {
+        console.warn('[createProgram] 좌표 변환 실패, 주소만 저장합니다.');
+      }
+    } else {
+      console.log('[createProgram] 주소가 없어 좌표 변환을 건너뜁니다.');
+    }
+
+    // 프로그램 데이터 삽입
+    const [result] = await connection.query(
+      `INSERT INTO programs (
+        program_nm, village_nm, chrge, reqst_bgnde, reqst_endde, status, address, min_personnel, max_personnel, use_time, refine_wgs84_lat, refine_wgs84_logt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        title.trim(),
+        category ? category.trim() : null,
+        price ? String(price) : null,
+        startDate || null,
+        endDate || null,
+        status || 'OPEN',
+        address ? address.trim() : null,
+        minPersonnel ? Number(minPersonnel) : null,
+        maxPersonnel ? Number(maxPersonnel) : null,
+        useTime ? useTime.trim() : null,
+        latitude,
+        longitude
+      ]
+    );
+
+    const programId = result.insertId;
+    console.log('[createProgram] 프로그램 생성 완료 - ID:', programId);
+
+    // 프로그램 타입 관계 저장
+    if (programTypes && programTypes.length > 0) {
+      for (const typeId of programTypes) {
+        const typeIdNum = Number(typeId);
+        if (!Number.isNaN(typeIdNum)) {
+          await connection.query(
+            `INSERT INTO program_program_types (program_id, program_type_id) VALUES (?, ?)`,
+            [programId, typeIdNum]
+          );
+        }
+      }
+    }
+
+    // 이미지 파일 이동 및 저장 (경로: public/images/item/item_{programId}/img_{index}.jpg)
+    const itemDir = path.join(__dirname, `../../public/images/item/item_${programId}`);
+    if (!fs.existsSync(itemDir)) {
+      fs.mkdirSync(itemDir, { recursive: true });
+    }
+
+    // 대표 이미지 저장 (display_order = 0)
+    if (mainImage) {
+      try {
+        const oldPath = mainImage.path;
+        console.log('[createProgram] 대표 이미지 파일 정보:', {
+          path: oldPath,
+          filename: mainImage.filename,
+          originalname: mainImage.originalname
+        });
+
+        if (!fs.existsSync(oldPath)) {
+          console.error('[createProgram] 파일이 존재하지 않습니다:', oldPath);
+          throw new Error(`대표 이미지 파일을 찾을 수 없습니다: ${oldPath}`);
+        }
+
+        const ext = path.extname(mainImage.originalname);
+        const newFilename = `img_0${ext}`;
+        const newPath = path.join(itemDir, newFilename);
+
+        // 파일 이동
+        fs.renameSync(oldPath, newPath);
+        console.log('[createProgram] 파일 이동 완료:', oldPath, '->', newPath);
+
+        const imageUrl = `/images/item/item_${programId}/${newFilename}`;
+        console.log('[createProgram] 대표 이미지 저장:', imageUrl);
+        await connection.query(
+          `INSERT INTO program_images (program_id, image_url, display_order) VALUES (?, ?, ?)`,
+          [programId, imageUrl, 0]
+        );
+      } catch (fileError) {
+        console.error('[createProgram] 대표 이미지 저장 실패:', fileError);
+        throw fileError;
+      }
+    }
+
+    // 상세 이미지들 저장 (display_order = 1, 2, 3, ...)
+    if (detailImages && detailImages.length > 0) {
+      for (let index = 0; index < detailImages.length; index++) {
+        const file = detailImages[index];
+        try {
+          const oldPath = file.path;
+          console.log(`[createProgram] 상세 이미지 ${index + 1} 파일 정보:`, {
+            path: oldPath,
+            filename: file.filename,
+            originalname: file.originalname
+          });
+
+          if (!fs.existsSync(oldPath)) {
+            console.error('[createProgram] 파일이 존재하지 않습니다:', oldPath);
+            throw new Error(`상세 이미지 파일을 찾을 수 없습니다: ${oldPath}`);
+          }
+
+          const ext = path.extname(file.originalname);
+          const newFilename = `img_${index + 1}${ext}`;
+          const newPath = path.join(itemDir, newFilename);
+
+          // 파일 이동
+          fs.renameSync(oldPath, newPath);
+          console.log(`[createProgram] 파일 이동 완료:`, oldPath, '->', newPath);
+
+          const imageUrl = `/images/item/item_${programId}/${newFilename}`;
+          console.log('[createProgram] 상세 이미지 저장:', imageUrl);
+          await connection.query(
+            `INSERT INTO program_images (program_id, image_url, display_order) VALUES (?, ?, ?)`,
+            [programId, imageUrl, index + 1]
+          );
+        } catch (fileError) {
+          console.error(`[createProgram] 상세 이미지 ${index + 1} 저장 실패:`, fileError);
+          throw fileError;
+        }
+      }
+    }
+
+    await connection.commit();
+
+    res.status(201).json({
+      success: true,
+      message: '체험이 등록되었습니다.',
+      data: { id: programId }
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('프로그램 생성 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '프로그램 생성 중 오류가 발생했습니다.'
+    });
+  } finally {
+    connection.release();
+  }
 };
 
 // 프로그램 수정
 exports.updateProgram = async (req, res) => {
-  // TODO: 이미지 업로드 미들웨어 추가 후 구현
-  res.status(501).json({
-    success: false,
-    message: '아직 구현되지 않았습니다.'
-  });
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const programId = req.params.id;
+    const { title, category, price, startDate, endDate, status, address, minPersonnel, maxPersonnel, useTime } = req.body;
+
+    // FormData에서 programTypes 배열 추출
+    // multer는 같은 이름의 필드가 여러 개일 때 배열로 처리하지 않을 수 있으므로
+    // req.body.programTypes가 문자열이거나 배열일 수 있음
+    let programTypes = [];
+    if (req.body.programTypes) {
+      if (Array.isArray(req.body.programTypes)) {
+        programTypes = req.body.programTypes;
+      } else {
+        // 문자열인 경우 (단일 값 또는 쉼표로 구분된 값)
+        programTypes = String(req.body.programTypes).split(',').map(t => t.trim()).filter(t => t);
+      }
+    }
+
+    // fields 방식: 대표 이미지와 상세 이미지 구분
+    const mainImage = req.files?.image?.[0]; // 대표 이미지
+    const detailImages = req.files?.detailImages || []; // 상세 이미지들
+
+    // 프로그램 존재 확인 및 기존 주소/좌표 조회
+    const [existing] = await connection.query(
+      `SELECT id, address, refine_wgs84_lat, refine_wgs84_logt FROM programs WHERE id = ?`,
+      [programId]
+    );
+
+    if (existing.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: '체험을 찾을 수 없습니다.'
+      });
+    }
+
+    // 필수 필드 검증
+    if (!title || !title.trim()) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: '체험명을 입력해 주세요.'
+      });
+    }
+
+    // 주소 좌표 변환 (기존 주소와 다르거나 좌표가 없는 경우에만)
+    let latitude = null;
+    let longitude = null;
+    const existingAddress = existing[0].address || '';
+    const existingLat = existing[0].refine_wgs84_lat;
+    const existingLng = existing[0].refine_wgs84_logt;
+    const newAddress = address ? address.trim() : '';
+
+    // 주소가 변경되었거나 좌표가 없는 경우에만 변환
+    if (newAddress && (newAddress !== existingAddress || !existingLat || !existingLng)) {
+      console.log('[updateProgram] 주소 변경 또는 좌표 없음 감지');
+      console.log('[updateProgram] 기존 주소:', existingAddress);
+      console.log('[updateProgram] 새 주소:', newAddress);
+      console.log('[updateProgram] 기존 좌표:', existingLat, existingLng);
+
+      console.log('[updateProgram] 주소 좌표 변환 시작:', newAddress);
+      const coordinates = await addressToCoordinates(newAddress);
+      if (coordinates) {
+        latitude = coordinates.lat;
+        longitude = coordinates.lng;
+        console.log('[updateProgram] 좌표 변환 완료 - 위도:', latitude, '경도:', longitude);
+      } else {
+        console.warn('[updateProgram] 좌표 변환 실패, 기존 좌표 유지 또는 주소만 업데이트합니다.');
+        // 변환 실패 시 기존 좌표 유지
+        latitude = existingLat;
+        longitude = existingLng;
+      }
+    } else if (newAddress && newAddress === existingAddress && existingLat && existingLng) {
+      // 주소가 변경되지 않았고 좌표가 있으면 기존 좌표 유지
+      latitude = existingLat;
+      longitude = existingLng;
+      console.log('[updateProgram] 주소 변경 없음, 기존 좌표 유지 - 위도:', latitude, '경도:', longitude);
+    } else {
+      console.log('[updateProgram] 주소가 없어 좌표 변환을 건너뜁니다.');
+    }
+
+    // 프로그램 정보 업데이트
+    await connection.query(
+      `UPDATE programs SET 
+        program_nm = ?, 
+        village_nm = ?, 
+        chrge = ?, 
+        reqst_bgnde = ?, 
+        reqst_endde = ?, 
+        status = ?,
+        address = ?,
+        min_personnel = ?,
+        max_personnel = ?,
+        use_time = ?,
+        refine_wgs84_lat = ?,
+        refine_wgs84_logt = ?,
+        updated_at = NOW()
+      WHERE id = ?`,
+      [
+        title.trim(),
+        category ? category.trim() : null,
+        price ? String(price) : null,
+        startDate || null,
+        endDate || null,
+        status || 'OPEN',
+        address ? address.trim() : null,
+        minPersonnel ? Number(minPersonnel) : null,
+        maxPersonnel ? Number(maxPersonnel) : null,
+        useTime ? useTime.trim() : null,
+        latitude,
+        longitude,
+        programId
+      ]
+    );
+    console.log('[updateProgram] 프로그램 정보 업데이트 완료 - ID:', programId);
+
+    // 프로그램 타입 관계 업데이트 (기존 관계 삭제 후 새로 추가)
+    await connection.query(
+      `DELETE FROM program_program_types WHERE program_id = ?`,
+      [programId]
+    );
+
+    if (programTypes && programTypes.length > 0) {
+      for (const typeId of programTypes) {
+        const typeIdNum = Number(typeId);
+        if (!Number.isNaN(typeIdNum)) {
+          await connection.query(
+            `INSERT INTO program_program_types (program_id, program_type_id) VALUES (?, ?)`,
+            [programId, typeIdNum]
+          );
+        }
+      }
+    }
+
+    // 새 이미지가 있으면 기존 이미지 삭제 후 새 이미지 추가
+    if (mainImage || (detailImages && detailImages.length > 0)) {
+      // 기존 이미지 파일 삭제
+      const [existingImages] = await connection.query(
+        `SELECT image_url FROM program_images WHERE program_id = ?`,
+        [programId]
+      );
+
+      // 기존 이미지 파일 삭제
+      for (const img of existingImages) {
+        if (img.image_url) {
+          const imagePath = path.join(__dirname, `../../public${img.image_url}`);
+          if (fs.existsSync(imagePath)) {
+            fs.unlinkSync(imagePath);
+            console.log('[updateProgram] 기존 이미지 삭제:', imagePath);
+          }
+        }
+      }
+
+      // 기존 이미지 디렉토리 삭제 (비어있으면)
+      const itemDir = path.join(__dirname, `../../public/images/item/item_${programId}`);
+      if (fs.existsSync(itemDir)) {
+        try {
+          const files = fs.readdirSync(itemDir);
+          if (files.length === 0) {
+            fs.rmdirSync(itemDir);
+          }
+        } catch (err) {
+          console.warn('[updateProgram] 디렉토리 삭제 실패:', err);
+        }
+      }
+
+      // DB에서 기존 이미지 레코드 삭제
+      await connection.query(
+        `DELETE FROM program_images WHERE program_id = ?`,
+        [programId]
+      );
+
+      // 새 이미지 디렉토리 생성
+      if (!fs.existsSync(itemDir)) {
+        fs.mkdirSync(itemDir, { recursive: true });
+      }
+
+      // 대표 이미지 저장 (display_order = 0)
+      if (mainImage) {
+        try {
+          const oldPath = mainImage.path;
+          console.log('[updateProgram] 대표 이미지 파일 정보:', {
+            path: oldPath,
+            filename: mainImage.filename,
+            originalname: mainImage.originalname
+          });
+
+          if (!fs.existsSync(oldPath)) {
+            console.error('[updateProgram] 파일이 존재하지 않습니다:', oldPath);
+            throw new Error(`대표 이미지 파일을 찾을 수 없습니다: ${oldPath}`);
+          }
+
+          const ext = path.extname(mainImage.originalname);
+          const newFilename = `img_0${ext}`;
+          const newPath = path.join(itemDir, newFilename);
+
+          // 파일 이동
+          fs.renameSync(oldPath, newPath);
+          console.log('[updateProgram] 파일 이동 완료:', oldPath, '->', newPath);
+
+          const imageUrl = `/images/item/item_${programId}/${newFilename}`;
+          console.log('[updateProgram] 대표 이미지 저장:', imageUrl);
+          await connection.query(
+            `INSERT INTO program_images (program_id, image_url, display_order) VALUES (?, ?, ?)`,
+            [programId, imageUrl, 0]
+          );
+        } catch (fileError) {
+          console.error('[updateProgram] 대표 이미지 저장 실패:', fileError);
+          throw fileError;
+        }
+      }
+
+      // 상세 이미지들 저장 (display_order = 1, 2, 3, ...)
+      if (detailImages && detailImages.length > 0) {
+        for (let index = 0; index < detailImages.length; index++) {
+          const file = detailImages[index];
+          try {
+            const oldPath = file.path;
+            console.log(`[updateProgram] 상세 이미지 ${index + 1} 파일 정보:`, {
+              path: oldPath,
+              filename: file.filename,
+              originalname: file.originalname
+            });
+
+            if (!fs.existsSync(oldPath)) {
+              console.error('[updateProgram] 파일이 존재하지 않습니다:', oldPath);
+              throw new Error(`상세 이미지 파일을 찾을 수 없습니다: ${oldPath}`);
+            }
+
+            const ext = path.extname(file.originalname);
+            const newFilename = `img_${index + 1}${ext}`;
+            const newPath = path.join(itemDir, newFilename);
+
+            // 파일 이동
+            fs.renameSync(oldPath, newPath);
+            console.log(`[updateProgram] 파일 이동 완료:`, oldPath, '->', newPath);
+
+            const imageUrl = `/images/item/item_${programId}/${newFilename}`;
+            console.log('[updateProgram] 상세 이미지 저장:', imageUrl);
+            await connection.query(
+              `INSERT INTO program_images (program_id, image_url, display_order) VALUES (?, ?, ?)`,
+              [programId, imageUrl, index + 1]
+            );
+          } catch (fileError) {
+            console.error(`[updateProgram] 상세 이미지 ${index + 1} 저장 실패:`, fileError);
+            throw fileError;
+          }
+        }
+      }
+    }
+
+    await connection.commit();
+
+    res.status(200).json({
+      success: true,
+      message: '체험이 수정되었습니다.',
+      data: { id: programId }
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('프로그램 수정 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '프로그램 수정 중 오류가 발생했습니다.'
+    });
+  } finally {
+    connection.release();
+  }
 };
 
 // 프로그램 삭제
 exports.deleteProgram = async (req, res) => {
-  // TODO: 구현 필요
-  res.status(501).json({
-    success: false,
-    message: '아직 구현되지 않았습니다.'
-  });
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const programId = req.params.id;
+
+    // 프로그램 존재 확인
+    const [existing] = await connection.query(
+      `SELECT id FROM programs WHERE id = ?`,
+      [programId]
+    );
+
+    if (existing.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: '체험을 찾을 수 없습니다.'
+      });
+    }
+
+    // 예약이 있는지 확인 (선택사항: 예약이 있으면 삭제 방지)
+    const [reservations] = await connection.query(
+      `SELECT COUNT(*) as count FROM reservations WHERE program_id = ?`,
+      [programId]
+    );
+
+    if (reservations[0].count > 0) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: `예약이 ${reservations[0].count}건 있어 삭제할 수 없습니다.`
+      });
+    }
+
+    // 프로그램 삭제 (CASCADE로 program_images, program_program_types도 자동 삭제됨)
+    await connection.query(
+      `DELETE FROM programs WHERE id = ?`,
+      [programId]
+    );
+
+    await connection.commit();
+
+    res.status(200).json({
+      success: true,
+      message: '체험이 삭제되었습니다.'
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('프로그램 삭제 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '프로그램 삭제 중 오류가 발생했습니다.'
+    });
+  } finally {
+    connection.release();
+  }
 };
 
 // 전체 예약 목록 조회 (검색/필터링 + 페이지네이션)
@@ -553,51 +1078,63 @@ exports.getAllProducts = async (req, res) => {
     const { page = 1, limit = 20, keyword = '', status = 'ALL' } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
 
-    let query = `
-      SELECT 
-        p.id,
-        p.name,
-        p.category,
-        p.image_url,
-        p.base_price,
-        p.is_active,
-        p.stock_quantity,
-        p.created_at
+    let baseQuery = `
       FROM products p
       WHERE 1=1
     `;
     const params = [];
+    const countParams = [];
 
     // 상태 필터
     if (status && status !== 'ALL') {
       if (status === 'ACTIVE') {
-        query += ` AND p.is_active = TRUE AND p.stock_quantity > 0`;
+        baseQuery += ` AND p.is_active = TRUE AND p.stock_quantity > 0`;
       } else if (status === 'SOLD_OUT') {
-        query += ` AND p.stock_quantity = 0`;
+        baseQuery += ` AND p.stock_quantity = 0`;
       } else if (status === 'INACTIVE') {
-        query += ` AND p.is_active = FALSE`;
+        baseQuery += ` AND p.is_active = FALSE`;
       }
     }
 
     // 검색어 필터 (상품명, 카테고리)
     if (keyword) {
-      query += ` AND (p.name LIKE ? OR p.category LIKE ?)`;
+      baseQuery += ` AND (p.name LIKE ? OR p.category LIKE ?)`;
       const searchKeyword = `%${keyword}%`;
       params.push(searchKeyword, searchKeyword);
+      countParams.push(searchKeyword, searchKeyword);
     }
 
     // 총 개수 조회
-    let countQuery = query.replace(/SELECT[\s\S]*?FROM/, 'SELECT COUNT(*) as total FROM');
-    const [countResult] = await db.query(countQuery, params);
+    const countQuery = `SELECT COUNT(*) as total ${baseQuery}`;
+    const [countResult] = await db.query(countQuery, countParams);
     const total = countResult[0].total;
 
-    // 데이터 조회 (페이지네이션)
-    query += ` ORDER BY p.created_at DESC LIMIT ? OFFSET ?`;
+    // 데이터 조회 쿼리 (이미지 포함)
+    let dataQuery = `
+      SELECT 
+        p.id,
+        p.name,
+        p.category,
+        p.base_price,
+        p.is_active,
+        p.stock_quantity,
+        p.created_at,
+        (SELECT GROUP_CONCAT(pi2.image_url ORDER BY pi2.display_order)
+        FROM product_images pi2
+        WHERE pi2.product_id = p.id ORDER BY pi2.display_order) as images
+      ${baseQuery}
+      ORDER BY p.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
     params.push(Number(limit), offset);
 
-    const [products] = await db.query(query, params);
+    const [products] = await db.query(dataQuery, params);
 
     const formatted = products.map(p => {
+      // 첫 번째 이미지를 대표 이미지로 사용
+      const images = p.images ? p.images.split(',') : [];
+      const imageUrl = images.length > 0 ? images[0] : null;
+
       let status = 'ACTIVE';
       if (!p.is_active) {
         status = 'INACTIVE';
@@ -611,7 +1148,9 @@ exports.getAllProducts = async (req, res) => {
         category: p.category,
         stock: p.stock_quantity,
         price: Number(p.base_price),
-        status: status
+        status: status,
+        imageUrl: imageUrl,
+        images: images // 모든 이미지 URL 배열로 반환
       };
     });
 
@@ -645,11 +1184,109 @@ exports.createProduct = async (req, res) => {
 
 // 상품 수정
 exports.updateProduct = async (req, res) => {
-  // TODO: 이미지 업로드 미들웨어 추가 후 구현
-  res.status(501).json({
-    success: false,
-    message: '아직 구현되지 않았습니다.'
-  });
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const productId = req.params.id;
+    const { name, stock, price, status } = req.body;
+
+    // fields 방식: 대표 이미지와 상세 이미지 구분
+    const mainImage = req.files?.image?.[0]; // 대표 이미지
+    const detailImages = req.files?.detailImages || []; // 상세 이미지들
+
+    // 상품 존재 확인
+    const [existing] = await connection.query(
+      `SELECT id FROM products WHERE id = ?`,
+      [productId]
+    );
+
+    if (existing.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: '상품을 찾을 수 없습니다.'
+      });
+    }
+
+    // 필수 필드 검증
+    if (!name || !name.trim()) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: '상품명을 입력해 주세요.'
+      });
+    }
+
+    const stockNumber = stock ? Number(stock) : 0;
+    const priceNumber = price ? Number(price) : 0;
+    const isActive = status === 'ACTIVE';
+
+    // 상품 정보 업데이트
+    await connection.query(
+      `UPDATE products SET 
+        name = ?, 
+        stock_quantity = ?, 
+        base_price = ?, 
+        is_active = ?,
+        updated_at = NOW()
+      WHERE id = ?`,
+      [
+        name.trim(),
+        stockNumber,
+        priceNumber,
+        isActive,
+        productId
+      ]
+    );
+
+    // 새 이미지가 있으면 기존 이미지 삭제 후 새 이미지 추가
+    if (mainImage || (detailImages && detailImages.length > 0)) {
+      // 기존 이미지 삭제
+      await connection.query(
+        `DELETE FROM product_images WHERE product_id = ?`,
+        [productId]
+      );
+
+      // 대표 이미지 저장 (display_order = 0)
+      if (mainImage) {
+        const imageUrl = `/images/products/${mainImage.filename}`;
+        await connection.query(
+          `INSERT INTO product_images (product_id, image_url, display_order) VALUES (?, ?, ?)`,
+          [productId, imageUrl, 0]
+        );
+      }
+
+      // 상세 이미지들 저장 (display_order = 1, 2, 3, ...)
+      if (detailImages && detailImages.length > 0) {
+        for (let index = 0; index < detailImages.length; index++) {
+          const file = detailImages[index];
+          const imageUrl = `/images/products/${file.filename}`;
+          await connection.query(
+            `INSERT INTO product_images (product_id, image_url, display_order) VALUES (?, ?, ?)`,
+            [productId, imageUrl, index + 1]
+          );
+        }
+      }
+    }
+
+    await connection.commit();
+
+    res.status(200).json({
+      success: true,
+      message: '상품이 수정되었습니다.',
+      data: { id: productId }
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('상품 수정 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '상품 수정 중 오류가 발생했습니다.'
+    });
+  } finally {
+    connection.release();
+  }
 };
 
 // 상품 삭제
@@ -755,5 +1392,28 @@ exports.updateUserStatus = async (req, res) => {
     success: false,
     message: '아직 구현되지 않았습니다.'
   });
+};
+
+// 프로그램 타입 목록 조회
+exports.getAllProgramTypes = async (req, res) => {
+  try {
+    const [types] = await db.query(
+      `SELECT id, type_name FROM program_types ORDER BY type_name ASC`
+    );
+
+    res.status(200).json({
+      success: true,
+      data: types.map(t => ({
+        id: t.id,
+        name: t.type_name
+      }))
+    });
+  } catch (error) {
+    console.error('프로그램 타입 목록 조회 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '프로그램 타입 목록 조회 중 오류가 발생했습니다.'
+    });
+  }
 };
 

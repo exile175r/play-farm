@@ -45,7 +45,7 @@ const reviewUpload = multer({
 });
 const uploadReviewImages = reviewUpload.array("images", 6);
 
-// 상품 이미지 업로드
+// 상품 이미지 업로드 (단일 - 기존 호환성 유지)
 const productUpload = multer({
   storage: createStorage("products", "product"),
   limits: { fileSize: 5 * 1024 * 1024, files: 1 },
@@ -53,13 +53,37 @@ const productUpload = multer({
 });
 const uploadProductImage = productUpload.single("image");
 
-// 체험 이미지 업로드
+// 상품 이미지 업로드 (대표 이미지 + 상세 이미지 여러 개)
+const productImagesUpload = multer({
+  storage: createStorage("products", "product"),
+  limits: { fileSize: 5 * 1024 * 1024, files: 11 }, // 대표 1개 + 상세 10개
+  fileFilter,
+});
+const uploadProductImages = productImagesUpload.fields([
+  { name: 'image', maxCount: 1 },        // 대표 이미지
+  { name: 'detailImages', maxCount: 10 } // 상세 이미지 (최대 10개)
+]);
+
+// 체험 이미지 업로드 (단일 - 기존 호환성 유지)
 const programUpload = multer({
   storage: createStorage("programs", "program"),
   limits: { fileSize: 5 * 1024 * 1024, files: 1 },
   fileFilter,
 });
 const uploadProgramImage = programUpload.single("image");
+
+// 체험 이미지 업로드 (대표 이미지 + 상세 이미지 여러 개)
+// multer는 파일만 처리하고 텍스트 필드는 req.body에 넣지 않으므로
+// .none()을 추가하여 텍스트 필드도 파싱하도록 설정
+const programImagesUpload = multer({
+  storage: createStorage("programs", "program"),
+  limits: { fileSize: 5 * 1024 * 1024, files: 11 }, // 대표 1개 + 상세 10개
+  fileFilter,
+});
+const uploadProgramImages = programImagesUpload.fields([
+  { name: 'image', maxCount: 1 },        // 대표 이미지
+  { name: 'detailImages', maxCount: 10 } // 상세 이미지 (최대 10개)
+]);
 
 // ✅ 이벤트 이미지 업로드 추가
 const eventUpload = multer({
@@ -72,6 +96,8 @@ const uploadEventImage = eventUpload.single("image");
 module.exports = {
   uploadReviewImages,
   uploadProductImage,
+  uploadProductImages, // ✅ 대표 이미지 + 상세 이미지 여러 개
   uploadProgramImage,
+  uploadProgramImages, // ✅ 대표 이미지 + 상세 이미지 여러 개
   uploadEventImage, // ✅ 꼭 export
 };

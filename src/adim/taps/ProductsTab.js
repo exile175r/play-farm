@@ -35,6 +35,8 @@ function ProductsTab() {
   const [form, setForm] = useState(emptyForm);
   const [imageFile, setImageFile] = useState(null); // ✅ 새로 추가 (업로드용 파일)
   const [imagePreview, setImagePreview] = useState(""); // ✅ 미리보기 (선택 사항)
+  const [detailImageFiles, setDetailImageFiles] = useState([]); // 상세 이미지 파일들
+  const [detailImagePreviews, setDetailImagePreviews] = useState([]); // 상세 이미지 미리보기 URL들
 
   // 상품 목록 로드
   const loadProducts = async (page = 1) => {
@@ -84,6 +86,8 @@ function ProductsTab() {
     setForm(emptyForm);
     setImageFile(null);
     setImagePreview("");
+    setDetailImageFiles([]);
+    setDetailImagePreviews([]);
     setIsModalOpen(true);
   };
 
@@ -97,7 +101,22 @@ function ProductsTab() {
       imageUrl: product.imageUrl || "",
     });
     setImageFile(null);
-    setImagePreview(product.imageUrl || "");
+
+    // 대표 이미지 미리보기 설정
+    const mainImageUrl = product.imageUrl || (product.images && product.images.length > 0 ? product.images[0] : "");
+    setImagePreview(mainImageUrl);
+
+    // 기존 상세 이미지들 미리보기 설정 (display_order > 0인 이미지들)
+    const existingDetailImages = product.images && Array.isArray(product.images) && product.images.length > 1
+      ? product.images.slice(1) // 첫 번째 이미지(대표) 제외
+      : [];
+    setDetailImageFiles([]); // 새로 선택한 파일은 없음
+    setDetailImagePreviews(existingDetailImages); // 기존 이미지 URL들
+
+    console.log('[openEditModal] 상품 데이터:', product);
+    console.log('[openEditModal] 대표 이미지 URL:', mainImageUrl);
+    console.log('[openEditModal] 상세 이미지 개수:', existingDetailImages.length);
+
     setIsModalOpen(true);
   };
 
@@ -119,6 +138,40 @@ function ProductsTab() {
     if (!file) return;
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleDetailImagesChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    // 기존 preview 개수 확인 (기존 이미지 + 새로 선택한 파일)
+    const currentPreviewCount = detailImagePreviews.length;
+    const availableSlots = 10 - currentPreviewCount;
+
+    if (availableSlots <= 0) {
+      alert('최대 10개까지 업로드 가능합니다.');
+      return;
+    }
+
+    // 추가 가능한 파일만 선택
+    const filesToAdd = files.slice(0, availableSlots);
+    const newFiles = [...detailImageFiles, ...filesToAdd];
+    setDetailImageFiles(newFiles);
+
+    // 기존 preview 유지 + 새 파일의 preview 추가
+    const newPreviews = filesToAdd.map((file) => URL.createObjectURL(file));
+    setDetailImagePreviews([...detailImagePreviews, ...newPreviews]);
+  };
+
+  const handleRemoveDetailImage = (index) => {
+    const newFiles = detailImageFiles.filter((_, i) => i !== index);
+    const newPreviews = detailImagePreviews.filter((_, i) => i !== index);
+
+    // 이전 URL 해제 (메모리 누수 방지)
+    URL.revokeObjectURL(detailImagePreviews[index]);
+
+    setDetailImageFiles(newFiles);
+    setDetailImagePreviews(newPreviews);
   };
 
   // ===== 저장 (생성/수정 공통) =====
@@ -148,8 +201,13 @@ function ProductsTab() {
       formData.append("status", form.status);
 
       if (imageFile) {
-        formData.append("image", imageFile); // 서버 multer에서 single('image') 사용
+        formData.append("image", imageFile); // 대표 이미지
       }
+
+      // 상세 이미지들 추가
+      detailImageFiles.forEach((file) => {
+        formData.append("detailImages", file);
+      });
 
       let result;
       if (editingProduct) {
@@ -392,6 +450,64 @@ function ProductsTab() {
                     style={{ maxWidth: "200px", borderRadius: "8px" }}
                   />
                 </div>
+              )}
+            </div>
+
+            <div className="admin-form-row">
+              <label className="admin-form-label">상세 이미지 (최대 10개)</label>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleDetailImagesChange}
+                disabled={detailImagePreviews.length >= 10}
+              />
+              {detailImagePreviews.length > 0 && (
+                <div style={{ marginTop: "12px", display: "flex", flexWrap: "wrap", gap: "12px" }}>
+                  {detailImagePreviews.map((preview, index) => (
+                    <div key={index} style={{ position: "relative", display: "inline-block" }}>
+                      <img
+                        src={preview}
+                        alt={`상세 이미지 ${index + 1}`}
+                        style={{
+                          width: "120px",
+                          height: "120px",
+                          objectFit: "cover",
+                          borderRadius: "8px",
+                          border: "1px solid #e5e7eb"
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDetailImage(index)}
+                        style={{
+                          position: "absolute",
+                          top: "-8px",
+                          right: "-8px",
+                          width: "24px",
+                          height: "24px",
+                          borderRadius: "50%",
+                          backgroundColor: "#ef4444",
+                          color: "white",
+                          border: "none",
+                          cursor: "pointer",
+                          fontSize: "14px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          lineHeight: "1"
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {detailImagePreviews.length >= 10 && (
+                <p style={{ marginTop: "8px", color: "#6b7280", fontSize: "12px" }}>
+                  최대 10개까지 업로드 가능합니다.
+                </p>
               )}
             </div>
           </div>

@@ -114,6 +114,28 @@ export async function refundOrder(orderId, reason = "관리자 환불 처리") {
   }
 }
 
+// 프로그램 타입 목록 조회
+export async function getAllProgramTypes() {
+  try {
+    const res = await fetchWithAuthAndRetry(
+      `${API_BASE}/admin/program-types`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+      onLogout
+    );
+
+    const data = await parseJsonResponse(res, "프로그램 타입 목록 조회 실패");
+    return { success: true, data: data.data };
+  } catch (e) {
+    console.error("getAllProgramTypes 실패:", e);
+    return { success: false, error: e, data: [] };
+  }
+}
+
 // 전체 프로그램 목록 조회
 export async function getAllPrograms({ page = 1, limit, keyword = "", status = "ALL" }) {
   try {
