@@ -23,6 +23,7 @@ router.get("/dashboard/stats", adminController.getDashboardStats);
 
 // 주문 관리
 router.get("/orders", adminController.getAllOrders);
+router.get("/orders/:id", adminController.getOrderById); // 관리자용 주문 상세 조회
 router.post("/orders/:id/refund", adminController.refundOrder);
 
 // 체험 관리
@@ -41,6 +42,7 @@ router.delete("/events/:id", eventController.deleteEvent);
 // 예약 관리
 router.get("/reservations", adminController.getAllReservations);
 router.put("/reservations/:id/status", adminController.updateReservationStatus);
+router.delete("/reservations/:id", adminController.deleteReservation);
 
 // 상품 관리
 router.get("/products", adminController.getAllProducts);

@@ -1,4 +1,6 @@
 const db = require('../config/db');
+const path = require('path');
+const fs = require('fs');
 
 // 전체 이벤트 목록 조회 (검색/필터링 + 페이지네이션)
 exports.getAllEvents = async (req, res) => {
@@ -126,20 +128,206 @@ exports.getAllEvents = async (req, res) => {
 
 // 이벤트 생성
 exports.createEvent = async (req, res) => {
-  // TODO: 이미지 업로드 미들웨어 추가 후 구현
-  res.status(501).json({
-    success: false,
-    message: '아직 구현되지 않았습니다.'
-  });
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const { title, startDate, endDate, status, description, position, tag, notice } = req.body;
+    const imageFile = req.file; // uploadEventImage.single("image")로 업로드된 파일
+
+    // 필수 필드 검증
+    if (!title || !title.trim()) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: '이벤트 제목을 입력해 주세요.'
+      });
+    }
+
+    // 날짜 검증 (빈 문자열 체크)
+    const validStartDate = startDate && startDate.trim() ? startDate.trim() : null;
+    const validEndDate = endDate && endDate.trim() ? endDate.trim() : null;
+    
+    if (!validStartDate || !validEndDate) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: '이벤트 기간(시작일/종료일)을 입력해 주세요.'
+      });
+    }
+
+    // 상태 값 검증
+    let validStatus = status && status.trim() ? status.trim() : 'SCHEDULED';
+    if (!['SCHEDULED', 'ONGOING', 'ENDED'].includes(validStatus)) {
+      validStatus = 'SCHEDULED';
+    }
+
+    // 이미지 URL 설정
+    let imageUrl = null;
+    if (imageFile) {
+      imageUrl = `/images/events/${imageFile.filename}`;
+    }
+
+    // 이벤트 데이터 삽입
+    const [result] = await connection.query(
+      `INSERT INTO events (title, description, position, start_date, end_date, status, image_url, tag, notice) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        title.trim(),
+        description ? description.trim() : null,
+        position ? position.trim() : null,
+        validStartDate,
+        validEndDate,
+        validStatus,
+        imageUrl,
+        tag ? tag.trim() : null,
+        notice ? notice.trim() : null
+      ]
+    );
+
+    const eventId = result.insertId;
+    console.log('[createEvent] 이벤트 생성 완료 - ID:', eventId);
+
+    await connection.commit();
+
+    res.status(201).json({
+      success: true,
+      message: '이벤트가 등록되었습니다.',
+      data: { id: eventId }
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('이벤트 생성 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '이벤트 생성 중 오류가 발생했습니다.'
+    });
+  } finally {
+    connection.release();
+  }
 };
 
 // 이벤트 수정
 exports.updateEvent = async (req, res) => {
-  // TODO: 이미지 업로드 미들웨어 추가 후 구현
-  res.status(501).json({
-    success: false,
-    message: '아직 구현되지 않았습니다.'
-  });
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const eventId = req.params.id;
+    const { title, startDate, endDate, status, description, position, tag, notice } = req.body;
+    const imageFile = req.file; // uploadEventImage.single("image")로 업로드된 파일
+
+    // 이벤트 존재 확인 및 기존 데이터 조회
+    const [existing] = await connection.query(
+      `SELECT id, title, description, position, start_date, end_date, status, image_url, tag, notice 
+       FROM events WHERE id = ?`,
+      [eventId]
+    );
+
+    if (existing.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: '이벤트를 찾을 수 없습니다.'
+      });
+    }
+
+    const existingEvent = existing[0];
+
+    // 필수 필드 검증
+    if (!title || !title.trim()) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: '이벤트 제목을 입력해 주세요.'
+      });
+    }
+
+    // 날짜 검증 (빈 문자열 체크)
+    const validStartDate = startDate && startDate.trim() ? startDate.trim() : null;
+    const validEndDate = endDate && endDate.trim() ? endDate.trim() : null;
+    
+    if (!validStartDate || !validEndDate) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: '이벤트 기간(시작일/종료일)을 입력해 주세요.'
+      });
+    }
+
+    // 이미지 처리
+    let imageUrl = existing[0].image_url; // 기존 이미지 유지
+    if (imageFile) {
+      // 새 이미지가 업로드된 경우
+      imageUrl = `/images/events/${imageFile.filename}`;
+      
+      // 기존 이미지 파일 삭제
+      if (existing[0].image_url) {
+        const imagePath = path.join(__dirname, `../../public${existing[0].image_url}`);
+        if (fs.existsSync(imagePath)) {
+          try {
+            fs.unlinkSync(imagePath);
+            console.log('[updateEvent] 기존 이미지 파일 삭제:', imagePath);
+          } catch (fileError) {
+            console.warn('[updateEvent] 기존 이미지 파일 삭제 실패:', fileError);
+            // 파일 삭제 실패해도 계속 진행
+          }
+        }
+      }
+    }
+
+    // 상태 값 검증 및 변환
+    let validStatus = status && status.trim() ? status.trim() : existingEvent.status || 'SCHEDULED';
+    // 유효한 상태값인지 확인
+    if (!['SCHEDULED', 'ONGOING', 'ENDED'].includes(validStatus)) {
+      validStatus = existingEvent.status || 'SCHEDULED';
+    }
+
+    // 이벤트 정보 업데이트 (프론트엔드에서 보내지 않는 필드는 기존 값 유지)
+    await connection.query(
+      `UPDATE events SET 
+        title = ?, 
+        description = ?,
+        position = ?,
+        start_date = ?, 
+        end_date = ?, 
+        status = ?,
+        image_url = ?,
+        tag = ?,
+        notice = ?,
+        updated_at = NOW()
+      WHERE id = ?`,
+      [
+        title.trim(),
+        description ? description.trim() : (existingEvent.description || null),
+        position ? position.trim() : (existingEvent.position || null),
+        validStartDate,
+        validEndDate,
+        validStatus,
+        imageUrl,
+        tag ? tag.trim() : (existingEvent.tag || null),
+        notice ? notice.trim() : (existingEvent.notice || null),
+        eventId
+      ]
+    );
+
+    await connection.commit();
+
+    res.status(200).json({
+      success: true,
+      message: '이벤트가 수정되었습니다.',
+      data: { id: eventId }
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('이벤트 수정 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '이벤트 수정 중 오류가 발생했습니다.'
+    });
+  } finally {
+    connection.release();
+  }
 };
 
 // 이벤트 삭제

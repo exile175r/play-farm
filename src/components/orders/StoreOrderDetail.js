@@ -4,13 +4,17 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import dayjs from 'dayjs';
 import './StoreOrderDetail.css';
 
-import { getOrderById, cancelOrder, refundOrder } from '../../services/orderApi';
+import { getOrderById as getUserOrderById, cancelOrder, refundOrder } from '../../services/orderApi';
+import { getOrderById as getAdminOrderById } from '../../services/adminApi';
+import { useLocation } from 'react-router-dom';
 
 function StoreOrderDetail() {
    const navigate = useNavigate();
    const { orderId } = useParams();
+   const location = useLocation();
 
    const isLoggedIn = !!localStorage.getItem('token');
+   const isFromAdmin = location.state?.fromAdminOrders === true; // 관리자 페이지에서 온 경우
 
    const [order, setOrder] = useState(null);
    const [loading, setLoading] = useState(true);
@@ -27,7 +31,11 @@ function StoreOrderDetail() {
          setLoading(true);
          setError(null);
          try {
-            const result = await getOrderById(orderId);
+            // 관리자 페이지에서 온 경우 관리자용 API 사용
+            const result = isFromAdmin 
+               ? await getAdminOrderById(orderId)
+               : await getUserOrderById(orderId);
+            
             if (result.success) {
                setOrder(result.data);
             } else {
@@ -42,7 +50,7 @@ function StoreOrderDetail() {
       };
 
       loadOrder();
-   }, [orderId, isLoggedIn]);
+   }, [orderId, isLoggedIn, isFromAdmin]);
 
    const items = useMemo(() => {
       if (!order?.items) return [];
@@ -80,7 +88,9 @@ function StoreOrderDetail() {
 
          alert('주문이 취소되었습니다.');
          // 주문 정보 다시 불러오기
-         const result = await getOrderById(orderId);
+         const result = isFromAdmin 
+            ? await getAdminOrderById(orderId)
+            : await getUserOrderById(orderId);
          if (result.success) {
             setOrder(result.data);
          }
@@ -110,7 +120,9 @@ function StoreOrderDetail() {
          alert(message);
          
          // 주문 정보 다시 불러오기
-         const result = await getOrderById(orderId);
+         const result = isFromAdmin 
+            ? await getAdminOrderById(orderId)
+            : await getUserOrderById(orderId);
          if (result.success) {
             setOrder(result.data);
          }
@@ -151,7 +163,17 @@ function StoreOrderDetail() {
             <div className="sod-inner">
                <h2 className="sod-title">주문 상세</h2>
                <p className="sod-muted">{error || '주문 정보를 찾을 수 없습니다.'}</p>
-               <button className="sod-btn" type="button" onClick={() => navigate('/mypage', { state: { openTab: 'store_orders' } })}>
+               <button 
+                  className="sod-btn" 
+                  type="button" 
+                  onClick={() => {
+                     if (isFromAdmin) {
+                        navigate('/admin', { state: { activeTab: 'orders' } });
+                     } else {
+                        navigate('/mypage', { state: { openTab: 'store_orders' } });
+                     }
+                  }}
+               >
                   주문내역으로 이동
                </button>
             </div>
@@ -264,8 +286,18 @@ function StoreOrderDetail() {
 
             {/* 액션 */}
             <div className="sod-actions">
-               <button type="button" className={`sod-btn ghost`} onClick={() => navigate('/mypage', { state: { openTab: 'store_orders' } })}>
-                  주문내역으로
+               <button 
+                  className="sod-btn" 
+                  type="button" 
+                  onClick={() => {
+                     if (isFromAdmin) {
+                        navigate('/admin', { state: { activeTab: 'orders' } });
+                     } else {
+                        navigate('/mypage', { state: { openTab: 'store_orders' } });
+                     }
+                  }}
+               >
+                  주문내역으로 이동
                </button>
 
                <button type="button" className={`sod-btn ${canCancel ? '' : 'is-disabled'}`} onClick={onCancel} disabled={!canCancel}>

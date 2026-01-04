@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import "./Tabs.css";
 import AdminModal from "../components/AdminModal";
 import { getAllEvents, deleteEvent, createEvent, updateEvent } from "../../services/adminApi";
+import { getApiBaseUrl } from "../../utils/apiConfig";
 
 const emptyForm = {
   title: "",
@@ -13,6 +14,29 @@ const emptyForm = {
 };
 
 function EventsTab() {
+  // 이미지 URL 처리 함수
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return '';
+    
+    // blob URL인 경우 (새로 선택한 파일의 미리보기)
+    if (imagePath.startsWith('blob:')) {
+      return imagePath;
+    }
+    
+    // 이미 전체 URL인 경우
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // 상대 경로인 경우 (/images/...)
+    // API_BASE에서 /api를 제거하고 이미지 경로 추가
+    const apiBase = getApiBaseUrl();
+    const baseUrl = apiBase.replace('/api', '');
+    const fullUrl = `${baseUrl}${imagePath}`;
+    console.log('[getImageUrl] 경로 변환:', imagePath, '->', fullUrl);
+    return fullUrl;
+  };
+
   // 상태
   const [events, setEvents] = useState([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -92,15 +116,30 @@ function EventsTab() {
 
   const openEditModal = (event) => {
     setEditingEvent(event);
+    const imageUrl = event.image || event.imageUrl || event.image_url || "";
+    
+    // 상태 변환 (프론트엔드 한글 → 서버 상태값)
+    let serverStatus = 'SCHEDULED';
+    if (event.status === '진행중' || event.status === 'ONGOING') {
+      serverStatus = 'ONGOING';
+    } else if (event.status === '종료' || event.status === 'ENDED') {
+      serverStatus = 'ENDED';
+    } else if (event.status === 'SCHEDULED' || event.status === '진행 예정') {
+      serverStatus = 'SCHEDULED';
+    } else if (event.status) {
+      // 이미 서버 상태값인 경우 그대로 사용
+      serverStatus = event.status;
+    }
+    
     setForm({
-      title: event.title,
-      startDate: event.startDate,
-      endDate: event.endDate,
-      status: event.status,
-      imageUrl: event.imageUrl || event.image_url || "",
+      title: event.title || "",
+      startDate: event.startDate || "",
+      endDate: event.endDate || "",
+      status: serverStatus,
+      imageUrl: imageUrl,
     });
     setImageFile(null);
-    setImagePreview(event.imageUrl || event.image_url || "");
+    setImagePreview(imageUrl); // 원본 경로 저장, img 태그에서 변환
     setIsModalOpen(true);
   };
 
@@ -372,9 +411,13 @@ function EventsTab() {
               {imagePreview && (
                 <div style={{ marginTop: "8px" }}>
                   <img
-                    src={imagePreview}
+                    src={getImageUrl(imagePreview)}
                     alt="이벤트 이미지 미리보기"
                     style={{ maxWidth: "240px", borderRadius: "8px" }}
+                    onError={(e) => {
+                      console.error('이미지 로드 실패:', imagePreview);
+                      e.target.style.display = 'none';
+                    }}
                   />
                 </div>
               )}

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import './Tabs.css';
 import AdminModal from '../components/AdminModal';
-import { getAllReservations } from '../../services/adminApi';
+import { getAllReservations, deleteReservation } from '../../services/adminApi';
 
 function ReservationsTab() {
    const [reservations, setReservations] = useState([]);
@@ -28,7 +28,27 @@ function ReservationsTab() {
          });
 
          if (result.success) {
-            setReservations(result.data || []);
+            const replaceText = { 체험: ' 체험', 및: ' 및 ' };
+            setReservations(
+               result.data
+                  .map((item) => {
+                  const newItem = { ...item };
+                  try {
+                     if (typeof newItem.programTitle === 'string' && newItem.programTitle.includes(' 체험')) {
+                        return newItem;
+                     }
+                     newItem.programTitle = JSON.parse(newItem.programTitle)
+                        .map((v) => v.replace(/체험|및/g, (match) => replaceText[match] || match))
+                        .join(', ');
+                  } catch (error) {
+                     if (typeof newItem.programTitle === 'string' && !newItem.programTitle.includes(' 체험')) {
+                        newItem.programTitle = newItem.programTitle.replace(/체험|및/g, (match) => replaceText[match] || match);
+                     }
+                  }
+                  return newItem;
+                  })
+                  .sort((a, b) => b.id - a.id)
+            );
             setPagination(result.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });
             setCurrentPage(page);
          } else {
@@ -69,6 +89,25 @@ function ReservationsTab() {
    const handleViewDetail = (reservation) => {
       setSelectedReservation(reservation);
       setDetailModalOpen(true);
+   };
+
+   const handleDelete = async (reservation) => {
+      if (!window.confirm(`예약번호 ${reservation.id}를 정말 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) {
+         return;
+      }
+
+      try {
+         const result = await deleteReservation(reservation.id);
+         if (result.success) {
+            alert('예약이 삭제되었습니다.');
+            loadReservations(currentPage);
+         } else {
+            alert(result.error?.message || '예약 삭제에 실패했습니다.');
+         }
+      } catch (err) {
+         console.error('예약 삭제 실패:', err);
+         alert('예약 삭제 중 오류가 발생했습니다.');
+      }
    };
 
    const renderStatusBadge = (status) => {
@@ -175,6 +214,14 @@ function ReservationsTab() {
                               <div className="admin-row-actions">
                                  <button type="button" className="admin-secondary-btn" onClick={() => handleViewDetail(r)}>
                                     상세
+                                 </button>
+                                 <button 
+                                    type="button" 
+                                    className="admin-danger-btn" 
+                                    onClick={() => handleDelete(r)}
+                                    style={{ marginLeft: '5px', backgroundColor: '#dc2626', color: 'white' }}
+                                 >
+                                    삭제
                                  </button>
                               </div>
                            </td>

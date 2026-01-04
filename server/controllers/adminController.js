@@ -256,6 +256,91 @@ exports.getAllOrders = async (req, res) => {
   }
 };
 
+// 관리자용 주문 상세 조회 (user_id 필터 없음)
+exports.getOrderById = async (req, res) => {
+  try {
+    const orderId = req.params.id; // order_id (ORD-xxx 형식)
+
+    const [orders] = await db.query(
+      `SELECT * FROM orders WHERE order_id = ?`,
+      [orderId]
+    );
+
+    if (orders.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '주문을 찾을 수 없습니다.'
+      });
+    }
+
+    const order = orders[0];
+
+    const [items] = await db.query(
+      `SELECT * FROM order_items WHERE order_id = ?`,
+      [order.id]
+    );
+
+    const [payments] = await db.query(
+      `SELECT * FROM payments WHERE order_id = ? ORDER BY created_at DESC LIMIT 1`,
+      [order.id]
+    );
+
+    // 구매자 정보 조회
+    const [users] = await db.query(
+      `SELECT id, name, email, phone FROM users WHERE id = ?`,
+      [order.user_id]
+    );
+
+    const response = {
+      orderId: order.order_id,
+      status: order.status,
+      totalAmount: Number(order.total_amount),
+      items: items.map(item => ({
+        productId: item.product_id,
+        title: item.product_title,
+        image: item.product_image,
+        optionId: item.option_id,
+        optionName: item.option_name,
+        unitPrice: Number(item.unit_price),
+        quantity: item.quantity
+      })),
+      payment: payments.length > 0 ? {
+        id: payments[0].id,
+        paymentId: payments[0].payment_id,
+        method: payments[0].method,
+        status: payments[0].status,
+        buyerName: payments[0].buyer_name,
+        buyerPhone: payments[0].buyer_phone,
+        buyerEmail: payments[0].buyer_email,
+        paidAt: payments[0].paid_at,
+        refundedAt: payments[0].refunded_at,
+        refundReason: payments[0].refund_reason
+      } : null,
+      buyer: users.length > 0 ? {
+        id: users[0].id,
+        name: users[0].name,
+        email: users[0].email,
+        phone: users[0].phone
+      } : null,
+      createdAt: order.created_at,
+      updatedAt: order.updated_at,
+      cancelledAt: order.cancelled_at
+    };
+
+    res.status(200).json({
+      success: true,
+      data: response
+    });
+
+  } catch (error) {
+    console.error('주문 조회 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '주문 조회 중 오류가 발생했습니다.'
+    });
+  }
+};
+
 // 주문 환불 처리
 exports.refundOrder = async (req, res) => {
   const connection = await db.getConnection();
@@ -1072,6 +1157,52 @@ exports.updateReservationStatus = async (req, res) => {
   }
 };
 
+// 예약 삭제
+exports.deleteReservation = async (req, res) => {
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const reservationId = req.params.id;
+
+    // 예약 존재 확인
+    const [reservations] = await connection.query(
+      `SELECT id, status FROM reservations WHERE id = ?`,
+      [reservationId]
+    );
+
+    if (reservations.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: '예약을 찾을 수 없습니다.'
+      });
+    }
+
+    // 예약 삭제
+    await connection.query(
+      `DELETE FROM reservations WHERE id = ?`,
+      [reservationId]
+    );
+
+    await connection.commit();
+
+    res.status(200).json({
+      success: true,
+      message: '예약이 삭제되었습니다.'
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('예약 삭제 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '예약 삭제 중 오류가 발생했습니다.'
+    });
+  } finally {
+    connection.release();
+  }
+};
+
 // 전체 상품 목록 조회 (검색/필터링 + 페이지네이션)
 exports.getAllProducts = async (req, res) => {
   try {
@@ -1118,6 +1249,7 @@ exports.getAllProducts = async (req, res) => {
         p.base_price,
         p.is_active,
         p.stock_quantity,
+        p.image_url,
         p.created_at,
         (SELECT GROUP_CONCAT(pi2.image_url ORDER BY pi2.display_order)
         FROM product_images pi2
@@ -1131,9 +1263,19 @@ exports.getAllProducts = async (req, res) => {
     const [products] = await db.query(dataQuery, params);
 
     const formatted = products.map(p => {
-      // 첫 번째 이미지를 대표 이미지로 사용
+      // product_images 테이블에서 이미지 가져오기
       const images = p.images ? p.images.split(',') : [];
-      const imageUrl = images.length > 0 ? images[0] : null;
+      
+      // 이미지 URL 우선순위: product_images > products.image_url
+      let imageUrl = null;
+      if (images.length > 0) {
+        imageUrl = images[0];
+      } else if (p.image_url) {
+        // product_images에 없으면 products.image_url 사용
+        imageUrl = p.image_url;
+        // 단일 이미지를 배열로 변환
+        images.push(p.image_url);
+      }
 
       let status = 'ACTIVE';
       if (!p.is_active) {
@@ -1175,11 +1317,82 @@ exports.getAllProducts = async (req, res) => {
 
 // 상품 생성
 exports.createProduct = async (req, res) => {
-  // TODO: 이미지 업로드 미들웨어 추가 후 구현
-  res.status(501).json({
-    success: false,
-    message: '아직 구현되지 않았습니다.'
-  });
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const { name, stock, price, status, category } = req.body;
+
+    // fields 방식: 대표 이미지와 상세 이미지 구분
+    const mainImage = req.files?.image?.[0]; // 대표 이미지
+    const detailImages = req.files?.detailImages || []; // 상세 이미지들
+
+    // 필수 필드 검증
+    if (!name || !name.trim()) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: '상품명을 입력해 주세요.'
+      });
+    }
+
+    const stockNumber = stock ? Number(stock) : 0;
+    const priceNumber = price ? Number(price) : 0;
+    const isActive = status === 'ACTIVE';
+
+    // 상품 데이터 삽입
+    const [result] = await connection.query(
+      `INSERT INTO products (name, category, stock_quantity, base_price, is_active) VALUES (?, ?, ?, ?, ?)`,
+      [
+        name.trim(),
+        category ? category.trim() : null,
+        stockNumber,
+        priceNumber,
+        isActive
+      ]
+    );
+
+    const productId = result.insertId;
+    console.log('[createProduct] 상품 생성 완료 - ID:', productId);
+
+    // 이미지 저장
+    if (mainImage) {
+      const imageUrl = `/images/store/${mainImage.filename}`;
+      await connection.query(
+        `INSERT INTO product_images (product_id, image_url, display_order) VALUES (?, ?, ?)`,
+        [productId, imageUrl, 0]
+      );
+    }
+
+    // 상세 이미지들 저장 (display_order = 1, 2, 3, ...)
+    if (detailImages && detailImages.length > 0) {
+      for (let index = 0; index < detailImages.length; index++) {
+        const file = detailImages[index];
+        const imageUrl = `/images/store/${file.filename}`;
+        await connection.query(
+          `INSERT INTO product_images (product_id, image_url, display_order) VALUES (?, ?, ?)`,
+          [productId, imageUrl, index + 1]
+        );
+      }
+    }
+
+    await connection.commit();
+
+    res.status(201).json({
+      success: true,
+      message: '상품이 등록되었습니다.',
+      data: { id: productId }
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('상품 생성 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '상품 생성 중 오류가 발생했습니다.'
+    });
+  } finally {
+    connection.release();
+  }
 };
 
 // 상품 수정
@@ -1250,7 +1463,7 @@ exports.updateProduct = async (req, res) => {
 
       // 대표 이미지 저장 (display_order = 0)
       if (mainImage) {
-        const imageUrl = `/images/products/${mainImage.filename}`;
+        const imageUrl = `/images/store/${mainImage.filename}`;
         await connection.query(
           `INSERT INTO product_images (product_id, image_url, display_order) VALUES (?, ?, ?)`,
           [productId, imageUrl, 0]
@@ -1261,7 +1474,7 @@ exports.updateProduct = async (req, res) => {
       if (detailImages && detailImages.length > 0) {
         for (let index = 0; index < detailImages.length; index++) {
           const file = detailImages[index];
-          const imageUrl = `/images/products/${file.filename}`;
+          const imageUrl = `/images/store/${file.filename}`;
           await connection.query(
             `INSERT INTO product_images (product_id, image_url, display_order) VALUES (?, ?, ?)`,
             [productId, imageUrl, index + 1]
@@ -1291,11 +1504,70 @@ exports.updateProduct = async (req, res) => {
 
 // 상품 삭제
 exports.deleteProduct = async (req, res) => {
-  // TODO: 구현 필요
-  res.status(501).json({
-    success: false,
-    message: '아직 구현되지 않았습니다.'
-  });
+  const connection = await db.getConnection();
+  try {
+    await connection.beginTransaction();
+
+    const productId = req.params.id;
+
+    // 상품 존재 확인
+    const [existing] = await connection.query(
+      `SELECT id FROM products WHERE id = ?`,
+      [productId]
+    );
+
+    if (existing.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: '상품을 찾을 수 없습니다.'
+      });
+    }
+
+    // 상품 이미지 파일 삭제 (선택사항)
+    const [images] = await connection.query(
+      `SELECT image_url FROM product_images WHERE product_id = ?`,
+      [productId]
+    );
+
+    // 이미지 파일 삭제
+    for (const img of images) {
+      if (img.image_url) {
+        const imagePath = path.join(__dirname, `../../public${img.image_url}`);
+        if (fs.existsSync(imagePath)) {
+          try {
+            fs.unlinkSync(imagePath);
+            console.log('[deleteProduct] 이미지 파일 삭제:', imagePath);
+          } catch (fileError) {
+            console.warn('[deleteProduct] 이미지 파일 삭제 실패:', fileError);
+            // 파일 삭제 실패해도 계속 진행
+          }
+        }
+      }
+    }
+
+    // 상품 삭제 (CASCADE로 product_images도 자동 삭제됨)
+    await connection.query(
+      `DELETE FROM products WHERE id = ?`,
+      [productId]
+    );
+
+    await connection.commit();
+
+    res.status(200).json({
+      success: true,
+      message: '상품이 삭제되었습니다.'
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('상품 삭제 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '상품 삭제 중 오류가 발생했습니다.'
+    });
+  } finally {
+    connection.release();
+  }
 };
 
 // 전체 사용자 목록 조회 (검색/필터링 + 페이지네이션)

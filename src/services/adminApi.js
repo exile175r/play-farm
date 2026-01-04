@@ -91,6 +91,28 @@ export async function getAllOrders({ page = 1, limit, keyword = "", status = "AL
   }
 }
 
+// 관리자용 주문 상세 조회
+export async function getOrderById(orderId) {
+  try {
+    const res = await fetchWithAuthAndRetry(
+      `${API_BASE}/admin/orders/${encodeURIComponent(orderId)}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+      onLogout
+    );
+
+    const data = await parseJsonResponse(res, "주문 상세 조회 실패");
+    return { success: true, data: data.data };
+  } catch (e) {
+    console.error("getOrderById 실패:", e);
+    return { success: false, error: e };
+  }
+}
+
 // 주문 환불 처리
 export async function refundOrder(orderId, reason = "관리자 환불 처리") {
   try {
@@ -279,6 +301,28 @@ export async function updateReservationStatus(reservationId, status) {
     return { success: true, message: data.message };
   } catch (e) {
     console.error("updateReservationStatus 실패:", e);
+    return { success: false, error: e };
+  }
+}
+
+// 예약 삭제
+export async function deleteReservation(reservationId) {
+  try {
+    const res = await fetchWithAuthAndRetry(
+      `${API_BASE}/admin/reservations/${encodeURIComponent(reservationId)}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+      onLogout
+    );
+
+    const data = await parseJsonResponse(res, "예약 삭제 실패");
+    return { success: true, message: data.message };
+  } catch (e) {
+    console.error("deleteReservation 실패:", e);
     return { success: false, error: e };
   }
 }

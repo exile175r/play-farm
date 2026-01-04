@@ -8,6 +8,7 @@ import {
   createProduct, // ✅ 추가
   updateProduct, // ✅ 추가
 } from "../../services/adminApi";
+import { getApiBaseUrl } from "../../utils/apiConfig";
 
 const emptyForm = {
   name: "",
@@ -18,6 +19,28 @@ const emptyForm = {
 };
 
 function ProductsTab() {
+  // 이미지 URL 처리 함수
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return '';
+    
+    // blob URL인 경우 (새로 선택한 파일의 미리보기)
+    if (imagePath.startsWith('blob:')) {
+      return imagePath;
+    }
+    
+    // 이미 전체 URL인 경우
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // 상대 경로인 경우 (/images/...)
+    // API_BASE에서 /api를 제거하고 이미지 경로 추가
+    const apiBase = getApiBaseUrl();
+    const baseUrl = apiBase.replace('/api', '');
+    const fullUrl = `${baseUrl}${imagePath}`;
+    console.log('[getImageUrl] 경로 변환:', imagePath, '->', fullUrl);
+    return fullUrl;
+  };
   const [products, setProducts] = useState([]);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [keyword, setKeyword] = useState("");
@@ -102,7 +125,7 @@ function ProductsTab() {
     });
     setImageFile(null);
 
-    // 대표 이미지 미리보기 설정
+    // 대표 이미지 미리보기 설정 (원본 경로 저장, img 태그에서 변환)
     const mainImageUrl = product.imageUrl || (product.images && product.images.length > 0 ? product.images[0] : "");
     setImagePreview(mainImageUrl);
 
@@ -111,9 +134,11 @@ function ProductsTab() {
       ? product.images.slice(1) // 첫 번째 이미지(대표) 제외
       : [];
     setDetailImageFiles([]); // 새로 선택한 파일은 없음
-    setDetailImagePreviews(existingDetailImages); // 기존 이미지 URL들
+    setDetailImagePreviews(existingDetailImages); // 기존 이미지 URL들 (원본 경로 저장)
 
     console.log('[openEditModal] 상품 데이터:', product);
+    console.log('[openEditModal] product.imageUrl:', product.imageUrl);
+    console.log('[openEditModal] product.images:', product.images);
     console.log('[openEditModal] 대표 이미지 URL:', mainImageUrl);
     console.log('[openEditModal] 상세 이미지 개수:', existingDetailImages.length);
 
@@ -164,14 +189,30 @@ function ProductsTab() {
   };
 
   const handleRemoveDetailImage = (index) => {
-    const newFiles = detailImageFiles.filter((_, i) => i !== index);
-    const newPreviews = detailImagePreviews.filter((_, i) => i !== index);
+    // 기존 이미지인지 새로 선택한 파일인지 확인
+    // detailImagePreviews의 앞부분은 기존 이미지 URL, 뒷부분은 새로 선택한 파일의 preview
+    const existingImageCount = detailImagePreviews.length - detailImageFiles.length;
+    const isExistingImage = index < existingImageCount;
 
-    // 이전 URL 해제 (메모리 누수 방지)
-    URL.revokeObjectURL(detailImagePreviews[index]);
+    if (isExistingImage) {
+      // 기존 이미지 삭제: preview에서만 제거 (실제 삭제는 서버에서 처리)
+      const newPreviews = detailImagePreviews.filter((_, i) => i !== index);
+      setDetailImagePreviews(newPreviews);
+    } else {
+      // 새로 선택한 파일 삭제: files와 preview 모두에서 제거
+      const fileIndex = index - existingImageCount;
+      const newFiles = detailImageFiles.filter((_, i) => i !== fileIndex);
+      const newPreviews = detailImagePreviews.filter((_, i) => i !== index);
 
-    setDetailImageFiles(newFiles);
-    setDetailImagePreviews(newPreviews);
+      // 이전 URL 해제 (메모리 누수 방지) - 새로 선택한 파일의 preview만 해제
+      const previewUrl = detailImagePreviews[index];
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+
+      setDetailImageFiles(newFiles);
+      setDetailImagePreviews(newPreviews);
+    }
   };
 
   // ===== 저장 (생성/수정 공통) =====
@@ -445,9 +486,13 @@ function ProductsTab() {
               {imagePreview && (
                 <div style={{ marginTop: "8px" }}>
                   <img
-                    src={imagePreview}
+                    src={getImageUrl(imagePreview)}
                     alt="상품 이미지 미리보기"
                     style={{ maxWidth: "200px", borderRadius: "8px" }}
+                    onError={(e) => {
+                      console.error('이미지 로드 실패:', imagePreview);
+                      e.target.style.display = 'none';
+                    }}
                   />
                 </div>
               )}
@@ -467,7 +512,7 @@ function ProductsTab() {
                   {detailImagePreviews.map((preview, index) => (
                     <div key={index} style={{ position: "relative", display: "inline-block" }}>
                       <img
-                        src={preview}
+                        src={getImageUrl(preview)}
                         alt={`상세 이미지 ${index + 1}`}
                         style={{
                           width: "120px",
@@ -475,6 +520,10 @@ function ProductsTab() {
                           objectFit: "cover",
                           borderRadius: "8px",
                           border: "1px solid #e5e7eb"
+                        }}
+                        onError={(e) => {
+                          console.error('상세 이미지 로드 실패:', preview);
+                          e.target.style.display = 'none';
                         }}
                       />
                       <button

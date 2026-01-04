@@ -47,7 +47,7 @@ const uploadReviewImages = reviewUpload.array("images", 6);
 
 // 상품 이미지 업로드 (단일 - 기존 호환성 유지)
 const productUpload = multer({
-  storage: createStorage("products", "product"),
+  storage: createStorage("store", "product"),
   limits: { fileSize: 5 * 1024 * 1024, files: 1 },
   fileFilter,
 });
@@ -55,7 +55,7 @@ const uploadProductImage = productUpload.single("image");
 
 // 상품 이미지 업로드 (대표 이미지 + 상세 이미지 여러 개)
 const productImagesUpload = multer({
-  storage: createStorage("products", "product"),
+  storage: createStorage("store", "product"),
   limits: { fileSize: 5 * 1024 * 1024, files: 11 }, // 대표 1개 + 상세 10개
   fileFilter,
 });
