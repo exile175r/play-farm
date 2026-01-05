@@ -7,6 +7,22 @@ const { addressToCoordinates } = require('../utils/geocoding');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
+// 로컬 타임존을 유지하는 날짜 포맷팅 함수 (UTC 변환 없이)
+const formatLocalDate = (date) => {
+  if (!date) return null;
+  if (date instanceof Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  // 이미 문자열인 경우 그대로 반환 (ISO 문자열인 경우 날짜 부분만 추출)
+  if (typeof date === 'string') {
+    return date.split('T')[0];
+  }
+  return date;
+};
+
 // ✅ 서버 코드에 관리자 계정 하드코딩 (DB 없이)
 const ADMIN_ACCOUNTS = {
   'admin': '1234',
@@ -63,9 +79,9 @@ exports.adminLogin = async (req, res) => {
 exports.getDashboardStats = async (req, res) => {
   try {
     const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-    const thisMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+    const today = formatLocalDate(now);
+    const thisMonthStart = formatLocalDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    const thisMonthEnd = formatLocalDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
 
     // 오늘 예약 건수
     const [todayReservations] = await db.query(
@@ -484,8 +500,8 @@ exports.getAllPrograms = async (req, res) => {
         title: program.program_nm,
         category: program.village_nm || '',
         status: program.status || 'OPEN', // DB의 status 컬럼 사용
-        startDate: program.reqst_bgnde ? program.reqst_bgnde.toISOString().split('T')[0] : null,
-        endDate: program.reqst_endde ? program.reqst_endde.toISOString().split('T')[0] : null,
+        startDate: formatLocalDate(program.reqst_bgnde),
+        endDate: formatLocalDate(program.reqst_endde),
         price: parsePrice(program.chrge) || null,
         imageUrl: imageUrl, // 대표 이미지 URL
         address: program.address || null,

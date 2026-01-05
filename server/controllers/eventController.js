@@ -57,11 +57,18 @@ exports.getAllEvents = async (req, res) => {
 
     // 프론트엔드 구조에 맞게 변환
     const formatted = events.map(e => {
-      // 기간 포맷팅 (YYYY-MM-DD ~ YYYY-MM-DD)
+      // 기간 포맷팅 (YYYY-MM-DD ~ YYYY-MM-DD) - 로컬 타임존 유지
       const formatDate = (date) => {
         if (!date) return null;
         if (date instanceof Date) {
-          return date.toISOString().split('T')[0];
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        }
+        // 이미 문자열인 경우 그대로 반환 (ISO 문자열인 경우 날짜 부분만 추출)
+        if (typeof date === 'string') {
+          return date.split('T')[0];
         }
         return date;
       };
