@@ -103,8 +103,6 @@ exports.getAllEvents = async (req, res) => {
       };
     });
 
-    console.log('getAllEvents formatted:', formatted); // DEBUG
-
     res.status(200).json({
       success: true,
       data: formatted,
@@ -291,7 +289,6 @@ exports.createEvent = async (req, res) => {
     );
 
     const eventId = result.insertId;
-    console.log('[createEvent] 이벤트 생성 완료 - ID:', eventId);
 
     await connection.commit();
 

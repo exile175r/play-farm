@@ -295,7 +295,26 @@
    gap: 12px;
 }
 
-.admin-form-row-inline > div {
+.admin-form-row.is-checkbox {
+   flex-direction: row;
+   align-items: center;
+   gap: 10px;
+}
+
+.admin-form-row.is-checkbox label {
+   margin-bottom: 0;
+   width: auto;
+   cursor: pointer;
+}
+
+.admin-form-row.is-checkbox input[type="checkbox"] {
+   width: 16px;
+   height: 16px;
+   margin: 0;
+   cursor: pointer;
+}
+
+.admin-form-row-inline>div {
    flex: 1;
 }
 

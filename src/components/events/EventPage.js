@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "./EventPage.css";
 import { getImagePath } from "../../utils/imagePath";
-import { getAllEvents } from "../../services/adminApi";
+import { getAllEvents } from "../../services/eventApi";
 import { getAllNotices } from "../../services/noticeApi";
 
 function EventPage() {
@@ -21,7 +21,6 @@ function EventPage() {
         ]);
 
         if (eventRes.success) {
-          console.log("EventPage events:", eventRes.data); // DEBUG
           setEvents(eventRes.data || []);
         }
         if (noticeRes.success) setNotices(noticeRes.data || []);
@@ -99,15 +98,12 @@ function EventList({ events }) {
               <img src={getImagePath(item.image)} alt={item.title} className="pf-event-banner-img" />
             </div>
 
-            <div className="pf-event-body">
-              {/* Design requirement: List shows only Description + Date (based on user image) */}
-              {/* Title is hidden in list view as the description acts as the main text */}
-              {/* <h3 className="pf-event-card-title">{item.title}</h3> */}
+            {/* <div className="pf-event-body">
               <p className="pf-event-card-desc" style={{ fontSize: '15px', fontWeight: '500', color: '#333' }}>
                 {item.description || item.title}
               </p>
               <p className="pf-event-card-date">{item.period}</p>
-            </div>
+            </div> */}
           </article>
         </Link>
       ))}

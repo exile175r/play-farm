@@ -189,14 +189,15 @@ function NoticesTab() {
                     onSubmit={handleSubmit}
                 >
                     <div className="admin-form-grid">
-                        <div className="admin-form-row">
-                            <label>중요 공지</label>
+                        <div className="admin-form-row is-checkbox">
                             <input
                                 type="checkbox"
+                                id="is_important"
                                 name="is_important"
                                 checked={form.is_important}
                                 onChange={handleChange}
                             />
+                            <label htmlFor="is_important">중요 공지</label>
                         </div>
                         <div className="admin-form-row">
                             <label>제목</label>

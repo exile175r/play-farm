@@ -17,33 +17,87 @@
   border: none;
   background: transparent;
   padding: 0;
-  margin-bottom: 16px;
-  font-size: 14px;
-  color: var(--color-list-sub);
+  margin-bottom: 24px;
+  font-size: 15px;
+  color: var(--color-list-sub, #666);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  transition: color 0.2s;
 }
 
 .pf-event-detail-back-btn:hover {
-  color: var(--color-list-title);
+  color: var(--color-list-title, #222);
 }
 
-/* 히어로 영역 */
-.pf-event-detail-hero {
-  display: grid;
-  grid-template-columns: 3fr 2fr;
-  gap: 32px;
-  align-items: flex-start;
+/* 히어로/헤더 영역 (제목 + 일정) */
+.pf-event-detail-header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid var(--color-border, #eee);
 }
 
-/* 배너 이미지 */
+.pf-event-detail-badge {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 20px;
+  background: #eee;
+  color: #666;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.pf-event-detail-badge-ing {
+  background: #2ecc71;
+  color: #fff;
+}
+
+.pf-event-detail-badge-closed {
+  background: #95a5a6;
+  color: #fff;
+}
+
+.pf-event-detail-title {
+  font-size: 36px;
+  font-weight: 800;
+  margin: 0 0 16px;
+  color: var(--color-list-title, #333);
+  line-height: 1.3;
+}
+
+.pf-event-detail-meta {
+  display: flex;
+  justify-content: center;
+}
+
+.pf-event-detail-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 17px;
+  color: var(--color-list-sub, #555);
+}
+
+.pf-event-detail-meta-label {
+  font-weight: 700;
+  color: var(--color-list-title, #222);
+}
+
+/* 내용 영역 (이미지 + 내용) */
+.pf-event-detail-body {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
 .pf-event-detail-banner {
-  position: relative;
-  border-radius: 18px;
+  margin-bottom: 48px;
+  border-radius: 16px;
   overflow: hidden;
-  background: #000;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  background: #f9f9f9;
 }
 
 .pf-event-detail-banner-img {
@@ -52,104 +106,31 @@
   object-fit: cover;
 }
 
-.pf-event-detail-badge {
-  position: absolute;
-  left: 16px;
-  top: 16px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #fff;
+.pf-event-detail-content {
+  font-size: 18px;
+  line-height: 1.8;
+  color: #333;
+  white-space: pre-wrap;
+  margin-bottom: 80px;
+  padding: 0 10px;
+  text-align: left;
 }
 
-.pf-event-detail-badge-ing {
-  background: var(--color-green-light);
+.pf-event-detail-content p {
+  margin-bottom: 1em;
 }
 
-.pf-event-detail-badge-closed {
-  background: #999999;
+/* 하단 버튼 */
+.pf-event-detail-actions {
+  text-align: center;
+  padding-top: 40px;
+  border-top: 1px solid var(--color-border, #eee);
 }
 
-/* 정보 영역 */
-.pf-event-detail-info {
-  background: #ffffff;
-  border-radius: 18px;
-  border: 1px solid var(--color-border);
-  padding: 20px 22px 22px;
-  box-sizing: border-box;
-  box-shadow: 0 16px 40px var(--color-shadow-mid);
-}
-
-.pf-event-detail-tag {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--color-list-card-bg);
-  font-size: 12px;
-  color: var(--color-green-dark);
-  margin-bottom: 8px;
-}
-
-.pf-event-detail-title {
-  margin: 0 0 10px;
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--color-list-title);
-}
-
-.pf-event-detail-desc {
-  margin: 0 0 18px;
-  font-size: 14px;
-  color: var(--color-list-sub);
-}
-
-/* 메타 정보 */
-.pf-event-detail-meta {
-  margin: 0;
-  padding: 0;
-}
-
-.pf-event-detail-meta-row {
-  display: flex;
-  gap: 16px;
-  font-size: 13px;
-  padding: 6px 0;
-}
-
-.pf-event-detail-meta-row dt {
-  min-width: 80px;
-  color: var(--color-list-sub);
-}
-
-.pf-event-detail-meta-row dd {
-  margin: 0;
-  color: var(--color-list-title);
-}
-
-/* 유의 사항 */
-.pf-event-detail-notice {
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--color-border);
-}
-
-.pf-event-detail-notice h2 {
-  margin: 0 0 6px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-list-title);
-}
-
-.pf-event-detail-notice p {
-  margin: 0;
-  font-size: 13px;
-  color: var(--color-list-sub);
-}
-
-/* 없는 이벤트 */
+/* 없는 이벤트 안내 */
 .pf-event-detail-empty {
-  margin: 80px 0 16px;
-  font-size: 16px;
-  color: var(--color-list-sub);
+  text-align: center;
+  padding: 100px 16px;
+  font-size: 18px;
+  color: var(--color-list-sub, #888);
 }

@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./EventDetail.css";
-import { fetchWithAuthAndRetry, basicFetch } from "../../utils/apiConfig"; // Use basicFetch for public GET
-// import { events } from "../data/eventData"; // Remove static data
+import { getEventById } from "../../services/eventApi";
+import { getImagePath } from "../../utils/imagePath";
 
 function EventDetail() {
   const { id } = useParams();
@@ -16,7 +16,7 @@ function EventDetail() {
     const fetchEvent = async () => {
       try {
         setLoading(true);
-        const result = await basicFetch(`/api/events/${id}`);
+        const result = await getEventById(id);
         if (result.success) {
           setEvent(result.data);
         } else {
@@ -58,21 +58,33 @@ function EventDetail() {
   const displayTitle = event.subtitle || event.title;
 
   return (
-    <main className="pf-event-detail">
-      <div className="pf-container">
-        <header className="pf-ed-head">
-          <span className={`pf-badge ${event.status === '진행중' ? 'active' : ''}`}>{event.status}</span>
-          <h2 className="pf-ed-title">{displayTitle}</h2>
-          <p className="pf-ed-date">{event.period}</p>
+    <main className="pf-event-detail-page">
+      <div className="pf-event-detail-inner">
+        <button className="pf-event-detail-back-btn" onClick={() => navigate('/events')}>
+          <span>←</span> 목록으로
+        </button>
+
+        <header className="pf-event-detail-header">
+          <span className={`pf-event-detail-badge ${event.status === '진행중' || event.status === 'ONGOING' ? 'pf-event-detail-badge-ing' : 'pf-event-detail-badge-closed'}`}>
+            {event.status === 'ONGOING' ? '진행중' : event.status}
+          </span>
+          <h2 className="pf-event-detail-title">{displayTitle}</h2>
+          <div className="pf-event-detail-meta">
+            <div className="pf-event-detail-meta-row">
+              <span className="pf-event-detail-meta-label">일정</span>
+              <span className="pf-event-detail-meta-value">{event.period}</span>
+            </div>
+          </div>
         </header>
 
-        <div className="pf-ed-body">
-          <div className="pf-ed-img">
-            {/* Use getImagePath utility if possible or just absolute path if starts with / */}
-            <img src={event.image} alt={displayTitle} />
+        <div className="pf-event-detail-body">
+          {/* 3. 이미지 */}
+          <div className="pf-event-detail-banner">
+            <img src={getImagePath(event.image)} alt={displayTitle} className="pf-event-detail-banner-img" />
           </div>
-          <div className="pf-ed-content">
-            {/* User requirement: "Content below image is description" */}
+
+          <div className="pf-event-detail-content">
+            {/* 4. 상세 내용 */}
             {event.description ? (
               event.description.split('\n').map((line, i) => (
                 <p key={i}>{line}</p>
@@ -83,25 +95,10 @@ function EventDetail() {
           </div>
         </div>
 
-        <div className="pf-ed-actions">
+        <div className="pf-event-detail-actions">
           <button className="pf-btn ghost" onClick={() => navigate('/events')}>목록으로</button>
         </div>
       </div>
-
-      <style>{`
-            .pf-event-detail { padding: 60px 0; }
-            .pf-event-detail-empty { text-align: center; padding: 100px 0; font-size: 18px; color: #666; }
-            .pf-ed-head { text-align: center; margin-bottom: 40px; border-bottom: 1px solid #eee; padding-bottom: 30px; }
-            .pf-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; background: #eee; color: #666; font-size: 14px; margin-bottom: 16px; }
-            .pf-badge.active { background: #2ecc71; color: #fff; }
-            .pf-ed-title { font-size: 32px; margin-bottom: 12px; color: #333; }
-            .pf-ed-date { font-size: 16px; color: #888; }
-            .pf-ed-body { max-width: 800px; margin: 0 auto; }
-            .pf-ed-img { margin-bottom: 40px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-            .pf-ed-img img { width: 100%; display: block; }
-            .pf-ed-content { font-size: 18px; line-height: 1.8; color: #444; white-space: pre-wrap; margin-bottom: 60px; }
-            .pf-ed-actions { text-align: center; padding-top: 40px; border-top: 1px solid #eee; }
-         `}</style>
     </main>
   );
 }
