@@ -10,6 +10,7 @@ import { getMyReviews, updateReview, deleteReview } from '../../services/reviewA
 import { getMyOrders } from '../../services/orderApi';
 import { getMyPoints } from '../../services/pointApi';
 import { getMyCart, updateCartItem, removeCartItem, clearCart as clearCartApi } from '../../services/cartApi';
+import { changePassword, deleteAccount, updateMyProfile, getMyProfile } from '../../services/userApi';
 
 function Mypage() {
    const navigate = useNavigate();
@@ -18,18 +19,69 @@ function Mypage() {
    // ===== auth =====
    const isLoggedIn = !!localStorage.getItem('token');
 
-   const user = useMemo(() => {
-      try {
-         const raw = localStorage.getItem('user');
-         return raw ? JSON.parse(raw) : null;
-      } catch {
-         return null;
-      }
-   }, []);
+   // DB에서 최신 정보를 가져오기 위해 초기값 null 설정 (로컬 스토리지 사용 X)
+   const [user, setUser] = useState(null);
+
+   // 프로그램 이름 parse
+   const programNameParsed = (list, name) => {
+      const replaceText = { 체험: ' 체험', 및: ' 및 ' };
+      return list.map((item) => {
+         const newItem = { ...item };
+         try {
+            if (typeof newItem[name] === 'string' && newItem[name].includes(' 체험')) {
+               return newItem;
+            }
+            newItem[name] = JSON.parse(newItem[name])
+               .map((v) => v.replace(/체험|및/g, (match) => replaceText[match] || match))
+               .join(', ');
+         } catch (error) {
+            if (typeof newItem[name] === 'string' && !newItem[name].includes(' 체험')) {
+               newItem[name] = newItem[name].replace(/체험|및/g, (match) => replaceText[match] || match);
+            }
+         }
+         return newItem;
+      });
+   };
+
+   // Format: USER + SignupDate(YYYYMMDD) + id(6digits)
+   const displayId = useMemo(() => {
+      if (!user) return '-';
+
+      // user가 이미 unwrapped 된 상태라고 가정하고 직접 구조분해
+      const { created_at, id } = user;
+
+      // 가입일 포맷
+      const dateStr = created_at ? dayjs(created_at).format('YYYYMMDD') : dayjs().format('YYYYMMDD');
+      // ID 포맷 (6자리 0 패딩)
+      const idStr = String(id).padStart(6, '0');
+
+      return `USER${dateStr}${idStr}`;
+   }, [user]);
+
+   // 소셜 로그인 여부 (user_id가 social_로 시작하면 소셜 로그인)
+   const isSocialLogin = useMemo(() => {
+      return user?.user_id && String(user.user_id).startsWith('social_');
+   }, [user]);
 
    const baseDisplayName = user?.nickname || user?.name || user?.user_id || '회원';
-   const displayId = user?.user_id || '';
    const userId = user?.user_id || user?.id || user?.email || '';
+
+   // Fetch User Profile
+   useEffect(() => {
+      if (!isLoggedIn) return;
+
+      getMyProfile().then(res => {
+         if (res.success && res.data) {
+            // res.data는 { user: {...}, token: ... } 형태일 수 있으므로 user 필드 확인
+            // 만약 res.data가 바로 user 객체라면 그대로 사용, {user: ...}라면 user만 추출
+            const userData = res.data.user || res.data;
+            setUser(userData);
+            // Keep localStorage in sync for persistence across reloads
+            localStorage.setItem('user', JSON.stringify(userData));
+         }
+      });
+   }, [isLoggedIn]);
+
 
    // ===== tabs =====
    // ✅ 기존 tab: account | reservations | reviews | bookmarks | security
@@ -102,7 +154,9 @@ function Mypage() {
             localStorage.setItem('reservations_program', JSON.stringify(next));
          }
 
-         setReservations(next);
+         const parsedList = programNameParsed(next, 'title');
+
+         setReservations(parsedList);
       } catch (error) {
          console.error('예약 목록 조회 실패:', error);
          setReservations([]);
@@ -161,23 +215,7 @@ function Mypage() {
          const res = await getMyBookmarks();
          if (res?.success) {
             const bookmarkList = Array.isArray(res.data?.bookmarks) ? res.data.bookmarks : [];
-            const replaceText = { 체험: ' 체험', 및: ' 및 ' };
-            const newBookmarkList = bookmarkList.map((item) => {
-               const newItem = { ...item };
-               try {
-                  if (typeof newItem.program_nm === 'string' && newItem.program_nm.includes(' 체험')) {
-                     return newItem;
-                  }
-                  newItem.program_nm = JSON.parse(newItem.program_nm)
-                     .map((v) => v.replace(/체험|및/g, (match) => replaceText[match] || match))
-                     .join(', ');
-               } catch (error) {
-                  if (typeof newItem.program_nm === 'string' && !newItem.program_nm.includes(' 체험')) {
-                     newItem.program_nm = newItem.program_nm.replace(/체험|및/g, (match) => replaceText[match] || match);
-                  }
-               }
-               return newItem;
-            });
+            const newBookmarkList = programNameParsed(bookmarkList, 'program_nm');
             setBookmarks(newBookmarkList);
          } else {
             setBookmarks([]);
@@ -269,7 +307,20 @@ function Mypage() {
       reader.readAsDataURL(file);
    };
 
-   const saveAccount = () => {
+   const saveAccount = async () => {
+      // ✅ API 호출로 백엔드 업데이트 확인
+      const result = await updateMyProfile({
+         nickname: accountForm.nickname.trim(),
+         phone: accountForm.phone.trim(),
+         email: accountForm.email.trim(),
+         // photo, loginProvider 등은 필요 시 추가
+      });
+
+      if (!result.success) {
+         alert(result.error || '정보 수정에 실패했습니다.');
+         return;
+      }
+
       const nextUser = {
          ...(user || {}),
          photo: accountForm.photo,
@@ -282,7 +333,66 @@ function Mypage() {
 
       localStorage.setItem('user', JSON.stringify(nextUser));
       setIsEditingAccount(false);
-      window.location.reload();
+      alert('회원 정보가 수정되었습니다.');
+      // window.location.reload(); // 리로드 대신 상태 유지 (필요하면 리로드)
+   };
+
+   // ===== security (password change / delete account) =====
+   const [pwForm, setPwForm] = useState({
+      current: '',
+      newPw: '',
+      confirmPw: ''
+   });
+   const [deletePw, setDeletePw] = useState('');
+
+   const handleChangePw = async () => {
+      if (!pwForm.current || !pwForm.newPw || !pwForm.confirmPw) {
+         alert('모든 항목을 입력해주세요.');
+         return;
+      }
+      if (pwForm.newPw !== pwForm.confirmPw) {
+         alert('새 비밀번호가 일치하지 않습니다.');
+         return;
+      }
+      // 비밀번호 유효성 검사 (Signup.js 참조)
+      const passwordRegex = /^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*]).{8,}$/;
+      if (!passwordRegex.test(pwForm.newPw)) {
+         alert("비밀번호는 8자 이상, 영문/숫자/특수문자를 포함해야 합니다.");
+         return;
+      }
+
+      const res = await changePassword(pwForm.current, pwForm.newPw);
+      if (res.success) {
+         alert('비밀번호가 변경되었습니다. 다시 로그인해주세요.');
+         localStorage.removeItem('token');
+         localStorage.removeItem('user');
+         navigate('/user/login');
+      } else {
+         alert(res.error);
+      }
+   };
+
+   const handleDeleteAccount = async () => {
+      if (!window.confirm('정말로 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+
+      // 로컬 로그인 유저만 비밀번호 체크
+      if (!isSocialLogin && !deletePw) {
+         alert('비밀번호를 입력해주세요.');
+         return;
+      }
+
+      // 소셜 로그인은 비밀번호 없이(null/empty) 요청
+      const res = await deleteAccount(isSocialLogin ? null : deletePw);
+      if (res.success) {
+         alert('회원 탈퇴가 완료되었습니다.');
+         localStorage.removeItem('token');
+         localStorage.removeItem('user');
+         navigate('/');
+         // 필요시 window.location.reload()를 호출하여 상단 헤더 등 상태 초기화 보장
+         window.location.reload();
+      } else {
+         alert(res.error);
+      }
    };
 
    // ===== review edit =====
@@ -452,50 +562,50 @@ function Mypage() {
 
    const cartTotal = useMemo(() => {
       return cartItems.reduce((sum, it) => sum + calcCartItemTotal(it), 0);
-    }, [cartItems]);
+   }, [cartItems]);
 
-    const updateCartQty = async (cartItemId, nextQty) => {
+   const updateCartQty = async (cartItemId, nextQty) => {
       const qty = Math.max(1, Number(nextQty || 1));
       try {
-        const result = await updateCartItem(cartItemId, { quantity: qty });
-        if (result.success) {
-          await loadCart(); // API에서 다시 조회
-        } else {
-          alert(result.error?.message || '수량 수정에 실패했습니다.');
-        }
+         const result = await updateCartItem(cartItemId, { quantity: qty });
+         if (result.success) {
+            await loadCart(); // API에서 다시 조회
+         } else {
+            alert(result.error?.message || '수량 수정에 실패했습니다.');
+         }
       } catch (error) {
-        console.error('수량 수정 오류:', error);
-        alert('수량 수정에 실패했습니다.');
+         console.error('수량 수정 오류:', error);
+         alert('수량 수정에 실패했습니다.');
       }
    };
 
    const removeCartItemHandler = async (cartItemId) => {
       if (!window.confirm('장바구니에서 삭제하시겠습니까?')) return;
       try {
-        const result = await removeCartItem(cartItemId);
-        if (result.success) {
-          await loadCart(); // API에서 다시 조회
-        } else {
-          alert(result.error?.message || '삭제에 실패했습니다.');
-        }
+         const result = await removeCartItem(cartItemId);
+         if (result.success) {
+            await loadCart(); // API에서 다시 조회
+         } else {
+            alert(result.error?.message || '삭제에 실패했습니다.');
+         }
       } catch (error) {
-        console.error('삭제 오류:', error);
-        alert('삭제에 실패했습니다.');
+         console.error('삭제 오류:', error);
+         alert('삭제에 실패했습니다.');
       }
    };
 
    const clearCart = async () => {
       if (!window.confirm('장바구니를 비우시겠습니까?')) return;
       try {
-        const result = await clearCartApi();
-        if (result.success) {
-          await loadCart(); // API에서 다시 조회
-        } else {
-          alert(result.error?.message || '장바구니 비우기에 실패했습니다.');
-        }
+         const result = await clearCartApi();
+         if (result.success) {
+            await loadCart(); // API에서 다시 조회
+         } else {
+            alert(result.error?.message || '장바구니 비우기에 실패했습니다.');
+         }
       } catch (error) {
-        console.error('장바구니 비우기 오류:', error);
-        alert('장바구니 비우기에 실패했습니다.');
+         console.error('장바구니 비우기 오류:', error);
+         alert('장바구니 비우기에 실패했습니다.');
       }
    };
 
@@ -506,8 +616,8 @@ function Mypage() {
    // ✅ 스토어 결제하기 → CheckoutPage(shop)
    const goStoreCheckout = () => {
       if (cartItems.length === 0) {
-        alert('장바구니가 비어 있습니다.');
-        return;
+         alert('장바구니가 비어 있습니다.');
+         return;
       }
       navigate('/checkout?type=shop');
    };
@@ -572,6 +682,16 @@ function Mypage() {
       if (isLoggedIn) {
          loadPoints();
       }
+
+      // 포인트 업데이트 이벤트 리스너
+      const handlePointUpdate = () => {
+         loadPoints();
+      };
+      window.addEventListener('pointUpdated', handlePointUpdate);
+
+      return () => {
+         window.removeEventListener('pointUpdated', handlePointUpdate);
+      };
    }, [isLoggedIn, loadPoints]);
 
    // ===== not logged in =====
@@ -601,6 +721,16 @@ function Mypage() {
    return (
       <main className="pf-mypage">
          <div className="pf-mypage-inner">
+            <style>{`
+               .pf-security-section { padding: 20px 0; }
+               .pf-sec-title { font-size: 18px; font-weight: 600; margin-bottom: 12px; }
+               .pf-sec-title.danger { color: #e74c3c; }
+               .pf-sec-desc { font-size: 14px; color: #666; margin-bottom: 16px; }
+               .pf-form-row { margin-bottom: 16px; max-width: 400px; }
+               .pf-form-row label { display: block; font-size: 14px; margin-bottom: 6px; font-weight: 500; }
+               .pf-btn-small { padding: 8px 16px; background: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+               .pf-btn-small.danger { background: #e74c3c; }
+            `}</style>
             <header className="pf-head">
                <h2 className="pf-title">마이페이지</h2>
                <div className="pf-divider" />
@@ -622,7 +752,12 @@ function Mypage() {
                      <div className="pf-avatar">{accountForm.photo ? <img src={accountForm.photo} alt="profile" /> : <span>{String(baseDisplayName).slice(0, 1)}</span>}</div>
                      <div className="pf-profile-meta">
                         <p className="pf-profile-name">{baseDisplayName}</p>
-                        <p className="pf-profile-id">{displayId ? `ID: ${displayId}` : `회원번호: ${userId || '-'}`}</p>
+                        {/* 
+                           User ID Display Rule: 
+                           1. If user_id exists (e.g. manually signed up), show it.
+                           2. If not, generate 'MEMBER_{id}' formatted string.
+                        */}
+                        <p className="pf-profile-id">ID: {displayId}</p>
                         {!pointsLoading && (
                            <p className="pf-profile-points" style={{ marginTop: '4px', color: '#666', fontSize: '14px' }}>
                               보유 포인트: {points.toLocaleString()}P
@@ -868,84 +1003,84 @@ function Mypage() {
                            <h3 className="pf-panel-title">장바구니</h3>
 
                            <div className="pf-cart-head-actions">
-                           <button type="button" className={`pf-ghost ${cartItems.length === 0 ? 'is-disabled' : ''}`} onClick={clearCart} disabled={cartItems.length === 0 || cartLoading}>
-                              비우기
-                           </button>
-                           <button type="button" className="pf-ghost" onClick={goShop}>
-                              스토어 가기
-                           </button>
+                              <button type="button" className={`pf-ghost ${cartItems.length === 0 ? 'is-disabled' : ''}`} onClick={clearCart} disabled={cartItems.length === 0 || cartLoading}>
+                                 비우기
+                              </button>
+                              <button type="button" className="pf-ghost" onClick={goShop}>
+                                 스토어 가기
+                              </button>
                            </div>
                         </div>
 
                         {cartLoading ? (
                            <div className="pf-empty">
-                           <p className="pf-empty-title">장바구니를 불러오는 중...</p>
+                              <p className="pf-empty-title">장바구니를 불러오는 중...</p>
                            </div>
                         ) : cartItems.length === 0 ? (
                            <div className="pf-empty">
-                           <p className="pf-empty-title">장바구니가 비어 있습니다</p>
-                           <p className="pf-empty-desc">스토어에서 상품을 담아 보세요.</p>
-                           <button type="button" className="pf-ghost" onClick={goShop}>
-                              스토어 보러가기
-                           </button>
+                              <p className="pf-empty-title">장바구니가 비어 있습니다</p>
+                              <p className="pf-empty-desc">스토어에서 상품을 담아 보세요.</p>
+                              <button type="button" className="pf-ghost" onClick={goShop}>
+                                 스토어 보러가기
+                              </button>
                            </div>
                         ) : (
                            <>
-                           <div className="pf-list">
-                              {cartItems.map((it) => {
-                                 const lineTotal = calcCartItemTotal(it);
-                                 return (
-                                 <div className="pf-item" key={it.cartItemId}>
-                                    <div className="pf-item-main">
-                                       <p className="pf-item-title">{it.name || it.title || `상품 #${it.id}`}</p>
+                              <div className="pf-list">
+                                 {cartItems.map((it) => {
+                                    const lineTotal = calcCartItemTotal(it);
+                                    return (
+                                       <div className="pf-item" key={it.cartItemId}>
+                                          <div className="pf-item-main">
+                                             <p className="pf-item-title">{it.name || it.title || `상품 #${it.id}`}</p>
 
-                                       <p className="pf-item-sub">
-                                       {it.optionName ? `옵션: ${it.optionName} · ` : ''}
-                                       단가 {Number(it.price || 0).toLocaleString()}원 · 합계 {Number(lineTotal).toLocaleString()}원
-                                       </p>
+                                             <p className="pf-item-sub">
+                                                {it.optionName ? `옵션: ${it.optionName} · ` : ''}
+                                                단가 {Number(it.price || 0).toLocaleString()}원 · 합계 {Number(lineTotal).toLocaleString()}원
+                                             </p>
 
-                                       <div className="pf-item-actions">
-                                       <button type="button" className="pf-linkbtn" onClick={() => navigate(`/shop/${it.id}`)}>
-                                          상세
-                                       </button>
+                                             <div className="pf-item-actions">
+                                                <button type="button" className="pf-linkbtn" onClick={() => navigate(`/shop/${it.id}`)}>
+                                                   상세
+                                                </button>
 
-                                       <div className="pf-qty">
-                                          <button type="button" className="pf-qty-btn" onClick={() => updateCartQty(it.cartItemId, Number(it.qty || 1) - 1)}>
-                                             −
-                                          </button>
-                                          <input
-                                             className="pf-qty-input"
-                                             value={Number(it.qty || 1)}
-                                             onChange={(e) => updateCartQty(it.cartItemId, e.target.value)}
-                                             inputMode="numeric"
-                                          />
-                                          <button type="button" className="pf-qty-btn" onClick={() => updateCartQty(it.cartItemId, Number(it.qty || 1) + 1)}>
-                                             +
-                                          </button>
+                                                <div className="pf-qty">
+                                                   <button type="button" className="pf-qty-btn" onClick={() => updateCartQty(it.cartItemId, Number(it.qty || 1) - 1)}>
+                                                      −
+                                                   </button>
+                                                   <input
+                                                      className="pf-qty-input"
+                                                      value={Number(it.qty || 1)}
+                                                      onChange={(e) => updateCartQty(it.cartItemId, e.target.value)}
+                                                      inputMode="numeric"
+                                                   />
+                                                   <button type="button" className="pf-qty-btn" onClick={() => updateCartQty(it.cartItemId, Number(it.qty || 1) + 1)}>
+                                                      +
+                                                   </button>
+                                                </div>
+
+                                                <button type="button" className="pf-linkbtn" onClick={() => removeCartItemHandler(it.cartItemId)}>
+                                                   삭제
+                                                </button>
+                                             </div>
+                                          </div>
+
+                                          <span className="pf-chip is-wait">스토어</span>
                                        </div>
-
-                                       <button type="button" className="pf-linkbtn" onClick={() => removeCartItemHandler(it.cartItemId)}>
-                                          삭제
-                                       </button>
-                                       </div>
-                                    </div>
-
-                                    <span className="pf-chip is-wait">스토어</span>
-                                 </div>
-                                 );
-                              })}
-                           </div>
-
-                           <div className="pf-cart-summary">
-                              <div className="pf-cart-sum-row">
-                                 <span className="k">총 결제 금액</span>
-                                 <span className="v">{cartTotal.toLocaleString()}원</span>
+                                    );
+                                 })}
                               </div>
 
-                              <button type="button" className="pf-cta" onClick={goStoreCheckout}>
-                                 결제하기
-                              </button>
-                           </div>
+                              <div className="pf-cart-summary">
+                                 <div className="pf-cart-sum-row">
+                                    <span className="k">총 결제 금액</span>
+                                    <span className="v">{cartTotal.toLocaleString()}원</span>
+                                 </div>
+
+                                 <button type="button" className="pf-cta" onClick={goStoreCheckout}>
+                                    결제하기
+                                 </button>
+                              </div>
                            </>
                         )}
                      </div>
@@ -1154,30 +1289,73 @@ function Mypage() {
                   )}
 
                   {/* security */}
+                  {/* security */}
+                  {/* 소셜 로그인 유저는 비밀번호 변경 불가 (비밀번호가 없거나 관리되지 않음) */}
                   {tab === 'security' && (
                      <div className="pf-panel">
                         <div className="pf-panel-head">
                            <h3 className="pf-panel-title">설정/보안</h3>
                         </div>
 
-                        <div className="pf-actions">
-                           <button type="button" className="pf-btn" onClick={() => alert('준비중입니다')}>
-                              비밀번호 변경
-                           </button>
-                           <button type="button" className="pf-btn" onClick={() => alert('준비중입니다')}>
-                              로그인 기록 보기
-                           </button>
-                           <button type="button" className="pf-btn" onClick={() => navigate('/support')}>
-                              고객센터
-                           </button>
-                        </div>
+                        {!isSocialLogin && (
+                           <div className="pf-security-section">
+                              <h4 className="pf-sec-title">비밀번호 변경</h4>
+                              <div className="pf-form-row">
+                                 <label>현재 비밀번호</label>
+                                 <input
+                                    type="password"
+                                    className="pf-input"
+                                    value={pwForm.current}
+                                    onChange={(e) => setPwForm({ ...pwForm, current: e.target.value })}
+                                 />
+                              </div>
+                              <div className="pf-form-row">
+                                 <label>새 비밀번호</label>
+                                 <input
+                                    type="password"
+                                    className="pf-input"
+                                    placeholder="8자 이상, 영문/숫자/특수문자 포함"
+                                    value={pwForm.newPw}
+                                    onChange={(e) => setPwForm({ ...pwForm, newPw: e.target.value })}
+                                 />
+                              </div>
+                              <div className="pf-form-row">
+                                 <label>새 비밀번호 확인</label>
+                                 <input
+                                    type="password"
+                                    className="pf-input"
+                                    value={pwForm.confirmPw}
+                                    onChange={(e) => setPwForm({ ...pwForm, confirmPw: e.target.value })}
+                                 />
+                              </div>
+                              <button type="button" className="pf-btn-small" onClick={handleChangePw}>변경하기</button>
+                           </div>
+                        )}
 
-                        <div className="pf-divider" />
+                        {!isSocialLogin && <div className="pf-divider" />}
 
-                        <div className="pf-withdraw-row">
-                           <button type="button" className="pf-btn is-danger" onClick={() => alert('준비중입니다')}>
-                              회원 탈퇴
-                           </button>
+                        <div className="pf-security-section delete-account">
+                           <h4 className="pf-sec-title danger">회원 탈퇴</h4>
+                           <p className="pf-sec-desc">탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다.</p>
+
+                           {!isSocialLogin ? (
+                              <div className="pf-form-row">
+                                 <label>비밀번호 확인</label>
+                                 <input
+                                    type="password"
+                                    className="pf-input"
+                                    placeholder="본인 확인을 위해 비밀번호를 입력해주세요"
+                                    value={deletePw}
+                                    onChange={(e) => setDeletePw(e.target.value)}
+                                 />
+                              </div>
+                           ) : (
+                              <p className="pf-sec-desc" style={{ color: '#666', marginBottom: '10px' }}>
+                                 소셜 로그인 사용자는 비밀번호 입력 없이 탈퇴할 수 있습니다.
+                              </p>
+                           )}
+
+                           <button type="button" className="pf-btn-small danger" onClick={handleDeleteAccount}>회원 탈퇴</button>
                         </div>
                      </div>
                   )}

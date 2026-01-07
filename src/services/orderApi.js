@@ -88,7 +88,7 @@ export async function getOrderById(orderId) {
 }
 
 // 주문 결제 처리
-export async function payOrder({ orderId, method = "CARD", buyerName, buyerPhone, buyerEmail }) {
+export async function payOrder({ orderId, method = "CARD", buyerName, buyerPhone, buyerEmail, usedPoints }) {
   try {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/orders/${orderId}/payment`,
@@ -97,7 +97,7 @@ export async function payOrder({ orderId, method = "CARD", buyerName, buyerPhone
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ method, buyerName, buyerPhone, buyerEmail }),
+        body: JSON.stringify({ method, buyerName, buyerPhone, buyerEmail, usedPoints }),
       },
       onLogout
     );

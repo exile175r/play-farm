@@ -94,7 +94,7 @@ export async function cancelReservation({ bookingId, userId }) {
 /**
  * 결제 성공 처리 (서버에서 예약 검토 후 승인/취소 결정)
  */
-export async function markReservationPaid({ bookingId, method = "CARD", buyerName, buyerPhone, buyerEmail }) {
+export async function markReservationPaid({ bookingId, method = "CARD", buyerName, buyerPhone, buyerEmail, usedPoints }) {
   try {
     const res = await fetchWithAuthAndRetry(
       `${API_BASE}/reservations/${bookingId}/payment`,
@@ -103,11 +103,12 @@ export async function markReservationPaid({ bookingId, method = "CARD", buyerNam
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           method,
           buyerName,
           buyerPhone,
-          buyerEmail
+          buyerEmail,
+          usedPoints
         }),
       },
       onLogout

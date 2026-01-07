@@ -7,7 +7,8 @@ import { listMyReservations, markReservationPaid, markReservationPaymentFailed }
 
 // ✅ NEW: 스토어 결제용
 import { getMyCart, clearCart } from '../../services/cartApi';
-import { createOrder, payOrder } from '../../services/orderApi';
+import { createOrder, payOrder, cancelOrder } from '../../services/orderApi';
+import { getMyPoints } from '../../services/pointApi';
 
 function CheckoutPage() {
    const navigate = useNavigate();
@@ -41,8 +42,17 @@ function CheckoutPage() {
    const [cartItems, setCartItems] = useState([]);
 
    // ===== 결제 UI 상태 =====
-   const [payMethod, setPayMethod] = useState('CARD'); // CARD | KAKAO_PAY | TRANSFER
-   const [agree, setAgree] = useState(false);
+   const [paymentMethod, setPaymentMethod] = useState('CARD'); // CARD | KAKAO_PAY | TRANSFER
+   const [agreements, setAgreements] = useState({
+      all: false,
+      service: false,
+      privacy: false,
+   });
+
+   // 포인트 관련 상태
+   const [userPoints, setUserPoints] = useState(0);
+   const [usePoints, setUsePoints] = useState(0); // 사용할 포인트 (입력값)
+   const [finalAmount, setFinalAmount] = useState(0); // 최종 결제 금액
 
    // 카드 결제 입력(시뮬레이션용)
    const [cardCompany, setCardCompany] = useState('현대');
@@ -58,6 +68,78 @@ function CheckoutPage() {
    // 실제같은 느낌: 결제 진행 로딩 + 실패 강제 토글(포트폴리오용)
    const [submitting, setSubmitting] = useState(false);
    const [forceFail, setForceFail] = useState(false);
+
+   // ===== 금액 계산 (Moved up to prevent ReferenceError) =====
+   // ✅ cartStorage(StoreDetail) 기준: it.price * it.qty
+   const shopSubtotal = useMemo(() => {
+      return (cartItems || []).reduce((acc, it) => acc + Number(it.price || 0) * Number(it.qty || 0), 0);
+   }, [cartItems]);
+
+   const shopShippingFee = shopSubtotal >= 30000 || shopSubtotal === 0 ? 0 : 3000;
+   const shopTotal = shopSubtotal + shopShippingFee;
+
+   // Derived itemData for point calculations
+   const itemData = useMemo(() => {
+      if (type === 'shop') {
+         return {
+            totalPrice: shopTotal,
+            items: (cartItems || []).map(it => ({
+               productId: String(it.id),
+               quantity: Number(it.qty || 0),
+               price: Number(it.price || 0)
+            }))
+         };
+      } else {
+         return {
+            price: Number(reservation?.price || 0),
+            bookingId: reservation?.bookingId
+         };
+      }
+   }, [type, shopTotal, cartItems, reservation]);
+
+   useEffect(() => {
+      // 포인트 조회
+      getMyPoints().then(res => {
+         if (res.success) {
+            console.log('res.data', res.data);
+            setUserPoints(res.data.points || 0);
+         }
+      });
+   }, []);
+
+   useEffect(() => {
+      // 초기 금액 설정
+      if (itemData) {
+         setFinalAmount(itemData.totalPrice || itemData.price);
+      }
+   }, [itemData]);
+
+   useEffect(() => {
+      // 포인트 적용 시 최종 금액 계산
+      if (itemData) {
+         const originalPrice = itemData.totalPrice || itemData.price;
+         setFinalAmount(Math.max(0, originalPrice - usePoints));
+      }
+   }, [usePoints, itemData]);
+
+   const handlePointChange = (e) => {
+      let val = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0;
+      if (val > userPoints) val = userPoints;
+      if (itemData) {
+         const originalPrice = itemData.totalPrice || itemData.price;
+         if (val > originalPrice) val = originalPrice;
+      }
+      setUsePoints(val);
+   };
+
+   const useAllPoints = () => {
+      let val = userPoints;
+      if (itemData) {
+         const originalPrice = itemData.totalPrice || itemData.price;
+         if (val > originalPrice) val = originalPrice;
+      }
+      setUsePoints(val);
+   };
 
    // ===== program 대상 불러오기 =====
    const fetchReservation = async () => {
@@ -82,7 +164,7 @@ function CheckoutPage() {
       try {
          // ✅ URL에서 바로 구매하기 플래그 확인
          const currentIsBuyNow = new URLSearchParams(location.search).get('buyNow') === 'true';
-         
+
          // ✅ 바로 구매하기인 경우 로컬 스토리지에서 불러오기
          if (currentIsBuyNow) {
             try {
@@ -103,7 +185,7 @@ function CheckoutPage() {
             navigate('/mypage', { state: { openTab: 'cart' } });
             return;
          }
-   
+
          // 기존: 장바구니에서 불러오기 (API)
          const result = await getMyCart();
          if (result.success) {
@@ -126,7 +208,7 @@ function CheckoutPage() {
          fetchCart();
          return;
       }
-   
+
       // ✅ program 결제: 기존 로직 유지
       if (!bookingId) {
          navigate('/mypage', { state: { openTab: 'reservations' } });
@@ -151,23 +233,16 @@ function CheckoutPage() {
 
    const onlyDigits = (v, max) => v.replace(/\D/g, '').slice(0, max);
 
-   // ===== 금액 계산 =====
-   // ✅ cartStorage(StoreDetail) 기준: it.price * it.qty
-   const shopSubtotal = useMemo(() => {
-      return (cartItems || []).reduce((acc, it) => acc + Number(it.price || 0) * Number(it.qty || 0), 0);
-   }, [cartItems]);
 
-   const shopShippingFee = shopSubtotal >= 30000 || shopSubtotal === 0 ? 0 : 3000;
-   const shopTotal = shopSubtotal + shopShippingFee;
 
    // ===== 검증 =====
    const validate = () => {
       if (!buyerName.trim()) return '결제자 성함을 입력해 주세요.';
       if (!buyerPhone.trim()) return '결제자 연락처를 입력해 주세요.';
       if (!buyerEmail.trim()) return '결제자 이메일을 입력해 주세요.';
-      if (!agree) return '약관에 동의해 주셔야 결제가 가능합니다.';
+      if (!agreements.service || !agreements.privacy) return '필수 약관에 동의해 주셔야 결제가 가능합니다.';
 
-      if (payMethod === 'CARD') {
+      if (paymentMethod === 'CARD') {
          const n = cardNumber.replace(/\s/g, '');
          if (n.length !== 16) return '카드번호 16자리를 정확히 입력해 주세요.';
          if (cardExp.replace('/', '').length !== 4) return '유효기간(MM/YY)을 정확히 입력해 주세요.';
@@ -204,10 +279,18 @@ function CheckoutPage() {
       const isFail = forceFail || Math.random() < 0.12;
 
       try {
+
+
          // =========================
          // ✅ SHOP 결제
          // =========================
          if (type === 'shop') {
+            if (isFail) {
+               alert('결제가 실패했습니다. 결제 정보를 확인하신 뒤 다시 시도해 주세요.');
+               setSubmitting(false);
+               return;
+            }
+
             // 1. 주문 생성
             const orderResult = await createOrder({
                items: cartItems.map((it) => ({
@@ -221,7 +304,8 @@ function CheckoutPage() {
                })),
                buyer: { name: buyerName, phone: buyerPhone, email: buyerEmail },
                amount: shopTotal,
-               payMethod,
+               payMethod: paymentMethod, // Use paymentMethod
+               usedPoints: usePoints, // Pass used points to order creation
             });
 
             if (!orderResult?.success) {
@@ -230,8 +314,13 @@ function CheckoutPage() {
                return;
             }
 
+            // 포트폴리오 데모용: 실패 강제
             if (isFail) {
-               alert('결제가 실패했습니다. 결제 정보를 확인하신 뒤 다시 시도해 주세요.');
+               alert('결제가 실패했습니다. (데모: 실패 시뮬레이션)');
+               // 실패 시 생성된 주문 취소 처리 (PENDING 상태 주문 삭제 효과)
+               if (orderResult?.data?.orderId) {
+                  await cancelOrder(orderResult.data.orderId, { reason: '결제 실패 시뮬레이션' });
+               }
                setSubmitting(false);
                return;
             }
@@ -239,21 +328,26 @@ function CheckoutPage() {
             // 2. 결제 처리
             const paymentResult = await payOrder({
                orderId: orderResult.data.orderId,
-               method: payMethod,
+               method: paymentMethod, // Use paymentMethod
                buyerName,
                buyerPhone,
                buyerEmail,
+               usedPoints: usePoints, // Pass used points to payment
             });
 
             if (!paymentResult?.success) {
                alert('결제 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+               // 실패 시 생성된 주문 취소 처리
+               if (orderResult?.data?.orderId) {
+                  await cancelOrder(orderResult.data.orderId, { reason: '결제 처리 실패' });
+               }
                setSubmitting(false);
                return;
             }
 
             // 3. 장바구니 비우기
             const currentIsBuyNow = new URLSearchParams(location.search).get('buyNow') === 'true';
-      
+
             if (currentIsBuyNow) {
                // 바로 구매하기인 경우 임시 데이터만 삭제
                localStorage.removeItem('buyNow_temp');
@@ -261,13 +355,21 @@ function CheckoutPage() {
                // 장바구니에서 구매한 경우 장바구니 비우기
                try {
                   await clearCart();
+                  // 로컬 스토리지 장바구니도 비우기
+                  localStorage.setItem('cart', JSON.stringify([]));
+                  window.dispatchEvent(new Event('cartUpdated'));
                } catch (error) {
                   console.error('장바구니 비우기 오류:', error);
                }
             }
-      
+
+            // 포인트 사용 시 전역 이벤트 발생
+            if (usePoints > 0) {
+               window.dispatchEvent(new Event('pointUpdated'));
+            }
+
             alert('결제가 정상적으로 완료되었습니다.');
-            navigate('/mypage', { state: { openTab: 'store_orders' } });
+            navigate('/mypage', { state: { openTab: 'store_orders', refresh: true } });
             return;
          }
 
@@ -286,20 +388,26 @@ function CheckoutPage() {
             return;
          }
 
-         const res = await markReservationPaid({ 
-            bookingId, 
-            method: payMethod,
+         const res = await markReservationPaid({
+            bookingId,
+            method: paymentMethod, // Use paymentMethod
             buyerName,
             buyerPhone,
-            buyerEmail
+            buyerEmail,
+            usedPoints: usePoints, // Pass used points
          });
          if (!res?.success) {
             alert('결제 완료 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.');
             return;
          }
 
+         // 포인트 사용 시 전역 이벤트 발생 (Mypage 갱신용)
+         if (usePoints > 0) {
+            window.dispatchEvent(new Event('pointUpdated'));
+         }
+
          alert('결제가 정상적으로 완료되었습니다.');
-         navigate('/mypage', { state: { openTab: 'reservations' } });
+         navigate('/mypage', { state: { openTab: 'reservations', refresh: true } });
       } finally {
          setSubmitting(false);
       }
@@ -369,7 +477,7 @@ function CheckoutPage() {
       );
    }
 
-   const amount = type === 'shop' ? Number(shopTotal || 0) : Number(reservation?.price || 0);
+
 
    const isPaid = type === 'shop' ? false : reservation?.paymentStatus === 'PAID';
 
@@ -379,6 +487,7 @@ function CheckoutPage() {
 
    return (
       <main className="pf-page pf-checkout">
+         <style>{styles}</style>
          <div className="pf-checkout-inner">
             <header className="pf-checkout-head">
                <h2 className="pf-checkout-title">결제하기</h2>
@@ -391,20 +500,49 @@ function CheckoutPage() {
 
                {type === 'shop' ? (
                   <>
-                     <div className="pf-checkout-row total">
-                        <span className="k">상품 소계</span>
-                        <span className="v">{shopSubtotal.toLocaleString()}원</span>
+                     <div className="co-summary-item">
+                        <span>총 상품금액</span>
+                        <span>{(itemData?.totalPrice || itemData?.price || 0).toLocaleString()}원</span>
                      </div>
-                     <div className="pf-checkout-row">
-                        <span className="k">배송비</span>
-                        <span className="v">{shopShippingFee.toLocaleString()}원</span>
+                     {shopShippingFee > 0 && (
+                        <div className="co-summary-item">
+                           <span>배송비</span>
+                           <span>+{shopShippingFee.toLocaleString()}원</span>
+                        </div>
+                     )}
+
+                     {/* 포인트 사용 UI (상품) */}
+                     <div className="co-summary-item point-row">
+                        <span>포인트 사용 <small>보유 {userPoints.toLocaleString()}P</small></span>
+                        <div className="co-point-input-group">
+                           <input
+                              type="text"
+                              value={usePoints.toLocaleString()}
+                              onChange={handlePointChange}
+                              className="co-point-input"
+                           />
+                           <button type="button" onClick={useAllPoints} className="co-point-btn">전액사용</button>
+                        </div>
                      </div>
-                     <div className="pf-checkout-row total">
-                        <span className="k">결제 금액</span>
-                        <span className="v">{shopTotal.toLocaleString()}원</span>
+                     {usePoints > 0 && (
+                        <div className="co-summary-item discount">
+                           <span>포인트 할인</span>
+                           <span>-{usePoints.toLocaleString()}원</span>
+                        </div>
+                     )}
+
+                     <div className="co-summary-divider" />
+                     <div className="co-summary-total">
+                        <span>최종 결제 금액</span>
+                        <span className="co-total-price">{finalAmount.toLocaleString()}원</span>
                      </div>
-                     <div className="pf-checkout-row">
-                        <span className="k">상품</span>
+                     <div className="co-summary-earned">
+                        <span>적립 예정 포인트</span>
+                        <span>+{Math.floor(finalAmount * 0.05).toLocaleString()}P</span>
+                     </div>
+
+                     <div className="pf-checkout-row" style={{ marginTop: '12px', opacity: 0.8 }}>
+                        <span className="k">상품 정보</span>
                         <span className="v">
                            {cartItems[0]?.name || cartItems[0]?.title || '상품'}
                            {cartItems.length > 1 ? ` 외 ${cartItems.length - 1}개` : ''}
@@ -428,9 +566,40 @@ function CheckoutPage() {
                         <span className="k">인원</span>
                         <span className="v">{reservation.people}명</span>
                      </div>
+
                      <div className="pf-checkout-row total">
                         <span className="k">결제 금액</span>
-                        <span className="v">{amount.toLocaleString()}원</span>
+                        <span className="v">{Number(reservation?.price || 0).toLocaleString()}원</span>
+                     </div>
+
+                     {/* 포인트 사용 UI (예약) ✅ ADDED */}
+                     <div className="co-summary-item point-row">
+                        <span>포인트 사용 <small>보유 {userPoints.toLocaleString()}P</small></span>
+                        <div className="co-point-input-group">
+                           <input
+                              type="text"
+                              value={usePoints.toLocaleString()}
+                              onChange={handlePointChange}
+                              className="co-point-input"
+                           />
+                           <button type="button" onClick={useAllPoints} className="co-point-btn">전액사용</button>
+                        </div>
+                     </div>
+                     {usePoints > 0 && (
+                        <div className="co-summary-item discount">
+                           <span>포인트 할인</span>
+                           <span>-{usePoints.toLocaleString()}원</span>
+                        </div>
+                     )}
+
+                     <div className="co-summary-divider" />
+                     <div className="co-summary-total">
+                        <span>최종 결제 금액</span>
+                        <span className="co-total-price">{finalAmount.toLocaleString()}원</span>
+                     </div>
+                     <div className="co-summary-earned">
+                        <span>적립 예정 포인트</span>
+                        <span>+{Math.floor(finalAmount * 0.05).toLocaleString()}P</span>
                      </div>
                   </>
                )}
@@ -441,24 +610,24 @@ function CheckoutPage() {
                <h4 className="pf-checkout-card-h4">결제 수단</h4>
 
                <div className="pf-pay-methods">
-                  <label className={`pf-radio ${payMethod === 'CARD' ? 'is-active' : ''}`}>
-                     <input type="radio" name="payMethod" value="CARD" checked={payMethod === 'CARD'} onChange={() => setPayMethod('CARD')} />
+                  <label className={`pf-radio ${paymentMethod === 'CARD' ? 'is-active' : ''}`}>
+                     <input type="radio" name="paymentMethod" value="CARD" checked={paymentMethod === 'CARD'} onChange={() => setPaymentMethod('CARD')} />
                      카드 결제
                   </label>
 
-                  <label className={`pf-radio ${payMethod === 'KAKAO_PAY' ? 'is-active' : ''}`}>
-                     <input type="radio" name="payMethod" value="KAKAO_PAY" checked={payMethod === 'KAKAO_PAY'} onChange={() => setPayMethod('KAKAO_PAY')} />
+                  <label className={`pf-radio ${paymentMethod === 'KAKAO_PAY' ? 'is-active' : ''}`}>
+                     <input type="radio" name="paymentMethod" value="KAKAO_PAY" checked={paymentMethod === 'KAKAO_PAY'} onChange={() => setPaymentMethod('KAKAO_PAY')} />
                      카카오페이
                   </label>
 
-                  <label className={`pf-radio ${payMethod === 'TRANSFER' ? 'is-active' : ''}`}>
-                     <input type="radio" name="payMethod" value="TRANSFER" checked={payMethod === 'TRANSFER'} onChange={() => setPayMethod('TRANSFER')} />
+                  <label className={`pf-radio ${paymentMethod === 'TRANSFER' ? 'is-active' : ''}`}>
+                     <input type="radio" name="paymentMethod" value="TRANSFER" checked={paymentMethod === 'TRANSFER'} onChange={() => setPaymentMethod('TRANSFER')} />
                      계좌이체
                   </label>
                </div>
 
                {/* 카드 입력폼(시뮬레이션) */}
-               {payMethod === 'CARD' && (
+               {paymentMethod === 'CARD' && (
                   <div className="pf-form">
                      <div className="pf-grid2">
                         <div>
@@ -504,7 +673,7 @@ function CheckoutPage() {
                )}
 
                {/* 카카오페이/계좌이체 안내(시뮬레이션) */}
-               {payMethod !== 'CARD' && <p className="pf-hint">선택하신 결제 수단은 실제 연동되지 않습니다. “결제하기” 버튼을 통해 결제 상태만 시뮬레이션됩니다.</p>}
+               {paymentMethod !== 'CARD' && <p className="pf-hint">선택하신 결제 수단은 실제 연동되지 않습니다. “결제하기” 버튼을 통해 결제 상태만 시뮬레이션됩니다.</p>}
             </section>
 
             {/* 결제자 정보 + 약관 */}
@@ -530,7 +699,7 @@ function CheckoutPage() {
                   </div>
 
                   <label className="pf-agree">
-                     <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
+                     <input type="checkbox" checked={agreements.all} onChange={(e) => setAgreements({ all: e.target.checked, service: e.target.checked, privacy: e.target.checked })} />
                      <span>결제 및 환불 규정에 동의합니다.</span>
                   </label>
 
@@ -550,7 +719,7 @@ function CheckoutPage() {
                   onClick={handlePay}
                   disabled={payDisabled}
                   title={!isBooked ? '진행 중 예약만 결제가 가능합니다.' : isPaid ? '이미 결제가 완료된 예약입니다.' : ''}>
-                  {submitting ? '결제 진행 중입니다…' : `${amount.toLocaleString()}원 결제하기`}
+                  {submitting ? '결제 진행 중입니다…' : `${finalAmount.toLocaleString()}원 결제하기`}
                </button>
             </div>
             <button type="button" className="pf-btn ghost" onClick={goBack} disabled={submitting}>
@@ -562,3 +731,35 @@ function CheckoutPage() {
 }
 
 export default CheckoutPage;
+
+/* CSS 추가 스타일 */
+const styles = `
+.co-point-input-group {
+   display: flex;
+   gap: 8px;
+   align-items: center;
+}
+.co-point-input {
+   width: 80px;
+   padding: 4px 8px;
+   border: 1px solid #ddd;
+   border-radius: 4px;
+   text-align: right;
+}
+.co-point-btn {
+   font-size: 12px;
+   padding: 4px 8px;
+   background: #f0f0f0;
+   border: 1px solid #ccc;
+   border-radius: 4px;
+   cursor: pointer;
+}
+.co-summary-item.point-row {
+   flex-direction: column;
+   align-items: flex-start;
+   gap: 8px;
+}
+.co-summary-item.discount {
+   color: #e74c3c;
+}
+`;

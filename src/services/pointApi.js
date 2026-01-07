@@ -12,7 +12,7 @@ export const setPointApiLogoutHandler = (handler) => {
 export async function getMyPoints() {
   try {
     const res = await fetchWithAuthAndRetry(
-      `${API_BASE}/points/my`,
+      `${API_BASE}/points/my?t=${Date.now()}`,
       {
         method: "GET",
         headers: {

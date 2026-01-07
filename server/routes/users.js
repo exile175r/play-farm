@@ -18,4 +18,11 @@ router.get('/me', authenticateToken, userController.getMyProfile);
 // 마이페이지 - 내 정보 수정
 router.put('/me', authenticateToken, userController.updateMyProfile);
 
+// 비밀번호 변경
+router.put('/change-password', authenticateToken, userController.changePassword);
+
+// 회원 탈퇴
+router.delete('/me', authenticateToken, userController.deleteAccount);
+
+
 module.exports = router;

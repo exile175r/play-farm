@@ -74,6 +74,7 @@ function App() {
             <Route path="/list/:id" element={<ListDetail />} />
 
             {/* 결제 */}
+            <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/checkout/:bookingId" element={<CheckoutPage />} />
             <Route path="/checkout/result" element={<CheckoutResult />} />
 

@@ -256,7 +256,7 @@ exports.payOrder = async (req, res) => {
 
     const userId = req.userId;
     const orderId = req.params.id; // order_id (ORD-xxx 형식)
-    const { method = 'CARD', buyerName, buyerPhone, buyerEmail } = req.body;
+    const { method = 'CARD', buyerName, buyerPhone, buyerEmail, usedPoints = 0 } = req.body;
 
     // 주문 조회 및 권한 확인
     const [orders] = await connection.query(
@@ -293,13 +293,64 @@ exports.payOrder = async (req, res) => {
       });
     }
 
+    // ===== 포인트 사용 검증 및 차감 =====
+    let finalAmount = Number(order.total_amount);
+    let pointDiscount = 0;
+
+    if (usedPoints > 0) {
+      // 보유 포인트 확인
+      const [users] = await connection.query('SELECT points FROM users WHERE id = ?', [userId]);
+      const currentPoints = users[0].points;
+
+      if (currentPoints < usedPoints) {
+        return res.status(400).json({
+          success: false,
+          message: `보유 포인트가 부족합니다. (보유: ${currentPoints}P)`
+        });
+      }
+
+      if (usedPoints > finalAmount) {
+        return res.status(400).json({
+          success: false,
+          message: `결제 금액보다 많은 포인트를 사용할 수 없습니다.`
+        });
+      }
+
+      // 포인트 차감
+      await connection.query(
+        `UPDATE users SET points = points - ? WHERE id = ?`,
+        [usedPoints, userId]
+      );
+
+      // 현재 포인트 잔액 재조회
+      const [uResult] = await connection.query('SELECT points FROM users WHERE id = ?', [userId]);
+      const balanceAfter = uResult[0].points;
+
+      // 차감 내역 기록
+      await connection.query(
+        `INSERT INTO point_transactions (
+          user_id, type, amount, balance_after, source_type, source_id, description
+        ) VALUES (?, 'USED', ?, ?, 'ORDER', ?, ?)`,
+        [
+          userId,
+          -usedPoints, // 음수
+          balanceAfter,
+          order.id,
+          `주문 결제 포인트 사용`
+        ]
+      );
+
+      pointDiscount = usedPoints;
+      finalAmount = finalAmount - pointDiscount;
+    }
+
     // 주문 상태를 PAID로 변경
     await connection.query(
       `UPDATE orders SET status = 'PAID' WHERE id = ?`,
       [order.id]
     );
 
-    // 결제 정보 저장
+    // 결제 정보 저장 (실 결제 금액 기준)
     const paymentId = `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const [paymentResult] = await connection.query(
       `INSERT INTO payments (
@@ -310,17 +361,17 @@ exports.payOrder = async (req, res) => {
         order.id,
         paymentId,
         method,
-        Number(order.total_amount),
+        finalAmount, // 포인트 차감 후 금액
         buyerName || null,
         buyerPhone || null,
         buyerEmail || null
       ]
     );
 
-    // 포인트 적립 (결제 금액의 5%)
-    const paymentAmount = Number(order.total_amount);
+    // 포인트 적립 (실 결제 금액의 5%)
+    const paymentAmount = finalAmount;
     const earnedPoints = Math.floor(paymentAmount * 0.05); // 5% 적립
-    
+
     if (earnedPoints > 0) {
       // 사용자 포인트 업데이트
       await connection.query(
@@ -418,8 +469,8 @@ exports.cancelOrder = async (req, res) => {
 
     const order = orders[0];
 
-    // PAID 상태인 경우만 취소 가능
-    if (order.status !== 'PAID') {
+    // PAID 또는 PENDING 상태인 경우 취소 가능
+    if (order.status !== 'PAID' && order.status !== 'PENDING') {
       return res.status(400).json({
         success: false,
         message: `취소 가능한 상태가 아닙니다. (현재 상태: ${order.status})`
@@ -466,105 +517,90 @@ exports.refundOrder = async (req, res) => {
     const orderId = req.params.id; // order_id (ORD-xxx 형식)
     const { reason = '사용자 요청' } = req.body;
 
-    // 주문 조회 및 권한 확인
+    // 주문 조회
     const [orders] = await connection.query(
       `SELECT * FROM orders WHERE order_id = ? AND user_id = ?`,
       [orderId, userId]
     );
 
     if (orders.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: '주문을 찾을 수 없습니다.'
-      });
+      return res.status(404).json({ success: false, message: '주문을 찾을 수 없습니다.' });
     }
 
     const order = orders[0];
 
-    // PAID 또는 CANCELLED 상태인 경우만 환불 가능
-    if (order.status !== 'PAID' && order.status !== 'CANCELLED') {
-      return res.status(400).json({
-        success: false,
-        message: `환불 가능한 상태가 아닙니다. (현재 상태: ${order.status})`
-      });
-    }
-
-    // 이미 환불된 주문인지 확인
+    // 이미 환불된 경우
     if (order.status === 'REFUNDED') {
+      return res.status(400).json({ success: false, message: '이미 환불된 주문입니다.' });
+    }
+
+    // 결제 내역 확인 (payments 테이블)
+    const [payments] = await connection.query(
+      `SELECT * FROM payments WHERE order_id = ? AND status = 'PAID'`,
+      [order.id]
+    );
+
+    if (payments.length === 0) {
       return res.status(400).json({
         success: false,
-        message: '이미 환불 처리된 주문입니다.'
+        message: '결제 내역이 없어 환불할 수 없습니다.'
       });
     }
 
-    // 주문 상태를 REFUNDED로 변경
+    const payment = payments[0];
+
+    // 1. 포인트 복구 (사용했던 포인트 돌려주기)
+    const [usedTrans] = await connection.query(
+      `SELECT amount FROM point_transactions 
+         WHERE source_type = 'ORDER' AND source_id = ? AND type = 'USED'`,
+      [order.id]
+    );
+    // used point transactions store negative amount. e.g. -1000
+    const usedPoints = usedTrans.reduce((acc, t) => acc + Math.abs(Number(t.amount)), 0);
+
+    if (usedPoints > 0) {
+      await connection.query('UPDATE users SET points = points + ? WHERE id = ?', [usedPoints, userId]);
+
+      const [u] = await connection.query('SELECT points FROM users WHERE id = ?', [userId]);
+
+      await connection.query(
+        `INSERT INTO point_transactions (user_id, type, amount, balance_after, source_type, source_id, description)
+             VALUES (?, 'REFUNDED', ?, ?, 'ORDER', ?, ?)`,
+        [userId, usedPoints, u[0].points, order.id, '주문 취소 포인트 환불']
+      );
+    }
+
+    // 2. 적립 포인트 회수 (적립되었던 포인트 뺏기)
+    const [earnedTrans] = await connection.query(
+      `SELECT amount FROM point_transactions 
+         WHERE source_type = 'ORDER' AND source_id = ? AND type = 'EARNED'`,
+      [order.id]
+    );
+    const earnedPoints = earnedTrans.reduce((acc, t) => acc + Number(t.amount), 0);
+
+    if (earnedPoints > 0) {
+      await connection.query('UPDATE users SET points = points - ? WHERE id = ?', [earnedPoints, userId]);
+
+      const [u] = await connection.query('SELECT points FROM users WHERE id = ?', [userId]);
+
+      await connection.query(
+        `INSERT INTO point_transactions (user_id, type, amount, balance_after, source_type, source_id, description)
+             VALUES (?, 'USED', ?, ?, 'ORDER', ?, ?)`,
+        [userId, -earnedPoints, u[0].points, order.id, '주문 취소 적립 회수']
+      );
+    }
+
+    // 3. 결제 상태 업데이트 (REFUNDED)
+    await connection.query(
+      `UPDATE payments SET status = 'REFUNDED', refunded_at = NOW(), refund_reason = ? WHERE id = ?`,
+      [reason, payment.id]
+    );
+
+    // 4. 주문 상태 업데이트
     await connection.query(
       `UPDATE orders SET status = 'REFUNDED' WHERE id = ?`,
       [order.id]
     );
-
-    // 결제 정보 업데이트
-    const [payments] = await connection.query(
-      `SELECT * FROM payments WHERE order_id = ? AND status = 'PAID' ORDER BY created_at DESC LIMIT 1`,
-      [order.id]
-    );
-
-    let refundedPoints = 0;
-
-    if (payments.length > 0) {
-      const payment = payments[0];
-
-      // 결제 정보를 REFUNDED로 업데이트
-      await connection.query(
-        `UPDATE payments SET status = 'REFUNDED', refunded_at = NOW(), refund_reason = ? WHERE id = ?`,
-        [reason, payment.id]
-      );
-
-      // 해당 주문으로 적립된 포인트 찾기
-      const [pointTransactions] = await connection.query(
-        `SELECT * FROM point_transactions 
-         WHERE source_type = 'ORDER' 
-           AND source_id = ? 
-           AND type = 'EARNED'
-         ORDER BY created_at DESC LIMIT 1`,
-        [order.id]
-      );
-
-      // 포인트 환불 처리
-      if (pointTransactions.length > 0) {
-        const pointTransaction = pointTransactions[0];
-        refundedPoints = Number(pointTransaction.amount);
-
-        if (refundedPoints > 0) {
-          // 사용자 포인트에서 차감
-          await connection.query(
-            `UPDATE users SET points = GREATEST(0, points - ?) WHERE id = ?`,
-            [refundedPoints, userId]
-          );
-
-          // 현재 포인트 잔액 조회
-          const [userResult] = await connection.query(
-            `SELECT points FROM users WHERE id = ?`,
-            [userId]
-          );
-          const balanceAfter = userResult[0].points;
-
-          // 포인트 환불 거래 내역 저장
-          await connection.query(
-            `INSERT INTO point_transactions (
-              user_id, type, amount, balance_after, source_type, source_id, description
-            ) VALUES (?, 'REFUNDED', ?, ?, 'ORDER', ?, ?)`,
-            [
-              userId,
-              -refundedPoints, // 음수로 저장 (차감)
-              balanceAfter,
-              order.id,
-              `주문 환불 포인트 차감 (${refundedPoints.toLocaleString()}P)`
-            ]
-          );
-        }
-      }
-    }
 
     await connection.commit();
 
@@ -574,8 +610,7 @@ exports.refundOrder = async (req, res) => {
       data: {
         orderId: order.order_id,
         status: 'REFUNDED',
-        refundedAt: new Date().toISOString(),
-        refundedPoints: refundedPoints
+        refundedAt: new Date().toISOString()
       }
     });
 

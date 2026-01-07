@@ -248,11 +248,84 @@ exports.refreshToken = async (req, res) => {
         token: newToken
       }
     });
+
   } catch (error) {
     console.error('토큰 갱신 실패:', error);
     res.status(500).json({
       success: false,
       message: '토큰 갱신 중 오류가 발생했습니다.'
     });
+  }
+};
+
+// 비밀번호 변경
+exports.changePassword = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { currentPassword, newPassword } = req.body;
+
+    // 사용자 조회
+    const [users] = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, message: '사용자를 찾을 수 없습니다.' });
+    }
+    const user = users[0];
+
+    // 현재 비밀번호 확인
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: '현재 비밀번호가 일치하지 않습니다.' });
+    }
+
+    // 새 비밀번호 해시화
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // 업데이트
+    await db.query('UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?', [hashedPassword, userId]);
+
+    res.status(200).json({ success: true, message: '비밀번호가 변경되었습니다.' });
+  } catch (error) {
+    console.error('비밀번호 변경 실패:', error);
+    res.status(500).json({ success: false, message: '비밀번호 변경 중 오류가 발생했습니다.' });
+  }
+};
+
+// 회원 탈퇴
+exports.deleteAccount = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { password } = req.body;
+
+    // 사용자 조회
+    const [users] = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
+    if (users.length === 0) {
+      return res.status(404).json({ success: false, message: '사용자를 찾을 수 없습니다.' });
+    }
+    const user = users[0];
+
+    // 비밀번호 확인 (소셜 로그인이 아닌 경우에만 확인)
+    const isSocialUser = user.user_id && user.user_id.startsWith('social_');
+
+    if (!isSocialUser && user.password) {
+      if (!password) {
+        return res.status(400).json({ success: false, message: '비밀번호를 입력해주세요.' });
+      }
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ success: false, message: '비밀번호가 일치하지 않습니다.' });
+      }
+    }
+
+    // 탈퇴 처리 (Soft Delete or Hard Delete? 보통 Hard Delete or Flagging)
+    // 여기서는 Hard Delete로 구현 (참조 무결성 때문에 연관 데이터 처리가 필요할 수 있음)
+    // FK 제약조건이 있다면 에러가 날 수 있으므로 주의. 
+    // 포트폴리오용이므로 CASCADE 설정이 되어있다고 가정하거나, 간단히 users 테이블에서 삭제.
+
+    await db.query('DELETE FROM users WHERE id = ?', [userId]);
+
+    res.status(200).json({ success: true, message: '회원 탈퇴가 완료되었습니다.' });
+  } catch (error) {
+    console.error('회원 탈퇴 실패:', error);
+    res.status(500).json({ success: false, message: '회원 탈퇴 중 오류가 발생했습니다.' });
   }
 };

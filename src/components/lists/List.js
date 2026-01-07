@@ -127,8 +127,16 @@ function List({ searchData, setSearchData }) {
           const data = searchData ? searchData : result.data || [];
           const processedData = processProgramData(data);
 
-          if (append) setPrograms((prev) => [...prev, ...processedData]);
-          else setPrograms(processedData);
+          if (append) {
+            setPrograms((prev) => {
+              // ID 기반 중복 제거
+              const existingIds = new Set(prev.map(p => p.id));
+              const uniqueNew = processedData.filter(p => !existingIds.has(p.id));
+              return [...prev, ...uniqueNew];
+            });
+          } else {
+            setPrograms(processedData);
+          }
 
           // hasMore 업데이트
           if (result.pagination) {
@@ -156,35 +164,39 @@ function List({ searchData, setSearchData }) {
     [searchData, processProgramData]
   );
 
-  // ✅ searchData 변경 감지 및 처리
+  // ✅ searchData 변경 감지 및 초기 로딩 통합
   useEffect(() => {
-    if (searchData !== prevSearchDataRef.current) {
-      prevSearchDataRef.current = searchData;
-
-      if (searchData) {
-        const processedData = processProgramData(searchData);
-        setPrograms(processedData);
-        setHasMore(false);
-        setPage(1);
-      } else {
-        setPrograms([]);
-        setPage(1);
-        setHasMore(true);
-      }
-    }
-  }, [searchData, processProgramData]);
-
-  // ✅ searchData가 없을 때만 API 호출
-  useEffect(() => {
-    if (!searchData && prevSearchDataRef.current === null) {
-      fetchPrograms(1, false);
+    // 검색 모드일 때
+    if (searchData) {
+      const processedData = processProgramData(searchData);
+      setPrograms(processedData);
+      setHasMore(false);
       setPage(1);
-    } else if (!searchData && prevSearchDataRef.current !== null) {
-      prevSearchDataRef.current = null;
+      // 검색 모드에서는 스크롤 리스너 차단이 필요하므로 loading/isLoadingRef와 무관하게 동작
+    } else {
+      // 일반 목록 모드일 때 (초기 진입 또는 검색 취소 시)
+      // 기존에 데이터가 없고 로딩중이 아니라면 초기 데이터 로드
+      // 단, 검색 취소 직후라면 prevSearchDataRef 체크 등으로 판단할 수 있으나,
+      // 여기서는 그냥 searchData가 없으면 page=1부터 다시 로드하도록 단순화
+      // (기존 데이터가 있어도 덮어써야 함)
+
+      // 검색어가 지워졌을 때(null이 되었을 때)만 실행하거나, 
+      // 컴포넌트 마운트 시 실행.
+      // 이를 위해 별도의 flag나 ref를 쓸 수도 있지만, 
+      // searchData가 null이 되는 순간 fetchPrograms(1, false)를 호출.
+
       fetchPrograms(1, false);
       setPage(1);
     }
-  }, [fetchPrograms, searchData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchData]); // processProgramData, fetchPrograms는 deps에서 제외하여 불필요한 호출 방지
+
+  // 중복 데이터를 걸러내기 위한 헬퍼 (append 시 사용)
+  const mergePrograms = (prev, next) => {
+    const existingIds = new Set(prev.map(p => p.id));
+    const filteredNext = next.filter(p => !existingIds.has(p.id));
+    return [...prev, ...filteredNext];
+  };
 
   // ✅ 무한 스크롤: Intersection Observer로 스크롤 감지
   useEffect(() => {

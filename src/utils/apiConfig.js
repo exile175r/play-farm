@@ -85,7 +85,8 @@ export const fetchWithAuthAndRetry = async (url, options = {}, onLogout = null) 
     const errorData = await response.json().catch(() => ({}));
 
     // 토큰 만료 에러인 경우
-    if (errorData.message?.includes('만료') || errorData.message?.includes('expired')) {
+    // 토큰이 없으면 만료 처리 로직을 실행하지 않음 (로그아웃 상태로 간주)
+    if (localStorage.getItem('token') && (errorData.message?.includes('만료') || errorData.message?.includes('expired'))) {
       const extended = await handleTokenExpired(
         () => {
           // 연장 성공 시 아무것도 하지 않음 (다시 요청할 예정)

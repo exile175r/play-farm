@@ -1,12 +1,18 @@
 // src/components/checkout/CheckoutModal.js
 import React, { useEffect, useMemo, useState } from 'react';
 import './CheckoutModal.css';
-import { createOrder, payOrder } from '../../services/orderApi';
+import { createOrder, payOrder, cancelOrder } from '../../services/orderApi';
+import { getMyPoints } from '../../services/pointApi';
 
 function CheckoutModal({ open, onClose, items, onSuccess }) {
   const [payMethod, setPayMethod] = useState('CARD');
   const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // 포인트 관련
+  const [userPoints, setUserPoints] = useState(0);
+  const [usePoints, setUsePoints] = useState(0);
+  const [finalAmount, setFinalAmount] = useState(0);
 
   // 카드 결제 입력
   const [cardCompany, setCardCompany] = useState('현대');
@@ -28,12 +34,21 @@ function CheckoutModal({ open, onClose, items, onSuccess }) {
   const [buyerPhone, setBuyerPhone] = useState(user?.phone || '');
   const [buyerEmail, setBuyerEmail] = useState(user?.email || '');
 
-  // 모달이 열릴 때 사용자 정보 초기화
+  // 모달이 열릴 때 사용자 정보 & 포인트 초기화
   useEffect(() => {
-    if (open && user) {
-      setBuyerName(user?.nickname || user?.name || user?.user_id || '');
-      setBuyerPhone(user?.phone || '');
-      setBuyerEmail(user?.email || '');
+    if (open) {
+      if (user) {
+        setBuyerName(user?.nickname || user?.name || user?.user_id || '');
+        setBuyerPhone(user?.phone || '');
+        setBuyerEmail(user?.email || '');
+      }
+      // 포인트 조회
+      getMyPoints().then((res) => {
+        if (res.success) {
+          setUserPoints(res.data.points || 0);
+        }
+      });
+      setUsePoints(0);
     }
   }, [open, user]);
 
@@ -44,6 +59,23 @@ function CheckoutModal({ open, onClose, items, onSuccess }) {
 
   const shippingFee = subtotal >= 30000 || subtotal === 0 ? 0 : 3000;
   const total = subtotal + shippingFee;
+
+  // 포인트 적용 후 최종 금액
+  useEffect(() => {
+    setFinalAmount(Math.max(0, total - usePoints));
+  }, [total, usePoints]);
+
+  const handlePointChange = (e) => {
+    let val = parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0;
+    if (val > userPoints) val = userPoints;
+    if (val > total) val = total;
+    setUsePoints(val);
+  };
+
+  const useAllPoints = () => {
+    const val = Math.min(userPoints, total);
+    setUsePoints(val);
+  };
 
   // 입력 포맷 helpers
   const formatCardNumber = (v) =>
@@ -101,8 +133,9 @@ function CheckoutModal({ open, onClose, items, onSuccess }) {
           qty: Number(it.qty || 0),
         })),
         buyer: { name: buyerName, phone: buyerPhone, email: buyerEmail },
-        amount: total,
+        amount: total, // 원래 주문 총액
         payMethod,
+        usedPoints: usePoints, // 사용 포인트 전달
       });
 
       if (!orderResult?.success) {
@@ -113,6 +146,10 @@ function CheckoutModal({ open, onClose, items, onSuccess }) {
 
       if (isFail) {
         alert('결제가 실패했습니다. 결제 정보를 확인하신 뒤 다시 시도해 주세요.');
+        // 실패 시 생성된 주문 취소 처리
+        if (orderResult?.data?.orderId) {
+          await cancelOrder(orderResult.data.orderId, { reason: '결제 실패 시뮬레이션' });
+        }
         setSubmitting(false);
         return;
       }
@@ -124,12 +161,22 @@ function CheckoutModal({ open, onClose, items, onSuccess }) {
         buyerName,
         buyerPhone,
         buyerEmail,
+        usedPoints: usePoints, // 사용 포인트 전달
       });
 
       if (!paymentResult?.success) {
         alert('결제 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+        // 실패 시 생성된 주문 취소 처리
+        if (orderResult?.data?.orderId) {
+          await cancelOrder(orderResult.data.orderId, { reason: '결제 처리 실패' });
+        }
         setSubmitting(false);
         return;
+      }
+
+      // 포인트 사용 시 전역 이벤트 발생
+      if (usePoints > 0) {
+        window.dispatchEvent(new Event('pointUpdated'));
       }
 
       alert('결제가 정상적으로 완료되었습니다.');
@@ -184,13 +231,63 @@ function CheckoutModal({ open, onClose, items, onSuccess }) {
               <span>상품금액</span>
               <span>{subtotal.toLocaleString()}원</span>
             </div>
-            <div className="checkout-summary-row">
-              <span>배송비</span>
-              <span>{shippingFee.toLocaleString()}원</span>
+            {shippingFee > 0 && (
+              <div className="checkout-summary-row">
+                <span>배송비</span>
+                <span>+{shippingFee.toLocaleString()}원</span>
+              </div>
+            )}
+
+            {/* 포인트 사용 UI */}
+            <div className="checkout-summary-row point-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '8px', marginTop: '12px', borderTop: '1px dashed #eee', paddingTop: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 600 }}>포인트 사용</span>
+                <span style={{ fontSize: '13px', color: '#666' }}>보유: {userPoints.toLocaleString()}P</span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  value={usePoints.toLocaleString()}
+                  onChange={handlePointChange}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #ddd',
+                    textAlign: 'right',
+                    fontWeight: 600
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={useAllPoints}
+                  style={{
+                    padding: '0 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #ddd',
+                    background: '#fff',
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  전액
+                </button>
+              </div>
             </div>
+            {usePoints > 0 && (
+              <div className="checkout-summary-row" style={{ color: '#e74c3c' }}>
+                <span>포인트 할인</span>
+                <span>-{usePoints.toLocaleString()}원</span>
+              </div>
+            )}
+
             <div className="checkout-summary-total">
-              <span>총 결제금액</span>
-              <strong>{total.toLocaleString()}원</strong>
+              <span style={{ fontSize: '15px' }}>총 결제금액</span>
+              <strong style={{ fontSize: '20px', color: '#3a8e87' }}>{finalAmount.toLocaleString()}원</strong>
+            </div>
+            <div className="checkout-summary-row" style={{ justifyContent: 'flex-end', gap: '6px', marginTop: '4px', fontSize: '13px', color: '#27ae60', fontWeight: 600 }}>
+              <span style={{ color: '#888', fontWeight: 500 }}>적립 예정 포인트</span>
+              <span>+{Math.floor(finalAmount * 0.05).toLocaleString()}P</span>
             </div>
           </div>
 
@@ -199,30 +296,30 @@ function CheckoutModal({ open, onClose, items, onSuccess }) {
             <label className="checkout-label">결제 수단</label>
             <div className="checkout-method-options">
               <label className="checkout-method-option">
-                <input 
-                  type="radio" 
-                  value="CARD" 
-                  checked={payMethod === 'CARD'} 
+                <input
+                  type="radio"
+                  value="CARD"
+                  checked={payMethod === 'CARD'}
                   onChange={(e) => setPayMethod(e.target.value)}
                   disabled={submitting}
                 />
                 <span>카드 결제</span>
               </label>
               <label className="checkout-method-option">
-                <input 
-                  type="radio" 
-                  value="KAKAO_PAY" 
-                  checked={payMethod === 'KAKAO_PAY'} 
+                <input
+                  type="radio"
+                  value="KAKAO_PAY"
+                  checked={payMethod === 'KAKAO_PAY'}
                   onChange={(e) => setPayMethod(e.target.value)}
                   disabled={submitting}
                 />
                 <span>카카오페이</span>
               </label>
               <label className="checkout-method-option">
-                <input 
-                  type="radio" 
-                  value="TRANSFER" 
-                  checked={payMethod === 'TRANSFER'} 
+                <input
+                  type="radio"
+                  value="TRANSFER"
+                  checked={payMethod === 'TRANSFER'}
                   onChange={(e) => setPayMethod(e.target.value)}
                   disabled={submitting}
                 />
@@ -236,9 +333,9 @@ function CheckoutModal({ open, onClose, items, onSuccess }) {
             <div className="checkout-card-form">
               <div className="checkout-form-row">
                 <label className="checkout-label">카드사</label>
-                <select 
-                  className="pf-modal-input" 
-                  value={cardCompany} 
+                <select
+                  className="pf-modal-input"
+                  value={cardCompany}
                   onChange={(e) => setCardCompany(e.target.value)}
                   disabled={submitting}
                 >
@@ -327,9 +424,9 @@ function CheckoutModal({ open, onClose, items, onSuccess }) {
           {/* 약관 동의 */}
           <div className="checkout-agree">
             <label>
-              <input 
-                type="checkbox" 
-                checked={agree} 
+              <input
+                type="checkbox"
+                checked={agree}
                 onChange={(e) => setAgree(e.target.checked)}
                 disabled={submitting}
               />
@@ -343,7 +440,7 @@ function CheckoutModal({ open, onClose, items, onSuccess }) {
             취소
           </button>
           <button type="button" className="pf-modal-btn primary" onClick={handlePay} disabled={submitting}>
-            {submitting ? '결제 진행 중...' : `${total.toLocaleString()}원 결제하기`}
+            {submitting ? '결제 진행 중...' : `${finalAmount.toLocaleString()}원 결제하기`}
           </button>
         </div>
       </div>
