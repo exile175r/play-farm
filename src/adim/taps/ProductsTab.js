@@ -14,6 +14,7 @@ const emptyForm = {
   name: "",
   stock: "",
   price: "",
+  description: "",
   status: "ACTIVE",
   imageUrl: "", // 서버에서 기존 이미지 보여줄 때용 (수정 모드)
 };
@@ -22,17 +23,17 @@ function ProductsTab() {
   // 이미지 URL 처리 함수
   const getImageUrl = (imagePath) => {
     if (!imagePath) return '';
-    
+
     // blob URL인 경우 (새로 선택한 파일의 미리보기)
     if (imagePath.startsWith('blob:')) {
       return imagePath;
     }
-    
+
     // 이미 전체 URL인 경우
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath;
     }
-    
+
     // 상대 경로인 경우 (/images/...)
     // API_BASE에서 /api를 제거하고 이미지 경로 추가
     const apiBase = getApiBaseUrl();
@@ -120,6 +121,7 @@ function ProductsTab() {
       name: product.name || "",
       stock: String(product.stock ?? ""),
       price: String(product.price ?? ""),
+      description: product.description || "",
       status: product.status || "ACTIVE",
       imageUrl: product.imageUrl || "",
     });
@@ -239,6 +241,7 @@ function ProductsTab() {
       formData.append("name", form.name.trim());
       formData.append("stock", stockNumber);
       formData.append("price", priceNumber);
+      formData.append("description", form.description);
       formData.append("status", form.status);
 
       if (imageFile) {
@@ -440,6 +443,18 @@ function ProductsTab() {
                 value={form.name}
                 onChange={handleChange}
                 placeholder="예: 유기농 감자 5kg"
+              />
+            </div>
+
+            <div className="admin-form-row">
+              <label className="admin-form-label">상품 상세 설명</label>
+              <textarea
+                name="description"
+                value={form.description}
+                onChange={handleChange}
+                placeholder="상품에 대한 상세한 설명을 입력해 주세요"
+                rows={4}
+                style={{ width: '100%', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '4px' }}
               />
             </div>
 

@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `name` VARCHAR(100) NOT NULL COMMENT '이름',
   `email` VARCHAR(255) NOT NULL UNIQUE COMMENT '이메일',
   `phone` VARCHAR(20) COMMENT '전화번호',
+  `nickname` VARCHAR(50) COMMENT '닉네임',
   `region` VARCHAR(100) COMMENT '지역',
   `marketing_agree` BOOLEAN DEFAULT FALSE COMMENT '마케팅 동의 여부',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '가입일시',
@@ -303,6 +304,7 @@ CREATE TABLE IF NOT EXISTS `point_transactions` (
 CREATE TABLE IF NOT EXISTS `events` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `title` VARCHAR(255) NOT NULL COMMENT '이벤트 제목',
+  `subtitle` VARCHAR(255) COMMENT '이벤트 소제목',
   `description` TEXT COMMENT '이벤트 설명',
   `position` VARCHAR(100) COMMENT '노출 위치',
   `start_date` DATE COMMENT '시작일',
@@ -317,3 +319,28 @@ CREATE TABLE IF NOT EXISTS `events` (
   INDEX `idx_start_date` (`start_date`),
   INDEX `idx_end_date` (`end_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='이벤트 관리 테이블';
+
+-- 19. notices 테이블 (공지사항)
+CREATE TABLE IF NOT EXISTS `notices` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `title` VARCHAR(255) NOT NULL COMMENT '공지 제목',
+  `content` TEXT NOT NULL COMMENT '공지 내용',
+  `is_important` BOOLEAN DEFAULT FALSE COMMENT '중요 공지 여부',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '작성일시',
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+  INDEX `idx_created_at` (`created_at`),
+  INDEX `idx_is_important` (`is_important`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='공지사항 테이블';
+
+-- 20. faqs 테이블 (자주 묻는 질문)
+CREATE TABLE IF NOT EXISTS `faqs` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `question` VARCHAR(255) NOT NULL COMMENT '질문',
+  `answer` TEXT NOT NULL COMMENT '답변',
+  `category` VARCHAR(50) DEFAULT '일반' COMMENT '카테고리',
+  `display_order` INT DEFAULT 0 COMMENT '표시 순서',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '작성일시',
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
+  INDEX `idx_display_order` (`display_order`),
+  INDEX `idx_category` (`category`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='자주 묻는 질문 테이블';

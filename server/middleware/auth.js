@@ -42,4 +42,25 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-module.exports = { authenticateToken };
+// 5. 관리자 권한 검증 미들웨어
+const isAdmin = (req, res, next) => {
+  // authenticateToken을 거쳤으므로 req.user가 존재함
+  // adminLogin에서 발급한 토큰에는 isAdmin: true 또는 role: 'admin'이 포함됨
+  if (req.user && (req.user.isAdmin || req.user.role === 'admin')) {
+    next();
+  } else {
+    // 혹시 토큰에 정보가 없다면, 하드코딩된 관리자 ID 체크 (보조 수단)
+    const ADMIN_ACCOUNTS = ['admin', 'owner', 'manager01'];
+    if (req.user && ADMIN_ACCOUNTS.includes(req.user.id)) { // user.id는 user_id(문자열)가 아니라 DB PK(숫자)일 수 있음. adminLogin에서는 id: user_id로 넣음.
+      next();
+      return;
+    }
+
+    return res.status(403).json({
+      success: false,
+      message: '관리자 권한이 필요합니다.'
+    });
+  }
+};
+
+module.exports = { authenticateToken, isAdmin };

@@ -1262,6 +1262,7 @@ exports.getAllProducts = async (req, res) => {
         p.id,
         p.name,
         p.category,
+        p.description,
         p.base_price,
         p.is_active,
         p.stock_quantity,
@@ -1281,7 +1282,7 @@ exports.getAllProducts = async (req, res) => {
     const formatted = products.map(p => {
       // product_images 테이블에서 이미지 가져오기
       const images = p.images ? p.images.split(',') : [];
-      
+
       // 이미지 URL 우선순위: product_images > products.image_url
       let imageUrl = null;
       if (images.length > 0) {
@@ -1304,6 +1305,7 @@ exports.getAllProducts = async (req, res) => {
         id: p.id,
         name: p.name,
         category: p.category,
+        description: p.description, // description 추가
         stock: p.stock_quantity,
         price: Number(p.base_price),
         status: status,
@@ -1337,7 +1339,7 @@ exports.createProduct = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    const { name, stock, price, status, category } = req.body;
+    const { name, stock, price, status, category, description } = req.body; // description 추가
 
     // fields 방식: 대표 이미지와 상세 이미지 구분
     const mainImage = req.files?.image?.[0]; // 대표 이미지
@@ -1358,10 +1360,11 @@ exports.createProduct = async (req, res) => {
 
     // 상품 데이터 삽입
     const [result] = await connection.query(
-      `INSERT INTO products (name, category, stock_quantity, base_price, is_active) VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO products (name, category, description, stock_quantity, base_price, is_active) VALUES (?, ?, ?, ?, ?, ?)`,
       [
         name.trim(),
         category ? category.trim() : null,
+        description ? description.trim() : null,
         stockNumber,
         priceNumber,
         isActive
@@ -1418,7 +1421,7 @@ exports.updateProduct = async (req, res) => {
     await connection.beginTransaction();
 
     const productId = req.params.id;
-    const { name, stock, price, status } = req.body;
+    const { name, stock, price, status, description } = req.body; // description 추가
 
     // fields 방식: 대표 이미지와 상세 이미지 구분
     const mainImage = req.files?.image?.[0]; // 대표 이미지
@@ -1451,10 +1454,11 @@ exports.updateProduct = async (req, res) => {
     const priceNumber = price ? Number(price) : 0;
     const isActive = status === 'ACTIVE';
 
-    // 상품 정보 업데이트
+    // 상품 정보 업데이트 (description 추가)
     await connection.query(
       `UPDATE products SET 
         name = ?, 
+        description = ?,
         stock_quantity = ?, 
         base_price = ?, 
         is_active = ?,
@@ -1462,11 +1466,19 @@ exports.updateProduct = async (req, res) => {
       WHERE id = ?`,
       [
         name.trim(),
+        description ? description.trim() : null,
         stockNumber,
         priceNumber,
         isActive,
         productId
       ]
+    );
+
+    // ✅ 가격 동기화: 옵션이 있는 경우 옵션 가격도 상품 기본 가격으로 일괄 업데이트
+    // (사용자가 상품 수정 모달에서 가격을 바꾸면 옵션 가격도 바뀌길 기대함)
+    await connection.query(
+      `UPDATE product_options SET price = ?, unit_price = ? WHERE product_id = ?`,
+      [priceNumber, priceNumber, productId]
     );
 
     // 새 이미지가 있으면 기존 이미지 삭제 후 새 이미지 추가

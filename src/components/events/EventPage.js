@@ -1,12 +1,38 @@
-// src/components/events/EventPage.js
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "./EventPage.css";
 import { getImagePath } from "../../utils/imagePath";
-import { events, notices } from "../data/eventData";
+import { getAllEvents } from "../../services/adminApi";
+import { getAllNotices } from "../../services/noticeApi";
 
 function EventPage() {
   const [activeTab, setActiveTab] = useState("event");
+  const [events, setEvents] = useState([]);
+  const [notices, setNotices] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [eventRes, noticeRes] = await Promise.all([
+          getAllEvents({ status: 'ONGOING' }), // Only ongoing for public? or ALL? Let's show ALL but potentially filter in UI or backend. Usually public shows Ongoing + maybe Ended.
+          getAllNotices()
+        ]);
+
+        if (eventRes.success) {
+          console.log("EventPage events:", eventRes.data); // DEBUG
+          setEvents(eventRes.data || []);
+        }
+        if (noticeRes.success) setNotices(noticeRes.data || []);
+      } catch (err) {
+        console.error("데이터 로드 실패:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   return (
     <main className="pf-page pf-event-page">
@@ -39,10 +65,16 @@ function EventPage() {
             총 {activeTab === "event" ? events.length : notices.length}개의{" "}
             {activeTab === "event" ? "이벤트" : "공지사항"}이 있습니다.
           </p>
+          {/* DEBUG: Render raw data check */}
+          {/* <div style={{display: 'none'}}>{JSON.stringify(events)}</div> */}
         </div>
 
         <section className="pf-event-content">
-          {activeTab === "event" ? <EventList events={events} /> : <NoticeList notices={notices} />}
+          {loading ? (
+            <p style={{ textAlign: 'center', padding: '50px' }}>로딩 중...</p>
+          ) : (
+            activeTab === "event" ? <EventList events={events} /> : <NoticeList notices={notices} />
+          )}
         </section>
       </div>
     </main>
@@ -68,8 +100,12 @@ function EventList({ events }) {
             </div>
 
             <div className="pf-event-body">
-              <h3 className="pf-event-card-title">{item.title}</h3>
-              <p className="pf-event-card-desc">{item.description || ""}</p>
+              {/* Design requirement: List shows only Description + Date (based on user image) */}
+              {/* Title is hidden in list view as the description acts as the main text */}
+              {/* <h3 className="pf-event-card-title">{item.title}</h3> */}
+              <p className="pf-event-card-desc" style={{ fontSize: '15px', fontWeight: '500', color: '#333' }}>
+                {item.description || item.title}
+              </p>
               <p className="pf-event-card-date">{item.period}</p>
             </div>
           </article>

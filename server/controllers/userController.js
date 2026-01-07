@@ -32,8 +32,8 @@ exports.signup = async (req, res) => {
 
     // 회원 정보 저장
     const [result] = await db.query(
-      `INSERT INTO users (user_id, password, name, email, phone, region, marketing_agree) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [user_id, hashedPassword, name, email, phone, region, marketing_agree]
+      `INSERT INTO users (user_id, password, name, email, phone, region, marketing_agree, nickname) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [user_id, hashedPassword, name, email, phone, region, marketing_agree, req.body.nickname]
     );
 
     return res.status(201).json({ success: true, message: '회원가입이 완료되었습니다.' });
@@ -62,6 +62,14 @@ exports.login = async (req, res) => {
     };
 
     const user = users[0];
+
+    // 탈퇴/비활성화 계정 확인
+    if (!user.is_active) {
+      return res.status(403).json({
+        success: false,
+        message: '탈퇴하거나 비활성화된 계정입니다.'
+      });
+    }
 
     // 비밀번호 확인
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -174,6 +182,10 @@ exports.updateMyProfile = async (req, res) => {
     if (name) {
       updateFields.push('name = ?');
       updateValues.push(name);
+    }
+    if (req.body.nickname) {
+      updateFields.push('nickname = ?');
+      updateValues.push(req.body.nickname);
     }
     if (email) {
       updateFields.push('email = ?');
@@ -317,11 +329,33 @@ exports.deleteAccount = async (req, res) => {
     }
 
     // 탈퇴 처리 (Soft Delete or Hard Delete? 보통 Hard Delete or Flagging)
-    // 여기서는 Hard Delete로 구현 (참조 무결성 때문에 연관 데이터 처리가 필요할 수 있음)
-    // FK 제약조건이 있다면 에러가 날 수 있으므로 주의. 
-    // 포트폴리오용이므로 CASCADE 설정이 되어있다고 가정하거나, 간단히 users 테이블에서 삭제.
+    // Soft Delete Implementation
+    // 1. 개인정보 익명화
+    const now = Date.now();
+    const randomSuffix = Math.random().toString(36).substr(2, 5);
+    const deletedId = `deleted_${now}_${randomSuffix}`;
+    const deletedEmail = `deleted_${now}_${randomSuffix}@deleted.com`;
+    const deletedName = '탈퇴한 사용자';
 
-    await db.query('DELETE FROM users WHERE id = ?', [userId]);
+    // 2. 비밀번호 무작위화 (로그인 불가능하게 변경)
+    const randomPassword = Math.random().toString(36);
+    const hashedRandomPassword = await bcrypt.hash(randomPassword, 10);
+
+    // 3. 업데이트 (is_active = false, points = 0)
+    await db.query(
+      `UPDATE users 
+       SET user_id = ?, 
+           email = ?, 
+           name = ?, 
+           password = ?, 
+           phone = NULL, 
+           is_active = FALSE, 
+           points = 0, 
+           marketing_agree = FALSE,
+           updated_at = NOW() 
+       WHERE id = ?`,
+      [deletedId, deletedEmail, deletedName, hashedRandomPassword, userId]
+    );
 
     res.status(200).json({ success: true, message: '회원 탈퇴가 완료되었습니다.' });
   } catch (error) {

@@ -67,6 +67,7 @@ function CheckoutPage() {
 
    // 실제같은 느낌: 결제 진행 로딩 + 실패 강제 토글(포트폴리오용)
    const [submitting, setSubmitting] = useState(false);
+   const [paymentPassword, setPaymentPassword] = useState(''); // 결제 비밀번호 (앞 2자리)
    const [forceFail, setForceFail] = useState(false);
 
    // ===== 금액 계산 (Moved up to prevent ReferenceError) =====
@@ -269,6 +270,16 @@ function CheckoutPage() {
          alert(msg);
          return;
       }
+      if (!agreements.all) {
+         alert('결제 및 환불 규정에 동의해 주세요.');
+         return;
+      }
+
+      if (paymentPassword.length !== 2) {
+         alert('결제 비밀번호 앞 2자리를 입력해 주세요.');
+         return;
+      }
+
 
       setSubmitting(true);
 
@@ -702,6 +713,20 @@ function CheckoutPage() {
                      <input type="checkbox" checked={agreements.all} onChange={(e) => setAgreements({ all: e.target.checked, service: e.target.checked, privacy: e.target.checked })} />
                      <span>결제 및 환불 규정에 동의합니다.</span>
                   </label>
+
+                  {/* 결제 비밀번호 입력 */}
+                  <div style={{ marginTop: '16px' }}>
+                     <label className="pf-label">결제 비밀번호 (앞 2자리)</label>
+                     <input
+                        type="password"
+                        className="pf-input"
+                        value={paymentPassword}
+                        onChange={(e) => setPaymentPassword(e.target.value.slice(0, 2))}
+                        placeholder="비밀번호 앞 2자리"
+                        maxLength={2}
+                     />
+                     <p className="pf-hint">본인 확인을 위해 비밀번호 앞 2자리를 입력해 주세요.</p>
+                  </div>
 
                   {/* 포트폴리오 데모용: 실패 강제 */}
                   <label className="pf-agree pf-agree-sub">

@@ -1,62 +1,85 @@
 // src/components/events/EventDetail.js
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./EventDetail.css";
-import { events } from "../data/eventData";
+import { fetchWithAuthAndRetry, basicFetch } from "../../utils/apiConfig"; // Use basicFetch for public GET
+// import { events } from "../data/eventData"; // Remove static data
 
 function EventDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const event = events.find((e) => e.id === parseInt(id));
+  useEffect(() => {
+    const fetchEvent = async () => {
+      try {
+        setLoading(true);
+        const result = await basicFetch(`/api/events/${id}`);
+        if (result.success) {
+          setEvent(result.data);
+        } else {
+          setError(result.message);
+        }
+      } catch (err) {
+        console.error(err);
+        // Show actual error message for debugging
+        setError(err.message || "이벤트 정보를 불러오는데 실패했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) {
+      fetchEvent();
+    } else {
+      setError("잘못된 접근입니다 (ID 없음).");
+      setLoading(false);
+    }
+  }, [id]);
 
-  // Mock descriptions for better content
-  const descriptions = {
-    1: "겨울 시즌을 맞아 플레이팜에서 특별한 이벤트를 준비했습니다.\n가족과 함께 따뜻한 추억을 만들어보세요.",
-    2: "지난 시즌 많은 사랑을 받았던 체험 프로그램이 종료되었습니다.\n다음 시즌에 더 좋은 모습으로 찾아뵙겠습니다.",
-    3: "신규 회원가입 시 2,000 포인트를 즉시 지급해 드립니다.\n지금 바로 가입하고 혜택을 받아보세요!",
-    4: "리뷰를 작성해주신 분들 중 추첨을 통해 선물을 드립니다.\n정성스러운 후기를 남겨주세요.",
-    5: "주말 한정 특별 할인 이벤트가 진행됩니다.\n최대 30% 할인된 가격으로 체험을 즐겨보세요."
-  };
+  if (loading) {
+    return <div className="pf-event-detail-empty"><p>로딩 중...</p></div>;
+  }
 
-  // Mock titles
-  const titles = {
-    1: "겨울바람, 따뜻한 추억",
-    2: "가을 수확 체험 종료",
-    3: "신규 가입 웰컴 이벤트",
-    4: "베스트 리뷰어 도전",
-    5: "주말 반짝 할인"
-  };
-
-  if (!event) {
+  if (error || !event) {
     return (
       <div className="pf-event-detail-empty">
-        <p>이벤트를 찾을 수 없습니다.</p>
-        <button className="pf-btn" onClick={() => navigate(-1)}>뒤로가기</button>
+        <p>{error || "이벤트를 찾을 수 없습니다."}</p>
+        <p style={{ fontSize: '12px', color: '#999' }}>ID: {id}</p> {/* DEBUG INFO */}
+        <button className="pf-btn" onClick={() => navigate('/events')}>뒤로가기</button>
       </div>
     );
   }
 
-  const desc = descriptions[event.id] || "이벤트 상세 내용입니다.";
-  const title = titles[event.id] || `이벤트 #${event.id}`;
+  // User requirement: "Title at the top is subtitle"
+  // So we display event.subtitle as the main header title.
+  // If subtitle is empty, we fallback to event.title.
+  const displayTitle = event.subtitle || event.title;
 
   return (
     <main className="pf-event-detail">
       <div className="pf-container">
         <header className="pf-ed-head">
           <span className={`pf-badge ${event.status === '진행중' ? 'active' : ''}`}>{event.status}</span>
-          <h2 className="pf-ed-title">{title}</h2>
-          <p className="pf-ed-date">2025.12.01 ~ 2025.12.31</p>
+          <h2 className="pf-ed-title">{displayTitle}</h2>
+          <p className="pf-ed-date">{event.period}</p>
         </header>
 
         <div className="pf-ed-body">
           <div className="pf-ed-img">
-            <img src={event.image || `/images/events/event (${event.id}).png`} alt={title} />
+            {/* Use getImagePath utility if possible or just absolute path if starts with / */}
+            <img src={event.image} alt={displayTitle} />
           </div>
           <div className="pf-ed-content">
-            {desc.split('\n').map((line, i) => (
-              <p key={i}>{line}</p>
-            ))}
+            {/* User requirement: "Content below image is description" */}
+            {event.description ? (
+              event.description.split('\n').map((line, i) => (
+                <p key={i}>{line}</p>
+              ))
+            ) : (
+              <p>상세 내용이 없습니다.</p>
+            )}
           </div>
         </div>
 

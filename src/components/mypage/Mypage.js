@@ -802,6 +802,12 @@ function Mypage() {
                      <button type="button" className={`pf-tab ${tab === 'security' ? 'is-active' : ''}`} onClick={() => setTab('security')}>
                         설정/보안
                      </button>
+                     {/* 관리자 링크 (localStorage isAdmin 체크) */}
+                     {localStorage.getItem('isAdmin') === 'true' && (
+                        <button type="button" className="pf-tab admin-link-btn" onClick={() => window.location.href = '/admin'}>
+                           관리자 페이지
+                        </button>
+                     )}
                   </nav>
                </aside>
 

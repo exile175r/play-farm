@@ -43,6 +43,8 @@ const orderRouter = require('./routes/orders');
 const pointRouter = require('./routes/points');
 const adminRouter = require('./routes/admin');
 const eventRouter = require('./routes/events');
+const noticeRouter = require('./routes/notices');
+const faqRouter = require('./routes/faqs');
 
 app.use('/api/programs', programRouter);
 app.use('/api/users', userRouter);
@@ -56,6 +58,8 @@ app.use('/api/orders', orderRouter);
 app.use('/api/points', pointRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/events', eventRouter);
+app.use('/api/notices', noticeRouter);
+app.use('/api/faqs', faqRouter);
 
 // 기본 라우트
 app.get('/', (req, res) => {

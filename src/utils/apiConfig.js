@@ -131,3 +131,27 @@ export const fetchWithAuthAndRetry = async (url, options = {}, onLogout = null) 
 
   return response;
 };
+
+/**
+ * 인증이 필요 없는 일반 fetch 래퍼
+ * @param {string} url - 요청 URL
+ * @param {Object} options - fetch 옵션
+ * @returns {Promise<any>} JSON response data
+ */
+export const basicFetch = async (url, options = {}) => {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.message || '요청 처리에 실패했습니다.');
+  }
+
+  return data;
+};

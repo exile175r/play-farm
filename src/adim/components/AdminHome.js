@@ -10,6 +10,8 @@ import ProductsTab from '../taps/ProductsTab';
 import OrdersTab from '../taps/OrdersTab';
 import UsersTab from '../taps/UsersTab';
 import EventsTab from '../taps/EventsTab';
+import NoticesTab from '../taps/NoticesTab';
+import FaqsTab from '../taps/FaqsTab';
 
 const TAB_LIST = [
    { id: 'dashboard', label: '대시보드' },
@@ -19,6 +21,8 @@ const TAB_LIST = [
    { id: 'orders', label: '주문 내역' },
    { id: 'users', label: '회원 관리' },
    { id: 'events', label: '이벤트 관리' },
+   { id: 'notices', label: '공지사항 관리' },
+   { id: 'faqs', label: 'FAQ 관리' },
 ];
 
 function AdminHome() {
@@ -51,6 +55,10 @@ function AdminHome() {
             return <UsersTab />;
          case 'events':
             return <EventsTab />;
+         case 'notices':
+            return <NoticesTab />;
+         case 'faqs':
+            return <FaqsTab />;
          default:
             return <DashboardTab />;
       }

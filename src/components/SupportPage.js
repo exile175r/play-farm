@@ -1,30 +1,31 @@
 // src/components/SupportPage.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './SupportPage.css';
 
-const faqData = [
-   {
-      question: '예약은 어떻게 진행되나요?',
-      answer:
-         'Play Farm에서는 체험 프로그램 상세 페이지에서 날짜 및 인원을 선택하여 예약을 진행할 수 있도록 준비 중입니다. 현재 버전은 데모 페이지이며 실제 예약 기능은 포함되어 있지 않습니다.',
-   },
-   {
-      question: '회원가입을 해야만 서비스를 이용할 수 있나요?',
-      answer: '체험 프로그램 열람은 회원가입 없이도 이용할 수 있지만, 예약 관리, 찜하기, 후기 작성 등의 기능은 회원 전용 기능으로 제공될 예정입니다.',
-   },
-   {
-      question: '고객센터 운영 시간은 어떻게 되나요?',
-      answer: '고객 문의 확인 및 답변은 평일 10:00 ~ 18:00 사이에 진행됩니다. 주말 및 공휴일에는 응대가 제한될 수 있습니다.',
-   },
-   {
-      question: '체험 취소 및 환불은 어떻게 처리되나요?',
-      answer: '취소 및 환불 규정은 각 체험 프로그램의 운영 정책에 따라 다를 수 있습니다. 정식 서비스에서는 체험 상세 페이지에 개별 규정을 안내할 예정입니다.',
-   },
-];
+import { getAllFaqs } from '../services/faqApi';
 
 const SupportPage = () => {
    const [activeIndex, setActiveIndex] = useState(null);
-   const [activeTab, setActiveTab] = useState('faq'); // 메뉴 탭
+   const [activeTab, setActiveTab] = useState('faq'); // 'faq' | 'notice' | 'contact'
+   const [faqs, setFaqs] = useState([]);
+   const [loading, setLoading] = useState(false);
+
+   useEffect(() => {
+      const fetchData = async () => {
+         setLoading(true);
+         try {
+            const faqRes = await getAllFaqs();
+
+            if (faqRes.success) setFaqs(faqRes.data || []);
+
+         } catch (err) {
+            console.error("데이터 로드 실패:", err);
+         } finally {
+            setLoading(false);
+         }
+      };
+      fetchData();
+   }, []);
 
    const handleToggle = (index) => {
       setActiveIndex((prev) => (prev === index ? null : index));
@@ -62,20 +63,26 @@ const SupportPage = () => {
                      <h2 className="support-section-title">자주 묻는 질문</h2>
 
                      <div className="faq-list">
-                        {faqData.map((item, index) => (
-                           <div key={index} className={`faq-item ${activeIndex === index ? 'faq-item-active' : ''}`}>
-                              <button type="button" className="faq-question" onClick={() => handleToggle(index)}>
-                                 <span>{item.question}</span>
-                                 <span className={`faq-arrow ${activeIndex === index ? 'open' : ''}`}>▼</span>
-                              </button>
+                        {loading ? (
+                           <p>불러오는 중...</p>
+                        ) : faqs.length === 0 ? (
+                           <p>등록된 질문이 없습니다.</p>
+                        ) : (
+                           faqs.map((item, index) => (
+                              <div key={item.id} className={`faq-item ${activeIndex === index ? 'faq-item-active' : ''}`}>
+                                 <button type="button" className="faq-question" onClick={() => handleToggle(index)}>
+                                    <span className="faq-cate">[{item.category}]</span>
+                                    <span>{item.question}</span>
+                                    <span className={`faq-arrow ${activeIndex === index ? 'open' : ''}`}>▼</span>
+                                 </button>
 
-                              {activeIndex === index && (
-                                 <div className="faq-answer">
-                                    <p>{item.answer}</p>
-                                 </div>
-                              )}
-                           </div>
-                        ))}
+                                 {activeIndex === index && (
+                                    <div className="faq-answer">
+                                       <p>{item.answer}</p>
+                                    </div>
+                                 )}
+                              </div>
+                           )))}
                      </div>
 
                      {/* FAQ 하단 연락처 안내 블록 */}
@@ -103,6 +110,8 @@ const SupportPage = () => {
                      </div>
                   </section>
                )}
+
+
 
                {/* 1:1 문의 탭 */}
                {activeTab === 'contact' && (

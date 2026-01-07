@@ -7,6 +7,8 @@ import { getApiBaseUrl } from "../../utils/apiConfig";
 
 const emptyForm = {
   title: "",
+  subtitle: "",
+  description: "",
   startDate: "",
   endDate: "",
   status: "SCHEDULED",
@@ -17,17 +19,17 @@ function EventsTab() {
   // 이미지 URL 처리 함수
   const getImageUrl = (imagePath) => {
     if (!imagePath) return '';
-    
+
     // blob URL인 경우 (새로 선택한 파일의 미리보기)
     if (imagePath.startsWith('blob:')) {
       return imagePath;
     }
-    
+
     // 이미 전체 URL인 경우
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath;
     }
-    
+
     // 상대 경로인 경우 (/images/...)
     // API_BASE에서 /api를 제거하고 이미지 경로 추가
     const apiBase = getApiBaseUrl();
@@ -117,7 +119,7 @@ function EventsTab() {
   const openEditModal = (event) => {
     setEditingEvent(event);
     const imageUrl = event.image || event.imageUrl || event.image_url || "";
-    
+
     // 상태 변환 (프론트엔드 한글 → 서버 상태값)
     let serverStatus = 'SCHEDULED';
     if (event.status === '진행중' || event.status === 'ONGOING') {
@@ -130,9 +132,11 @@ function EventsTab() {
       // 이미 서버 상태값인 경우 그대로 사용
       serverStatus = event.status;
     }
-    
+
     setForm({
       title: event.title || "",
+      subtitle: event.subtitle || "",
+      description: event.description || "",
       startDate: event.startDate || "",
       endDate: event.endDate || "",
       status: serverStatus,
@@ -177,6 +181,8 @@ function EventsTab() {
     try {
       const formData = new FormData();
       formData.append("title", form.title.trim());
+      formData.append("subtitle", form.subtitle);
+      formData.append("description", form.description);
       formData.append("startDate", form.startDate);
       formData.append("endDate", form.endDate);
       formData.append("status", form.status);
@@ -382,6 +388,29 @@ function EventsTab() {
                 value={form.title}
                 onChange={handleChange}
                 placeholder="예: 봄맞이 체험 할인 이벤트"
+              />
+            </div>
+
+            <div className="admin-form-row">
+              <label className="admin-form-label">소제목</label>
+              <input
+                type="text"
+                name="subtitle"
+                value={form.subtitle}
+                onChange={handleChange}
+                placeholder="예: 최대 50% 할인!"
+              />
+            </div>
+
+            <div className="admin-form-row">
+              <label className="admin-form-label">설명</label>
+              <textarea
+                name="description"
+                value={form.description}
+                onChange={handleChange}
+                placeholder="이벤트 상세 설명을 입력하세요"
+                rows={4}
+                style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ddd" }}
               />
             </div>
 

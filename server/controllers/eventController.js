@@ -12,6 +12,7 @@ exports.getAllEvents = async (req, res) => {
       SELECT 
         id,
         title,
+        subtitle,
         description,
         position,
         start_date,
@@ -32,7 +33,7 @@ exports.getAllEvents = async (req, res) => {
       let serverStatus = status;
       if (status === '진행중') serverStatus = 'ONGOING';
       if (status === '종료') serverStatus = 'ENDED';
-      
+
       query += ` AND status = ?`;
       params.push(serverStatus);
     }
@@ -72,11 +73,11 @@ exports.getAllEvents = async (req, res) => {
         }
         return date;
       };
-      
+
       const startDate = formatDate(e.start_date);
       const endDate = formatDate(e.end_date);
       const period = startDate && endDate ? `${startDate} ~ ${endDate}` : (startDate || endDate || '');
-      
+
       // 상태 변환 (서버: ONGOING/ENDED/SCHEDULED → 프론트: 진행중/종료)
       let frontendStatus = '진행중';
       if (e.status === 'ENDED') {
@@ -88,6 +89,7 @@ exports.getAllEvents = async (req, res) => {
       return {
         id: e.id,
         title: e.title || '',
+        subtitle: e.subtitle || '',
         description: e.description || '',
         period: period,
         status: frontendStatus,
@@ -100,6 +102,8 @@ exports.getAllEvents = async (req, res) => {
         createdAt: e.created_at
       };
     });
+
+    console.log('getAllEvents formatted:', formatted); // DEBUG
 
     res.status(200).json({
       success: true,
@@ -133,13 +137,106 @@ exports.getAllEvents = async (req, res) => {
   }
 };
 
+
+// 이벤트 상세 조회
+exports.getEventById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 조회수 증가 등 로직이 필요하면 여기에 추가
+
+    const [rows] = await db.query(
+      `SELECT 
+        id,
+        title,
+        subtitle,
+        description,
+        position,
+        start_date,
+        end_date,
+        status,
+        image_url,
+        tag,
+        notice,
+        created_at
+       FROM events
+       WHERE id = ?`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '이벤트를 찾을 수 없습니다.'
+      });
+    }
+
+    const e = rows[0];
+
+    // 날짜 포맷팅 및 데이터 가공
+    const formatDate = (date) => {
+      if (!date) return null;
+      if (date instanceof Date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+      if (typeof date === 'string') {
+        return date.split('T')[0];
+      }
+      return date;
+    };
+
+    const startDate = formatDate(e.start_date);
+    const endDate = formatDate(e.end_date);
+    const period = startDate && endDate ? `${startDate} ~ ${endDate}` : (startDate || endDate || '');
+
+    // 상태 변환
+    let frontendStatus = '진행중';
+    if (e.status === 'ENDED') {
+      frontendStatus = '종료';
+    } else if (e.status === 'SCHEDULED') {
+      frontendStatus = '진행중';
+    }
+
+    const data = {
+      id: e.id,
+      title: e.title || '',
+      subtitle: e.subtitle || '', // 소제목
+      description: e.description || '', // 설명
+      period: period,
+      status: frontendStatus,
+      image: e.image_url || '',
+      tag: e.tag || null,
+      notice: e.notice || null,
+      position: e.position || '',
+      startDate: startDate,
+      endDate: endDate,
+      createdAt: e.created_at
+    };
+
+    res.status(200).json({
+      success: true,
+      data: data
+    });
+
+  } catch (error) {
+    console.error('이벤트 상세 조회 실패:', error);
+    res.status(500).json({
+      success: false,
+      message: '이벤트 상세 조회 중 오류가 발생했습니다.'
+    });
+  }
+};
+
 // 이벤트 생성
 exports.createEvent = async (req, res) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
 
-    const { title, startDate, endDate, status, description, position, tag, notice } = req.body;
+    const { title, subtitle, startDate, endDate, status, description, position, tag, notice } = req.body;
     const imageFile = req.file; // uploadEventImage.single("image")로 업로드된 파일
 
     // 필수 필드 검증
@@ -154,7 +251,7 @@ exports.createEvent = async (req, res) => {
     // 날짜 검증 (빈 문자열 체크)
     const validStartDate = startDate && startDate.trim() ? startDate.trim() : null;
     const validEndDate = endDate && endDate.trim() ? endDate.trim() : null;
-    
+
     if (!validStartDate || !validEndDate) {
       await connection.rollback();
       return res.status(400).json({
@@ -177,10 +274,11 @@ exports.createEvent = async (req, res) => {
 
     // 이벤트 데이터 삽입
     const [result] = await connection.query(
-      `INSERT INTO events (title, description, position, start_date, end_date, status, image_url, tag, notice) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO events (title, subtitle, description, position, start_date, end_date, status, image_url, tag, notice) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         title.trim(),
+        subtitle ? subtitle.trim() : null,
         description ? description.trim() : null,
         position ? position.trim() : null,
         validStartDate,
@@ -221,12 +319,12 @@ exports.updateEvent = async (req, res) => {
     await connection.beginTransaction();
 
     const eventId = req.params.id;
-    const { title, startDate, endDate, status, description, position, tag, notice } = req.body;
+    const { title, subtitle, startDate, endDate, status, description, position, tag, notice } = req.body;
     const imageFile = req.file; // uploadEventImage.single("image")로 업로드된 파일
 
     // 이벤트 존재 확인 및 기존 데이터 조회
     const [existing] = await connection.query(
-      `SELECT id, title, description, position, start_date, end_date, status, image_url, tag, notice 
+      `SELECT id, title, subtitle, description, position, start_date, end_date, status, image_url, tag, notice 
        FROM events WHERE id = ?`,
       [eventId]
     );
@@ -253,7 +351,7 @@ exports.updateEvent = async (req, res) => {
     // 날짜 검증 (빈 문자열 체크)
     const validStartDate = startDate && startDate.trim() ? startDate.trim() : null;
     const validEndDate = endDate && endDate.trim() ? endDate.trim() : null;
-    
+
     if (!validStartDate || !validEndDate) {
       await connection.rollback();
       return res.status(400).json({
@@ -267,7 +365,7 @@ exports.updateEvent = async (req, res) => {
     if (imageFile) {
       // 새 이미지가 업로드된 경우
       imageUrl = `/images/events/${imageFile.filename}`;
-      
+
       // 기존 이미지 파일 삭제
       if (existing[0].image_url) {
         const imagePath = path.join(__dirname, `../../public${existing[0].image_url}`);
@@ -294,6 +392,7 @@ exports.updateEvent = async (req, res) => {
     await connection.query(
       `UPDATE events SET 
         title = ?, 
+        subtitle = ?,
         description = ?,
         position = ?,
         start_date = ?, 
@@ -306,6 +405,7 @@ exports.updateEvent = async (req, res) => {
       WHERE id = ?`,
       [
         title.trim(),
+        subtitle ? subtitle.trim() : (existingEvent.subtitle || null),
         description ? description.trim() : (existingEvent.description || null),
         position ? position.trim() : (existingEvent.position || null),
         validStartDate,
