@@ -78,7 +78,8 @@ axiosInstance.interceptors.response.use(
 export async function createReview(payload) {
   try {
     const formData = new FormData();
-    formData.append('program_id', payload.program_id);
+    if (payload.program_id) formData.append('program_id', payload.program_id);
+    if (payload.product_id) formData.append('product_id', payload.product_id);
     formData.append('rating', payload.rating);
     formData.append('content', payload.content);
 
@@ -123,6 +124,24 @@ export async function getReviewsByProgram(programId) {
 }
 
 /**
+ * 상품별 후기 목록 조회
+ * @param {number} productId
+ */
+export async function getReviewsByProduct(productId) {
+  try {
+    const res = await axiosInstance.get(`/reviews/product/${productId}`);
+    return { success: true, data: res.data.data };
+  } catch (error) {
+    console.error('상품 후기 조회 실패:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message,
+      data: [],
+    };
+  }
+}
+
+/**
  * 내 후기 목록 조회
  */
 export async function getMyReviews() {
@@ -148,6 +167,12 @@ export async function updateReview(reviewId, payload) {
     if (payload.images && payload.images.length > 0) {
       payload.images.forEach((file) => {
         formData.append('images', file);
+      });
+    }
+
+    if (payload.existingImages && Array.isArray(payload.existingImages)) {
+      payload.existingImages.forEach((img) => {
+        formData.append('existingImages', img);
       });
     }
 

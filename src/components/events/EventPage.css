@@ -88,7 +88,8 @@
 }
 
 .pf-event-card {
-  position: relative; /* ✅ 오버레이 기준 */
+  position: relative;
+  /* ✅ 오버레이 기준 */
   border: 1px solid var(--color-border, #e8e2d0);
   background: #fff;
   border-radius: 18px;
@@ -147,7 +148,8 @@
   letter-spacing: -0.02em;
   font-size: 15px;
   border-radius: 18px;
-  pointer-events: none; /* 클릭 막고 싶으면 none 제거 */
+  pointer-events: none;
+  /* 클릭 막고 싶으면 none 제거 */
 }
 
 /* 종료 카드 톤다운 */
@@ -263,6 +265,7 @@
   max-height: 260px;
   opacity: 1;
   transform: translateY(0);
+  overflow: hidden auto;
 }
 
 .pf-notice-content {
@@ -271,4 +274,5 @@
   font-size: 13px;
   line-height: 1.6;
   color: var(--color-list-sub, #555);
+  white-space: pre-wrap;
 }

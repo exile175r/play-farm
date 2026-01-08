@@ -132,13 +132,15 @@ CREATE TABLE IF NOT EXISTS `bookmarks` (
 CREATE TABLE IF NOT EXISTS `reviews` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT NOT NULL COMMENT '회원 ID',
-  `program_id` INT NOT NULL COMMENT '프로그램 ID',
+  `program_id` INT NULL COMMENT '프로그램 ID',
+  `product_id` INT NULL COMMENT '상품 ID',
   `rating` TINYINT NOT NULL COMMENT '별점 (1-5)',
   `content` TEXT NOT NULL COMMENT '후기 내용',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '작성일시',
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '수정일시',
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
   FOREIGN KEY (`program_id`) REFERENCES `programs`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE,
   INDEX `idx_user_id` (`user_id`),
   INDEX `idx_program_id` (`program_id`),
   INDEX `idx_created_at` (`created_at`)

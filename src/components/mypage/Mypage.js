@@ -126,7 +126,7 @@ function Mypage() {
          return;
       }
       // experience 쪽 탭이면 experience 활성화
-      if (tab === 'reservations' || tab === 'reviews' || tab === 'bookmarks') {
+      if (tab === 'reservations' || tab === 'bookmarks') {
          if (topSection !== 'experience') setTopSection('experience');
       }
       // account/security는 공통이라 topSection 유지
@@ -135,14 +135,14 @@ function Mypage() {
    // ✅ 상단 섹션 탭 클릭 시 대표 탭으로 이동(가독성/UX)
    const goTopExperience = () => {
       setTopSection('experience');
-      // experience 대표 탭
+      // experience 대표 탭 (리뷰 탭은 공통이므로 유지)
       if (!(tab === 'reservations' || tab === 'reviews' || tab === 'bookmarks')) setTab('reservations');
    };
 
    const goTopStore = () => {
       setTopSection('store');
-      // store 대표 탭
-      if (!(tab === 'cart' || tab === 'store_orders')) setTab('cart');
+      // store 대표 탭 (리뷰 탭은 공통이므로 유지)
+      if (!(tab === 'cart' || tab === 'store_orders' || tab === 'reviews')) setTab('cart');
    };
 
    // ===== reservations (localStorage 기반) =====
@@ -218,6 +218,14 @@ function Mypage() {
       }
       setReviewsLoading(false);
    };
+
+   const filteredReviews = useMemo(() => {
+      if (topSection === 'experience') {
+         return myReviews.filter((r) => !!r.programId || !!r.programName);
+      } else {
+         return myReviews.filter((r) => !!r.productId || !!r.productName);
+      }
+   }, [myReviews, topSection]);
 
    // ===== bookmarks =====
    const [bookmarks, setBookmarks] = useState([]);
@@ -428,10 +436,12 @@ function Mypage() {
    const [editingImages, setEditingImages] = useState([]); // 기존 이미지 중 유지할 목록
    const [newReviewFiles, setNewReviewFiles] = useState([]); // 새로 업로드할 파일들
    const [newReviewPreviews, setNewReviewPreviews] = useState([]); // 새 파일 미리보기
+   const [editingRating, setEditingRating] = useState(5); // 수정 중인 별점
 
    const startEditReview = (review) => {
       setEditingReviewId(review.id);
       setEditingContent(review.content || '');
+      setEditingRating(review.rating || 5);
       setEditingImages(review.images || []);
       setNewReviewFiles([]);
       setNewReviewPreviews([]);
@@ -487,11 +497,10 @@ function Mypage() {
       if (!review) return;
 
       const payload = {
-         rating: review.rating,
+         rating: editingRating,
          content: nextContent,
          images: newReviewFiles,
-         existingImages: editingImages // 서버에 이 목록을 보내서 유지하게 할 수 있지만, 현재 백엔드는 전부 교체 로직일 수 있음
-         // 백엔드 확인 필요: server/controllers/reviewController.js의 updateReview 확인
+         existingImages: editingImages
       };
 
       const result = await updateReview(reviewId, payload);
@@ -517,10 +526,8 @@ function Mypage() {
    };
 
    // ===== helpers =====
-   // const logout = () => {
-   //   localStorage.removeItem("token");
-   //   navigate("/");
-   // };
+   const renderStarsText = (rating = 0) => '★'.repeat(rating) + '☆'.repeat(Math.max(0, 5 - rating));
+
 
    const goWriteReview = (programId) => {
       navigate(`/list/${programId}`, { state: { openTab: 'review', openComposer: true } });
@@ -861,6 +868,10 @@ function Mypage() {
                            <button type="button" className={`pf-tab ${tab === 'store_orders' ? 'is-active' : ''}`} onClick={() => setTab('store_orders')}>
                               주문내역
                            </button>
+
+                           <button type="button" className={`pf-tab ${tab === 'reviews' ? 'is-active' : ''}`} onClick={() => setTab('reviews')}>
+                              리뷰
+                           </button>
                         </>
                      )}
 
@@ -1056,14 +1067,16 @@ function Mypage() {
                                                 </button>
                                              ) : null}
 
-                                             <button
-                                                type="button"
-                                                className={`pf-linkbtn ${canWrite ? '' : 'is-disabled'}`}
-                                                onClick={() => goWriteReview(it.programId)}
-                                                disabled={!canWrite}
-                                                title={reviewBtnTitle}>
-                                                {hasReviewed ? '작성 완료' : '리뷰 작성'}
-                                             </button>
+                                             {!hasReviewed && (
+                                                <button
+                                                   type="button"
+                                                   className={`pf-linkbtn ${canWrite ? '' : 'is-disabled'}`}
+                                                   onClick={() => goWriteReview(it.programId)}
+                                                   disabled={!canWrite}
+                                                   title={reviewBtnTitle}>
+                                                   리뷰 작성
+                                                </button>
+                                             )}
 
                                              {/* ✅ 미결제/실패만 예약 취소 가능 */}
                                              {canCancel ? (
@@ -1230,9 +1243,21 @@ function Mypage() {
                                              </button>
 
                                              {items?.[0]?.productId ? (
-                                                <button type="button" className="pf-linkbtn" onClick={() => navigate(`/shop/${items[0].productId}`)}>
-                                                   상품 상세
-                                                </button>
+                                                <>
+                                                   <button type="button" className="pf-linkbtn" onClick={() => navigate(`/shop/${items[0].productId}`)}>
+                                                      상품 상세
+                                                   </button>
+                                                   {o.status === 'PAID' && (
+                                                      <button
+                                                         type="button"
+                                                         className="pf-linkbtn primary"
+                                                         style={{ display: myReviews.some(r => Number(r.productId) === Number(items[0].productId)) ? 'none' : 'inline-block' }}
+                                                         onClick={() => navigate(`/shop/${items[0].productId}`)}
+                                                      >
+                                                         리뷰 작성
+                                                      </button>
+                                                   )}
+                                                </>
                                              ) : null}
                                           </div>
                                        </div>
@@ -1258,23 +1283,31 @@ function Mypage() {
                               <p className="pf-empty-title">리뷰를 불러오는 중입니다</p>
                               <p className="pf-empty-desc">잠시만 기다려 주세요.</p>
                            </div>
-                        ) : myReviews.length === 0 ? (
+                        ) : filteredReviews.length === 0 ? (
                            <div className="pf-empty">
-                              <p className="pf-empty-title">작성한 리뷰가 없습니다</p>
-                              <p className="pf-empty-desc">체험 완료 + 결제 완료 예약에서 리뷰를 작성할 수 있습니다.</p>
-                              <button type="button" className="pf-ghost" onClick={() => setTab('reservations')}>
-                                 예약 보기
+                              <p className="pf-empty-title">작성한 {topSection === 'experience' ? '체험' : '상품'} 리뷰가 없습니다</p>
+                              <p className="pf-empty-desc">
+                                 {topSection === 'experience'
+                                    ? '체험 완료 건에 대해 리뷰를 작성할 수 있습니다.'
+                                    : '상품 구매 완료 건에 대해 리뷰를 작성할 수 있습니다.'}
+                              </p>
+                              <button type="button" className="pf-ghost" onClick={() => setTab(topSection === 'experience' ? 'reservations' : 'store_orders')}>
+                                 {topSection === 'experience' ? '예약 보기' : '주문내역 보기'}
                               </button>
                            </div>
                         ) : (
                            <ul className="pf-review-list">
-                              {myReviews.map((r) => {
+                              {filteredReviews.map((r) => {
                                  const isEditing = editingReviewId === r.id;
 
                                  return (
                                     <li className="pf-review-item" key={r.id}>
                                        <div className="pf-review-top">
                                           <div className="pf-review-meta">
+                                             <span className="pf-review-target">
+                                                {r.programName ? `[체험] ${r.programName}` : `[상품] ${r.productName || '상품 정보 없음'}`}
+                                             </span>
+                                             <span className="pf-review-stars">{renderStarsText(r.rating || 0)}</span>
                                              <span className="pf-review-date">{r.date ? dayjs(r.date).format('YYYY.MM.DD') : ''}</span>
                                              {r.editedAt ? <span className="pf-review-edited">수정됨</span> : null}
                                           </div>
@@ -1306,6 +1339,18 @@ function Mypage() {
                                           <p className="pf-review-content">{r.content}</p>
                                        ) : (
                                           <div className="pf-review-edit-form">
+                                             <div className="pf-rating-edit">
+                                                {[1, 2, 3, 4, 5].map((n) => (
+                                                   <button
+                                                      key={n}
+                                                      type="button"
+                                                      className={`pf-star ${editingRating >= n ? 'is-on' : ''}`}
+                                                      onClick={() => setEditingRating(n)}
+                                                   >
+                                                      {editingRating >= n ? '★' : '☆'}
+                                                   </button>
+                                                ))}
+                                             </div>
                                              <textarea
                                                 className="pf-review-editor"
                                                 value={editingContent}

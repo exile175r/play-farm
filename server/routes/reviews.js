@@ -10,6 +10,9 @@ router.post('/', authenticateToken, uploadReviewImages, reviewController.createR
 // 프로그램별 후기 목록 조회 (인증 불필요)
 router.get('/program/:program_id', reviewController.getReviewsByProgram);
 
+// 상품별 후기 목록 조회 (인증 불필요)
+router.get('/product/:product_id', reviewController.getReviewsByProduct);
+
 // 내 후기 목록 조회 (인증 필요)
 router.get('/my', authenticateToken, reviewController.getMyReviews);
 

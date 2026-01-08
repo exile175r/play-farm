@@ -6,6 +6,7 @@ import "./StoreDetail.css";
 import { getProductById } from "../../services/productApi";
 import { addToCart as addToCartApi } from "../../services/cartApi";
 import { getMyOrders } from "../../services/orderApi";
+import { createReview, getReviewsByProduct, deleteReview } from "../../services/reviewApi";
 import CheckoutModal from "../checkout/CheckoutModal";
 
 function StoreDetail() {
@@ -18,19 +19,16 @@ function StoreDetail() {
   const [loading, setLoading] = useState(true);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
 
-  // 로그인 여부
+  // 로그인 여부/정보
   const isLoggedIn = !!localStorage.getItem("token");
-
-  // 유저 정보
   const user = useMemo(() => {
     try {
       const raw = localStorage.getItem("user");
       return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   }, []);
 
+  const myUserId = Number(user?.id || 0);
   const displayName = user?.nickname || user?.name || user?.user_id || "익명";
 
   // ===== 상품 로드 =====
@@ -89,7 +87,6 @@ function StoreDetail() {
 
   const unitPrice = useMemo(() => {
     if (selectedOption) return Number(selectedOption.unitPrice || 0);
-    // 옵션이 있는데 선택이 없으면, 최저가 옵션 기준으로 보여주기
     if (product?.options?.length) {
       const sorted = [...product.options].sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
       return Number(sorted[0]?.unitPrice || 0);
@@ -98,7 +95,6 @@ function StoreDetail() {
   }, [selectedOption, product]);
 
   const unitLabel = useMemo(() => {
-    // "2kg" 같은 단위를 표시(옵션 label 우선)
     if (selectedOption?.label) return selectedOption.label;
     if (product?.options?.length) return product.options[0]?.label || "";
     return "";
@@ -125,26 +121,22 @@ function StoreDetail() {
     return Math.max(1, Number(qty || 1)) * Number(finalPrice || 0);
   }, [qty, finalPrice]);
 
-  // ✅ 총중량(kg 단위일 때만 계산해서 보여줌)
+  // ✅ 총중량
   const totalAmountText = useMemo(() => {
     if (typeof amount !== "number" || !unit) return "정보가 제공되지 않았습니다.";
     const total = amount * Math.max(1, Number(qty || 1));
-    // 소수면 보기 좋게
     const pretty = Number.isInteger(total) ? total : total.toFixed(2);
     return `${pretty}${unit}`;
   }, [amount, unit, qty]);
 
   // ===== 이미지 처리 =====
   const heroImg = useMemo(() => {
-    const src = product?.image || "";
-    if (!src) return "";
-    return src;
+    return product?.image || "";
   }, [product]);
 
   // ===== 상품 로드 후 기본 옵션 선택 =====
   useEffect(() => {
     if (!product) return;
-
     if (Array.isArray(product.options) && product.options.length > 0) {
       setSelectedOptionId(String(product.options[0].id));
     } else {
@@ -153,16 +145,14 @@ function StoreDetail() {
     setQty(1);
   }, [product]);
 
-  // ===== ✅ 구매 여부(주문내역 기준): 구매 완료된 상품만 리뷰 작성 가능 =====
+  // ===== 구매 여부 확인 =====
   const [hasPurchased, setHasPurchased] = useState(false);
-
   useEffect(() => {
     const checkPurchase = async () => {
       if (!isLoggedIn || !id) {
         setHasPurchased(false);
         return;
       }
-
       try {
         const result = await getMyOrders();
         if (result.success) {
@@ -179,44 +169,63 @@ function StoreDetail() {
         setHasPurchased(false);
       }
     };
-
     checkPurchase();
   }, [isLoggedIn, id]);
 
-  // ===== 리뷰 (로컬스토리지) =====
-  const REVIEW_KEY = "reviews_store";
+  // ===== 리뷰 (서버 API 기반) =====
   const [reviews, setReviews] = useState([]);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewContent, setReviewContent] = useState("");
+  const [hasAlreadyReviewed, setHasAlreadyReviewed] = useState(false);
+  const [reviewFiles, setReviewFiles] = useState([]);
+  const [reviewPreviews, setReviewPreviews] = useState([]);
 
-  const readReviews = useCallback(() => {
+  const loadReviews = useCallback(async () => {
+    if (!id) return;
     try {
-      const raw = localStorage.getItem(REVIEW_KEY);
-      const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
+      const result = await getReviewsByProduct(id);
+      if (result.success) {
+        const data = result.data || [];
+        setReviews(data);
+
+        // 내가 이미 작성했는지 확인
+        if (isLoggedIn && myUserId > 0) {
+          const mine = data.some(r => Number(r.userId) === myUserId);
+          setHasAlreadyReviewed(mine);
+        }
+      }
+    } catch (e) {
+      console.error("리뷰 로드 오류:", e);
     }
-  }, []);
-
-  const writeReviews = useCallback((next) => {
-    localStorage.setItem(REVIEW_KEY, JSON.stringify(next));
-  }, []);
-
-  const loadReviews = useCallback(() => {
-    const all = readReviews();
-    const mine = all.filter((r) => String(r.productId) === String(id));
-    setReviews(mine);
-  }, [readReviews, id]);
+  }, [id, isLoggedIn, myUserId]);
 
   useEffect(() => {
-    if (!id) return;
     loadReviews();
-  }, [id, loadReviews]);
+  }, [loadReviews]);
+
+  // 이미지 파일 핸들러
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length + reviewFiles.length > 6) {
+      alert("이미지는 최대 6장까지 업로드 가능합니다.");
+      return;
+    }
+    const newPreviews = files.map(file => URL.createObjectURL(file));
+    setReviewFiles(prev => [...prev, ...files]);
+    setReviewPreviews(prev => [...prev, ...newPreviews]);
+  };
+
+  const removeFile = (index) => {
+    setReviewFiles(prev => prev.filter((_, i) => i !== index));
+    setReviewPreviews(prev => prev.filter((_, i) => {
+      if (i === index) URL.revokeObjectURL(prev[i]);
+      return i !== index;
+    }));
+  };
 
   const renderStarsText = (rating = 0) => "★".repeat(rating) + "☆".repeat(Math.max(0, 5 - rating));
 
-  const handleSubmitReview = (e) => {
+  const handleSubmitReview = async (e) => {
     e.preventDefault();
 
     if (!isLoggedIn) {
@@ -224,9 +233,13 @@ function StoreDetail() {
       return;
     }
 
-    // ✅ 구매 완료된 상품만 작성 가능
     if (!hasPurchased) {
       alert("구매 완료된 상품만 후기를 작성하실 수 있습니다.");
+      return;
+    }
+
+    if (hasAlreadyReviewed) {
+      alert("이미 이 상품에 대한 후기를 작성하셨습니다.");
       return;
     }
 
@@ -236,40 +249,45 @@ function StoreDetail() {
       return;
     }
 
-    const all = readReviews();
-    const next = [
-      {
-        id: `${Date.now()}_${Math.random().toString(16).slice(2)}`,
-        productId: String(id),
-        user: displayName,
+    try {
+      const result = await createReview({
+        product_id: id,
         rating: reviewRating,
-        content,
-        date: new Date().toISOString(),
-      },
-      ...all,
-    ];
+        content: content,
+        images: reviewFiles
+      });
 
-    writeReviews(next);
-    setReviewRating(5);
-    setReviewContent("");
-    loadReviews();
+      if (result.success) {
+        alert("후기가 등록되었습니다.");
+        setReviewRating(5);
+        setReviewContent("");
+        setReviewFiles([]);
+        setReviewPreviews([]);
+        loadReviews();
+      } else {
+        alert(result.error || "후기 등록에 실패했습니다.");
+      }
+    } catch (err) {
+      console.error("후기 제출 오류:", err);
+      alert("후기 등록 중 오류가 발생했습니다.");
+    }
   };
 
-  const handleDeleteReview = (reviewId) => {
-    const all = readReviews();
-    const target = all.find((r) => r.id === reviewId);
-    if (!target) return;
-
-    if (!isLoggedIn || (target.user || "") !== displayName) {
-      alert("본인 후기만 삭제하실 수 있습니다.");
-      return;
-    }
-
+  const handleDeleteReview = async (reviewId) => {
     if (!window.confirm("후기를 삭제하시겠습니까?")) return;
 
-    const next = all.filter((r) => r.id !== reviewId);
-    writeReviews(next);
-    loadReviews();
+    try {
+      const result = await deleteReview(reviewId);
+      if (result.success) {
+        alert("후기가 삭제되었습니다.");
+        loadReviews();
+      } else {
+        alert(result.error || "삭제에 실패했습니다.");
+      }
+    } catch (err) {
+      console.error("후기 삭제 오류:", err);
+      alert("후기 삭제 중 오류가 발생했습니다.");
+    }
   };
 
   // ✅ 옵션 선택 검증
@@ -648,7 +666,7 @@ function StoreDetail() {
               <h3 className="sd-panel-title">상품 후기</h3>
 
               {/* ✅ 구매 완료된 상품만 리뷰 작성 폼 노출 */}
-              {isLoggedIn && hasPurchased ? (
+              {isLoggedIn && hasPurchased && !hasAlreadyReviewed ? (
                 <form className="sd-review-form" onSubmit={handleSubmitReview}>
                   <div className="sd-review-form-row">
                     <div className="sd-review-userline">
@@ -674,9 +692,25 @@ function StoreDetail() {
                     className="sd-review-textarea"
                     value={reviewContent}
                     onChange={(e) => setReviewContent(e.target.value)}
-                    placeholder="후기 내용을 입력해 주시기 바랍니다."
+                    placeholder="상품에 대한 진솔한 후기를 남겨주세요."
                     rows={4}
                   />
+
+                  {/* 이미지 업로드 영역 */}
+                  <div className="sd-review-upload">
+                    <label className="sd-upload-btn">
+                      <input type="file" multiple accept="image/*" onChange={handleFileChange} hidden />
+                      <span>이미지 첨부 ({reviewFiles.length}/6)</span>
+                    </label>
+                    <div className="sd-preview-list">
+                      {reviewPreviews.map((src, i) => (
+                        <div key={i} className="sd-preview-item">
+                          <img src={src} alt="미리보기" />
+                          <button type="button" onClick={() => removeFile(i)}>×</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
                   <button className="sd-review-submit" type="submit" disabled={!reviewContent.trim()}>
                     후기 등록하기
@@ -684,8 +718,13 @@ function StoreDetail() {
                 </form>
               ) : !isLoggedIn ? (
                 <p className="sd-muted">후기 작성은 로그인 후 가능합니다.</p>
+              ) : hasAlreadyReviewed ? (
+                null
               ) : (
-                <p className="sd-muted">구매 완료된 상품만 후기 작성이 가능합니다.</p>
+                <div className="sd-notice-box">
+                  <p className="sd-muted">구매 완료된 상품만 후기 작성이 가능합니다.</p>
+                  <p className="sd-hint">※ 상품을 구매하고 배송 완료(결제 완료) 상태가 되면 작성하실 수 있습니다.</p>
+                </div>
               )}
 
               {!reviews || reviews.length === 0 ? (
@@ -693,7 +732,7 @@ function StoreDetail() {
               ) : (
                 <ul className="sd-review-list">
                   {reviews.map((r) => {
-                    const canDelete = isLoggedIn && (r.user || "") === displayName;
+                    const isMyOwn = isLoggedIn && Number(r.userId) === myUserId;
 
                     return (
                       <li key={r.id} className="sd-review-item">
@@ -708,7 +747,7 @@ function StoreDetail() {
                           <div className="sd-review-right">
                             <span className="sd-review-stars">{renderStarsText(r.rating || 0)}</span>
 
-                            {canDelete && (
+                            {isMyOwn && (
                               <button type="button" className="sd-review-del" onClick={() => handleDeleteReview(r.id)}>
                                 삭제하기
                               </button>
@@ -717,6 +756,17 @@ function StoreDetail() {
                         </div>
 
                         <p className="sd-review-content">{r.content}</p>
+
+                        {/* 후기 이미지 목록 */}
+                        {r.images && r.images.length > 0 && (
+                          <div className="sd-review-imgs">
+                            {r.images.map((img, idx) => (
+                              <div key={idx} className="sd-review-img-wrap">
+                                <img src={img} alt={`후기이미지 ${idx + 1}`} onClick={() => window.open(img, '_blank')} />
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </li>
                     );
                   })}

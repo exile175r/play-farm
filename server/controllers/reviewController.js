@@ -9,11 +9,11 @@ exports.createReview = async (req, res) => {
     await connection.beginTransaction();
 
     const userId = req.userId;
-    const { program_id, rating, content } = req.body;
+    const { program_id, product_id, rating, content } = req.body;
     const files = req.files || [];
 
-    // 입력 검증
-    if (!program_id || !rating || !content) {
+    // 입력 검증 (둘 중 하나는 필수)
+    if ((!program_id && !product_id) || !rating || !content) {
       return res.status(400).json({
         success: false,
         message: '필수 항목이 누락되었습니다.'
@@ -27,37 +27,37 @@ exports.createReview = async (req, res) => {
       });
     }
 
-    // 프로그램 존재 확인
-    const [programs] = await connection.query(
-      'SELECT id FROM programs WHERE id = ?',
-      [program_id]
-    );
-
-    if (programs.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: '프로그램을 찾을 수 없습니다.'
-      });
+    // 대상 존재 확인
+    if (program_id) {
+      const [programs] = await connection.query('SELECT id FROM programs WHERE id = ?', [program_id]);
+      if (programs.length === 0) {
+        return res.status(404).json({ success: false, message: '프로그램을 찾을 수 없습니다.' });
+      }
+    } else {
+      const [products] = await connection.query('SELECT id FROM products WHERE id = ?', [product_id]);
+      if (products.length === 0) {
+        return res.status(404).json({ success: false, message: '상품을 찾을 수 없습니다.' });
+      }
     }
 
-    // 중복 후기 확인 (동일 사용자가 동일 프로그램에 한 번만 작성 가능)
+    // 중복 후기 확인
     const [existingReviews] = await connection.query(
-      'SELECT id FROM reviews WHERE user_id = ? AND program_id = ?',
-      [userId, program_id]
+      `SELECT id FROM reviews WHERE user_id = ? AND ${program_id ? 'program_id = ?' : 'product_id = ?'}`,
+      [userId, program_id || product_id]
     );
 
     if (existingReviews.length > 0) {
       return res.status(400).json({
         success: false,
-        message: '이미 이 프로그램에 대한 후기를 작성하셨습니다.'
+        message: `이미 이 ${program_id ? '프로그램' : '상품'}에 대한 후기를 작성하셨습니다.`
       });
     }
 
     // 후기 저장
     const [result] = await connection.query(
-      `INSERT INTO reviews (user_id, program_id, rating, content)
-       VALUES (?, ?, ?, ?)`,
-      [userId, program_id, rating, content]
+      `INSERT INTO reviews (user_id, program_id, product_id, rating, content)
+       VALUES (?, ?, ?, ?, ?)`,
+      [userId, program_id || null, product_id || null, rating, content]
     );
 
     const reviewId = result.insertId;
@@ -79,51 +79,27 @@ exports.createReview = async (req, res) => {
 
     await connection.commit();
 
+    // 저장된 후기 조회 (이미지는 별도로 조회하여 병합 - 호환성 및 안정성 목적)
     // 저장된 후기 조회
-    const [reviews] = await connection.query(
+    const [rows] = await connection.query(
       `SELECT 
-        r.id,
-        r.user_id,
-        r.program_id,
-        r.rating,
-        r.content,
-        r.created_at,
-        r.updated_at,
-        u.name as user_name,
-        u.nickname as user_nickname,
-        u.user_id as user_user_id,
-        JSON_ARRAYAGG(
-          IF(ri.id IS NOT NULL,
-            JSON_OBJECT(
-              'id', ri.id,
-              'image_path', ri.image_path,
-              'display_order', ri.display_order
-            ),
-            NULL
-          )
-        ) as images
+        r.id, r.user_id, r.program_id, r.product_id, r.rating, r.content, r.created_at, r.updated_at,
+        u.name as user_name, u.nickname as user_nickname, u.user_id as user_user_id
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
-      LEFT JOIN review_images ri ON r.id = ri.review_id
-      WHERE r.id = ?
-      GROUP BY r.id`,
+      WHERE r.id = ?`,
       [reviewId]
     );
 
-    const review = reviews[0];
+    const review = rows[0];
     if (review) {
-      // 이미지 처리: [null] 이거나 null인 경우 빈 배열로 처리
-      let images = [];
-      try {
-        const rawImages = typeof review.images === 'string' ? JSON.parse(review.images) : review.images;
-        images = Array.isArray(rawImages)
-          ? rawImages.filter(img => img !== null).sort((a, b) => a.display_order - b.display_order)
-          : [];
-      } catch (e) {
-        console.error('이미지 파싱 오류:', e);
-      }
+      // 이미지 별도 조회
+      const [images] = await connection.query(
+        'SELECT id, image_path, display_order FROM review_images WHERE review_id = ? ORDER BY display_order ASC',
+        [reviewId]
+      );
 
-      review.images = images;
+      review.images = images.map(img => img.image_path);
       review.user = review.user_nickname || review.user_name || review.user_user_id || '익명';
     }
 
@@ -143,6 +119,55 @@ exports.createReview = async (req, res) => {
   }
 };
 
+// 상품별 후기 목록 조회
+exports.getReviewsByProduct = async (req, res) => {
+  try {
+    const { product_id } = req.params;
+
+    const [reviews] = await db.query(
+      `SELECT 
+        r.id, r.user_id, r.product_id, r.rating, r.content, r.created_at, r.updated_at,
+        u.name as user_name, u.nickname as user_nickname, u.user_id as user_user_id
+      FROM reviews r
+      LEFT JOIN users u ON r.user_id = u.id
+      WHERE r.product_id = ?
+      ORDER BY r.created_at DESC`,
+      [product_id]
+    );
+
+    if (reviews.length === 0) return res.json({ success: true, data: [] });
+
+    const reviewIds = reviews.map(r => r.id);
+    const [allImages] = await db.query(
+      'SELECT review_id, image_path, display_order FROM review_images WHERE review_id IN (?) ORDER BY display_order ASC',
+      [reviewIds]
+    );
+
+    const imageMap = allImages.reduce((acc, img) => {
+      if (!acc[img.review_id]) acc[img.review_id] = [];
+      acc[img.review_id].push(img.image_path);
+      return acc;
+    }, {});
+
+    const formattedReviews = reviews.map(review => ({
+      id: review.id,
+      userId: review.user_id,
+      productId: review.product_id,
+      rating: review.rating,
+      content: review.content,
+      date: review.created_at,
+      editedAt: review.updated_at !== review.created_at ? review.updated_at : null,
+      user: review.user_nickname || review.user_name || review.user_user_id || '익명',
+      images: imageMap[review.id] || []
+    }));
+
+    res.json({ success: true, data: formattedReviews });
+  } catch (error) {
+    console.error('상품 후기 조회 오류:', error);
+    res.status(500).json({ success: false, message: '후기 조회 중 오류가 발생했습니다.' });
+  }
+};
+
 // 프로그램별 후기 목록 조회
 exports.getReviewsByProgram = async (req, res) => {
   try {
@@ -159,37 +184,35 @@ exports.getReviewsByProgram = async (req, res) => {
         r.updated_at,
         u.name as user_name,
         u.nickname as user_nickname,
-        u.user_id as user_user_id,
-        JSON_ARRAYAGG(
-          IF(ri.id IS NOT NULL,
-            JSON_OBJECT(
-              'id', ri.id,
-              'image_path', ri.image_path,
-              'display_order', ri.display_order
-            ),
-            NULL
-          )
-        ) as images
+        u.user_id as user_user_id
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
-      LEFT JOIN review_images ri ON r.id = ri.review_id
       WHERE r.program_id = ?
-      GROUP BY r.id
       ORDER BY r.created_at DESC`,
       [program_id]
     );
 
-    const formattedReviews = reviews.map(review => {
-      let images = [];
-      try {
-        const rawImages = typeof review.images === 'string' ? JSON.parse(review.images) : review.images;
-        images = Array.isArray(rawImages)
-          ? rawImages.filter(img => img !== null).sort((a, b) => a.display_order - b.display_order)
-          : [];
-      } catch (e) {
-        console.error('이미지 파싱 오류:', e);
-      }
+    if (reviews.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
 
+    // 모든 후기 ID 추출
+    const reviewIds = reviews.map(r => r.id);
+
+    // 이미지 별도 조회 (IN 연산자 사용)
+    const [allImages] = await db.query(
+      'SELECT review_id, image_path, display_order FROM review_images WHERE review_id IN (?) ORDER BY display_order ASC',
+      [reviewIds]
+    );
+
+    // 이미지를 후기별로 그룹화
+    const imageMap = allImages.reduce((acc, img) => {
+      if (!acc[img.review_id]) acc[img.review_id] = [];
+      acc[img.review_id].push(img.image_path);
+      return acc;
+    }, {});
+
+    const formattedReviews = reviews.map(review => {
       return {
         id: review.id,
         userId: review.user_id,
@@ -199,7 +222,7 @@ exports.getReviewsByProgram = async (req, res) => {
         date: review.created_at,
         editedAt: review.updated_at !== review.created_at ? review.updated_at : null,
         user: review.user_nickname || review.user_name || review.user_user_id || '익명',
-        images: images.map(img => img.image_path)
+        images: imageMap[review.id] || []
       };
     });
 
@@ -223,69 +246,50 @@ exports.getMyReviews = async (req, res) => {
 
     const [reviews] = await db.query(
       `SELECT 
-        r.id,
-        r.user_id,
-        r.program_id,
-        r.rating,
-        r.content,
-        r.created_at,
-        r.updated_at,
-        p.program_nm,
-        p.village_nm,
-        JSON_ARRAYAGG(
-          IF(ri.id IS NOT NULL,
-            JSON_OBJECT(
-              'id', ri.id,
-              'image_path', ri.image_path,
-              'display_order', ri.display_order
-            ),
-            NULL
-          )
-        ) as images
+        r.id, r.user_id, r.program_id, r.product_id, r.rating, r.content, r.created_at, r.updated_at,
+        p.program_nm, p.village_nm,
+        pd.name as product_name
       FROM reviews r
       LEFT JOIN programs p ON r.program_id = p.id
-      LEFT JOIN review_images ri ON r.id = ri.review_id
+      LEFT JOIN products pd ON r.product_id = pd.id
       WHERE r.user_id = ?
-      GROUP BY r.id
       ORDER BY r.created_at DESC`,
       [userId]
     );
 
-    const formattedReviews = reviews.map(review => {
-      let images = [];
-      try {
-        const rawImages = typeof review.images === 'string' ? JSON.parse(review.images) : review.images;
-        images = Array.isArray(rawImages)
-          ? rawImages.filter(img => img !== null).sort((a, b) => a.display_order - b.display_order)
-          : [];
-      } catch (e) {
-        console.error('이미지 파싱 오류:', e);
-      }
+    if (reviews.length === 0) return res.json({ success: true, data: [] });
 
-      return {
-        id: review.id,
-        userId: review.user_id,
-        programId: review.program_id,
-        programName: review.program_nm,
-        villageName: review.village_nm,
-        rating: review.rating,
-        content: review.content,
-        date: review.created_at,
-        editedAt: review.updated_at !== review.created_at ? review.updated_at : null,
-        images: images.map(img => img.image_path)
-      };
-    });
+    const reviewIds = reviews.map(r => r.id);
+    const [allImages] = await db.query(
+      'SELECT review_id, image_path, display_order FROM review_images WHERE review_id IN (?) ORDER BY display_order ASC',
+      [reviewIds]
+    );
 
-    res.json({
-      success: true,
-      data: formattedReviews
-    });
+    const imageMap = allImages.reduce((acc, img) => {
+      if (!acc[img.review_id]) acc[img.review_id] = [];
+      acc[img.review_id].push(img.image_path);
+      return acc;
+    }, {});
+
+    const formattedReviews = reviews.map(review => ({
+      id: review.id,
+      userId: review.user_id,
+      programId: review.program_id,
+      productId: review.product_id,
+      programName: review.program_nm,
+      villageName: review.village_nm,
+      productName: review.product_name,
+      rating: review.rating,
+      content: review.content,
+      date: review.created_at,
+      editedAt: review.updated_at !== review.created_at ? review.updated_at : null,
+      images: imageMap[review.id] || []
+    }));
+
+    res.json({ success: true, data: formattedReviews });
   } catch (error) {
     console.error('내 후기 조회 오류:', error);
-    res.status(500).json({
-      success: false,
-      message: '후기 조회 중 오류가 발생했습니다.'
-    });
+    res.status(500).json({ success: false, message: '후기 조회 중 오류가 발생했습니다.' });
   }
 };
 
@@ -337,9 +341,18 @@ exports.updateReview = async (req, res) => {
     // 이미지 수정 로직 보강
     let existingImagesToKeep = [];
     if (req.body.existingImages) {
-      existingImagesToKeep = Array.isArray(req.body.existingImages)
-        ? req.body.existingImages
-        : JSON.parse(req.body.existingImages || '[]');
+      if (Array.isArray(req.body.existingImages)) {
+        existingImagesToKeep = req.body.existingImages;
+      } else {
+        try {
+          // JSON 문자열인 경우 파싱 시도
+          const parsed = JSON.parse(req.body.existingImages);
+          existingImagesToKeep = Array.isArray(parsed) ? parsed : [parsed];
+        } catch (e) {
+          // 일반 문자열인 경우 배열로 감쌈
+          existingImagesToKeep = [req.body.existingImages];
+        }
+      }
     }
 
     // 1. 현재 DB에 등록된 이미지 목록 조회
@@ -399,7 +412,7 @@ exports.updateReview = async (req, res) => {
     await connection.commit();
 
     // 수정된 후기 조회
-    const [updatedReviews] = await connection.query(
+    const [rows] = await connection.query(
       `SELECT 
         r.id,
         r.user_id,
@@ -410,38 +423,21 @@ exports.updateReview = async (req, res) => {
         r.updated_at,
         u.name as user_name,
         u.nickname as user_nickname,
-        u.user_id as user_user_id,
-        JSON_ARRAYAGG(
-          IF(ri.id IS NOT NULL,
-            JSON_OBJECT(
-              'id', ri.id,
-              'image_path', ri.image_path,
-              'display_order', ri.display_order
-            ),
-            NULL
-          )
-        ) as images
+        u.user_id as user_user_id
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
-      LEFT JOIN review_images ri ON r.id = ri.review_id
-      WHERE r.id = ?
-      GROUP BY r.id`,
+      WHERE r.id = ?`,
       [id]
     );
 
-    const review = updatedReviews[0];
+    const review = rows[0];
     if (review) {
-      let images = [];
-      try {
-        const rawImages = typeof review.images === 'string' ? JSON.parse(review.images) : review.images;
-        images = Array.isArray(rawImages)
-          ? rawImages.filter(img => img !== null).sort((a, b) => a.display_order - b.display_order)
-          : [];
-      } catch (e) {
-        console.error('이미지 파싱 오류:', e);
-      }
+      const [images] = await connection.query(
+        'SELECT id, image_path, display_order FROM review_images WHERE review_id = ? ORDER BY display_order ASC',
+        [id]
+      );
 
-      review.images = images;
+      review.images = images.map(img => img.image_path);
       review.user = review.user_nickname || review.user_name || review.user_user_id || '익명';
     }
 

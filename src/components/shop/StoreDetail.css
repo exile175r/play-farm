@@ -459,7 +459,8 @@
 
 .sd-buy-sticky {
   position: sticky;
-  top: 76px; /* 탭 sticky 아래 여백 */
+  top: 76px;
+  /* 탭 sticky 아래 여백 */
   border: 1px solid var(--color-border);
   background: #fff;
   border-radius: 16px;
@@ -736,21 +737,127 @@
   font-weight: 800;
 }
 
+/* 후기 이미지 업로드 영역 */
+.sd-review-upload {
+  margin-bottom: 15px;
+}
+
+.sd-upload-btn {
+  display: inline-block;
+  padding: 8px 16px;
+  background: var(--color-bg);
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--color-list-sub);
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.sd-upload-btn:hover {
+  background: var(--color-list-card-bg);
+  border-color: var(--color-list-sub);
+}
+
+.sd-preview-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.sd-preview-item {
+  position: relative;
+  width: 70px;
+  height: 70px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.sd-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sd-preview-item button {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+/* 후기 목록 이미지 그리드 */
+.sd-review-imgs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.sd-review-img-wrap {
+  width: 100px;
+  height: 100px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.sd-review-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: 0.3s;
+}
+
+.sd-review-img-wrap:hover img {
+  transform: scale(1.05);
+}
+
+/* 안내 박스 */
+.sd-notice-box {
+  padding: 14px;
+  background: var(--color-list-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+
+.sd-notice-box .sd-muted {
+  margin: 0 0 4px;
+}
+
 /* ===== responsive ===== */
 @media (max-width: 980px) {
   .sd-inner {
     padding: 20px 16px 16px;
   }
+
   .sd-inner::before {
     left: 16px;
     right: 16px;
   }
+
   .sd-top {
     grid-template-columns: 1fr;
   }
+
   .sd-buy-grid {
     grid-template-columns: 1fr;
   }
+
   .sd-buy-sticky {
     top: 64px;
   }

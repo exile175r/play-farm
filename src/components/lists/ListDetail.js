@@ -49,8 +49,8 @@ function ListDetail() {
   // 화면 표시 이름
   const displayName = user?.nickname || user?.name || user?.user_id || "익명";
 
-  // ✅ “본인 판별용” ID (서버 붙으면 여기만 진짜 user_id로 통일)
-  const myUserId = user?.user_id || user?.id || user?.email || null;
+  // ✅ “본인 판별용” ID: DB의 PK(id)를 최우선으로 사용해야 함
+  const myUserId = user?.id || user?.user_id || user?.email || null;
 
   // ✅ 북마크 훅 사용 (단일 프로그램)
   const { isBookmarked, toggleBookmark, loadBookmarkStatus } = useBookmark();
@@ -151,16 +151,30 @@ function ListDetail() {
     })();
   }, [isLoggedIn, myUserId]);
 
+  // ✅ 추가: 이 프로그램에 대해 내 예약(상태 불문)이 하나라도 있는지 여부
+  const hasAnyReservation = useMemo(() => {
+    if (!isLoggedIn || !myUserId) return false;
+    return (myReservations || []).some((r) => String(r.programId ?? r.program_id ?? r.programID) === String(id));
+  }, [myReservations, isLoggedIn, myUserId, id]);
+
   // ✅ 추가: 이 프로그램에 대해 “체험 완료(COMPLETED)” 된 내 예약이 있는지
   const hasCompletedReservation = useMemo(() => {
     if (!isLoggedIn || !myUserId) return false;
-
     return (myReservations || []).some((r) => {
       const sameProgram = String(r.programId ?? r.program_id ?? r.programID) === String(id);
-      const isCompleted = r.status === "COMPLETED";
-      return sameProgram && isCompleted;
+      return sameProgram && r.status === "COMPLETED";
     });
   }, [myReservations, isLoggedIn, myUserId, id]);
+
+  // ✅ 추가: 이미 이 프로그램에 대해 후기를 작성했는지 여부
+  const hasAlreadyReviewed = useMemo(() => {
+    if (!isLoggedIn || !myUserId || !reviews.length) return false;
+    return reviews.some((r) => {
+      // numeric ID 비교 (Number로 통일하여 타입 불일치 방지)
+      if (r.userId && myUserId) return Number(r.userId) === Number(myUserId);
+      return (r.user || "") === displayName;
+    });
+  }, [reviews, isLoggedIn, myUserId, displayName]);
 
   // kakao map script
   useEffect(() => {
@@ -263,7 +277,7 @@ function ListDetail() {
 
   const isMyReview = (review) => {
     if (!isLoggedIn) return false;
-    if (review?.userId && myUserId) return String(review.userId) === String(myUserId);
+    if (review?.userId && myUserId) return Number(review.userId) === Number(myUserId);
     return (review?.user || "") === displayName;
   };
 
@@ -562,8 +576,8 @@ function ListDetail() {
               {/* ✅ 예약 상태 확인 중 */}
               {isLoggedIn && myResvLoading && <p className="muted">예약 정보를 확인하는 중...</p>}
 
-              {/* ✅ 로그인 + 체험 완료된 예약 있을 때만 작성 폼 노출 */}
-              {isLoggedIn && !myResvLoading && hasCompletedReservation && (
+              {/* ✅ 1. 작성 폼: 체험 완료(당일 포함) + 아직 안 썼을 때 만 노출 */}
+              {isLoggedIn && !myResvLoading && hasCompletedReservation && !hasAlreadyReviewed && (
                 <form className="review-form" onSubmit={handleSubmitReview}>
                   <div className="review-form-row">
                     <div className="review-userline">
@@ -619,12 +633,12 @@ function ListDetail() {
                 </form>
               )}
 
-              {/* ✅ 로그인 했지만 완료 예약 없으면 안내 */}
-              {isLoggedIn && !myResvLoading && !hasCompletedReservation && (
-                <p className="muted">체험이 완료된 예약이 있을 때만 후기를 작성할 수 있습니다.</p>
+              {/* ✅ 2. 안내문: 예약은 했으나 아직 당일이 아니거나 미완료일 때 만 노출 (미작성 시) */}
+              {isLoggedIn && !myResvLoading && hasAnyReservation && !hasCompletedReservation && !hasAlreadyReviewed && (
+                <div className="review-status-notice">
+                  <p className="muted">체험 완료(예약 당일) 후 리뷰를 작성할 수 있습니다.</p>
+                </div>
               )}
-
-              {!isLoggedIn && <p className="muted">리뷰 작성은 로그인 후 이용할 수 있습니다.</p>}
 
               {reviewsLoading ? (
                 <p className="muted">후기를 불러오는 중...</p>
