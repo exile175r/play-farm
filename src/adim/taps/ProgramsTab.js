@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import './Tabs.css';
 import AdminModal from '../components/AdminModal';
 import { getAllPrograms, deleteProgram, createProgram, updateProgram, getAllProgramTypes } from '../../services/adminApi';
+import { useProgramParsing } from '../../hooks/useProgramParsing';
 
 const emptyProgramForm = {
   title: '',
@@ -41,6 +42,9 @@ function ProgramsTab() {
   const [detailImagePreviews, setDetailImagePreviews] = useState([]);
   const [programTypes, setProgramTypes] = useState([]); // 전체 프로그램 타입 목록
 
+  // 체험명 가공 Hook
+  const { parseProgramList } = useProgramParsing();
+
   // 프로그램 목록 로드
   const loadPrograms = async (page = 1) => {
     try {
@@ -53,25 +57,8 @@ function ProgramsTab() {
       });
 
       if (result.success) {
-        const replaceText = { 체험: ' 체험', 및: ' 및 ' };
         setPrograms(
-          result.data
-            .map((item) => {
-              const newItem = { ...item };
-              try {
-                if (typeof newItem.title === 'string' && newItem.title.includes(' 체험')) {
-                  return newItem;
-                }
-                newItem.title = JSON.parse(newItem.title)
-                  .map((v) => v.replace(/체험|및/g, (match) => replaceText[match] || match))
-                  .join(', ');
-              } catch (error) {
-                if (typeof newItem.title === 'string' && !newItem.title.includes(' 체험')) {
-                  newItem.title = newItem.title.replace(/체험|및/g, (match) => replaceText[match] || match);
-                }
-              }
-              return newItem;
-            })
+          parseProgramList(result.data, 'title')
             .sort((a, b) => b.id - a.id)
         );
         setPagination(result.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });

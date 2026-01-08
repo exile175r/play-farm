@@ -12,6 +12,7 @@ import ReservationModal from "../reservation/ReservationModal";
 
 // ✅ 추가: 체험 완료 여부(내 예약) 체크용
 import { listMyReservations, normalizeReservationStatus } from "../../services/reservationApi";
+import { useProgramParsing } from "../../hooks/useProgramParsing";
 
 function ListDetail() {
   const [data, setData] = useState(null);
@@ -86,17 +87,15 @@ function ListDetail() {
   const [reviewFiles, setReviewFiles] = useState([]);
   const [reviewPreviews, setReviewPreviews] = useState([]);
 
+  // 체험명 가공 Hook
+  const { parseProgramName } = useProgramParsing();
+
   const fetchProgramDetail = async (programId) => {
     try {
       const result = await getProgramById(programId);
       if (result.success) {
-        const replaceText = { 체험: " 체험", 및: " 및 " };
-        try {
-          result.data.program_nm = JSON.parse(result.data.program_nm)
-            .map((v) => v.replace(/체험|및/g, (m) => replaceText[m]))
-            .join(", ");
-        } catch {
-          result.data.program_nm = result.data.program_nm.replace(/체험|및/g, (m) => replaceText[m]);
+        if (result.data) {
+          result.data.program_nm = parseProgramName(result.data.program_nm);
         }
         setData(result.data || null);
       }

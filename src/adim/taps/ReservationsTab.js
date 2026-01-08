@@ -4,6 +4,7 @@ import dayjs from 'dayjs';
 import './Tabs.css';
 import AdminModal from '../components/AdminModal';
 import { getAllReservations, deleteReservation } from '../../services/adminApi';
+import { useProgramParsing } from '../../hooks/useProgramParsing';
 
 function ReservationsTab() {
   const [reservations, setReservations] = useState([]);
@@ -15,6 +16,9 @@ function ReservationsTab() {
 
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedReservation, setSelectedReservation] = useState(null);
+
+  // 체험명 가공 Hook
+  const { parseProgramList } = useProgramParsing();
 
   // 예약 목록 로드
   const loadReservations = useCallback(async (page = 1) => {
@@ -28,25 +32,8 @@ function ReservationsTab() {
       });
 
       if (result.success) {
-        const replaceText = { 체험: ' 체험', 및: ' 및 ' };
         setReservations(
-          result.data
-            .map((item) => {
-              const newItem = { ...item };
-              try {
-                if (typeof newItem.programTitle === 'string' && newItem.programTitle.includes(' 체험')) {
-                  return newItem;
-                }
-                newItem.programTitle = JSON.parse(newItem.programTitle)
-                  .map((v) => v.replace(/체험|및/g, (match) => replaceText[match] || match))
-                  .join(', ');
-              } catch (error) {
-                if (typeof newItem.programTitle === 'string' && !newItem.programTitle.includes(' 체험')) {
-                  newItem.programTitle = newItem.programTitle.replace(/체험|및/g, (match) => replaceText[match] || match);
-                }
-              }
-              return newItem;
-            })
+          parseProgramList(result.data, 'programTitle')
             .sort((a, b) => b.id - a.id)
         );
         setPagination(result.pagination || { page: 1, limit: 10, total: 0, totalPages: 0 });

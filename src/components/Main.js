@@ -10,6 +10,7 @@ import { getImagePath } from '../utils/imagePath';
 import { getAllPrograms } from '../services/programApi';
 import shopData from './data/StoreData';
 import dayjs from 'dayjs';
+import { useProgramParsing } from '../hooks/useProgramParsing';
 
 const heroImage = getImagePath('/benner/benner1.png');
 
@@ -47,25 +48,8 @@ function Main() {
   const expRowRef = useRef(null);
   const storeRowRef = useRef(null);
 
-  // 체험명 가공 (List.js 로직 축약)
-  const processProgramData = useCallback((data) => {
-    if (!data || !Array.isArray(data)) return [];
-
-    const replaceText = { 체험: ' 체험', 및: ' 및 ' };
-    return data.map((item) => {
-      const newItem = { ...item };
-      try {
-        if (typeof JSON.parse(newItem.program_nm)) {
-          newItem.program_nm = JSON.parse(newItem.program_nm).map((v) => v.replace(/체험|및/g, (match) => replaceText[match] || match)).join(', ');
-        }
-      } catch {
-        if (typeof newItem.program_nm === 'string') {
-          newItem.program_nm = newItem.program_nm.replace(/체험|및/g, (match) => replaceText[match] || match);
-        }
-      }
-      return newItem;
-    });
-  }, []);
+  // 체험명 가공 Hook
+  const { parseProgramList } = useProgramParsing();
 
   // 체험 데이터 불러오기
   useEffect(() => {
@@ -78,30 +62,24 @@ function Main() {
 
         if (!mounted) return;
 
-        if (!result || result.success === false) {
-          console.error('메인: getAllPrograms 실패', result?.error);
-          setPrograms(processProgramData(DEFAULT_PROGRAMS));
-          return;
-        }
-
         const raw = Array.isArray(result.data) ? result.data : [];
-        const processed = processProgramData(raw);
+        const processed = parseProgramList(raw);
 
         if (processed.length === 0) {
-          setPrograms(processProgramData(DEFAULT_PROGRAMS));
+          setPrograms(parseProgramList(DEFAULT_PROGRAMS));
         } else {
           setPrograms(processed);
         }
       } catch (err) {
         console.error('메인: 체험 데이터 불러오는 중 오류', err);
-        if (mounted) setPrograms(processProgramData(DEFAULT_PROGRAMS));
+        if (mounted) setPrograms(parseProgramList(DEFAULT_PROGRAMS));
       }
     })();
 
     return () => {
       mounted = false;
     };
-  }, [processProgramData]);
+  }, [parseProgramList]);
 
   // 메인에서 보여줄 추천 체험
   const featuredPrograms = useMemo(() => {

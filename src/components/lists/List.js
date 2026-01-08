@@ -7,6 +7,7 @@ import { useBookmark } from "../../hooks/useBookmark";
 import { getAllPrograms } from "../../services/programApi";
 import { getImagePath } from "../../utils/imagePath";
 import ListSearchBar from "./ListSearchBar";
+import { useProgramParsing } from "../../hooks/useProgramParsing";
 
 function List({ searchData, setSearchData }) {
   const navigate = useNavigate();
@@ -75,28 +76,8 @@ function List({ searchData, setSearchData }) {
     [toggleBookmark, isLoggedIn, isBookmarked]
   );
 
-  // ✅ 데이터 처리 함수 (메모이제이션으로 중복 처리 방지)
-  const processProgramData = useCallback((data) => {
-    if (!data || !Array.isArray(data)) return [];
-
-    const replaceText = { 체험: " 체험", 및: " 및 " };
-    return data.map((item) => {
-      const newItem = { ...item };
-      try {
-        if (typeof newItem.program_nm === "string" && newItem.program_nm.includes(" 체험")) {
-          return newItem;
-        }
-        newItem.program_nm = JSON.parse(newItem.program_nm)
-          .map((v) => v.replace(/체험|및/g, (match) => replaceText[match] || match))
-          .join(", ");
-      } catch (error) {
-        if (typeof newItem.program_nm === "string" && !newItem.program_nm.includes(" 체험")) {
-          newItem.program_nm = newItem.program_nm.replace(/체험|및/g, (match) => replaceText[match] || match);
-        }
-      }
-      return newItem;
-    });
-  }, []);
+  // 체험명 가공 Hook
+  const { parseProgramList } = useProgramParsing();
 
   // 전체 프로그램 목록 조회
   const fetchPrograms = useCallback(
@@ -125,7 +106,7 @@ function List({ searchData, setSearchData }) {
         if (result.success) {
           // 검색 데이터 있으면 검색 데이터 사용, 없으면 전체 데이터 사용
           const data = searchData ? searchData : result.data || [];
-          const processedData = processProgramData(data);
+          const processedData = parseProgramList(data);
 
           if (append) {
             setPrograms((prev) => {
@@ -161,14 +142,14 @@ function List({ searchData, setSearchData }) {
         setLoading(false);
       }
     },
-    [searchData, processProgramData]
+    [searchData, parseProgramList]
   );
 
   // ✅ searchData 변경 감지 및 초기 로딩 통합
   useEffect(() => {
     // 검색 모드일 때
     if (searchData) {
-      const processedData = processProgramData(searchData);
+      const processedData = parseProgramList(searchData);
       setPrograms(processedData);
       setHasMore(false);
       setPage(1);
@@ -189,7 +170,7 @@ function List({ searchData, setSearchData }) {
       setPage(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchData]); // processProgramData, fetchPrograms는 deps에서 제외하여 불필요한 호출 방지
+  }, [searchData]); // parseProgramList, fetchPrograms는 deps에서 제외하여 불필요한 호출 방지
 
   // 중복 데이터를 걸러내기 위한 헬퍼 (append 시 사용)
   const mergePrograms = (prev, next) => {

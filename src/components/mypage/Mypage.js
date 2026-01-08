@@ -12,6 +12,7 @@ import { getMyPoints } from '../../services/pointApi';
 import { getMyCart, updateCartItem, removeCartItem, clearCart as clearCartApi } from '../../services/cartApi';
 import { changePassword, deleteAccount, updateMyProfile, getMyProfile } from '../../services/userApi';
 import { getApiBaseUrl } from '../../utils/apiConfig';
+import { useProgramParsing } from '../../hooks/useProgramParsing';
 
 function Mypage() {
    const navigate = useNavigate();
@@ -23,26 +24,8 @@ function Mypage() {
    // DB에서 최신 정보를 가져오기 위해 초기값 null 설정 (로컬 스토리지 사용 X)
    const [user, setUser] = useState(null);
 
-   // 프로그램 이름 parse
-   const programNameParsed = (list, name) => {
-      const replaceText = { 체험: ' 체험', 및: ' 및 ' };
-      return list.map((item) => {
-         const newItem = { ...item };
-         try {
-            if (typeof newItem[name] === 'string' && newItem[name].includes(' 체험')) {
-               return newItem;
-            }
-            newItem[name] = JSON.parse(newItem[name])
-               .map((v) => v.replace(/체험|및/g, (match) => replaceText[match] || match))
-               .join(', ');
-         } catch (error) {
-            if (typeof newItem[name] === 'string' && !newItem[name].includes(' 체험')) {
-               newItem[name] = newItem[name].replace(/체험|및/g, (match) => replaceText[match] || match);
-            }
-         }
-         return newItem;
-      });
-   };
+   // 체험명 가공 Hook
+   const { parseProgramList } = useProgramParsing();
 
    // Format: USER + SignupDate(YYYYMMDD) + id(6digits)
    const displayId = useMemo(() => {
@@ -171,7 +154,7 @@ function Mypage() {
             localStorage.setItem('reservations_program', JSON.stringify(next));
          }
 
-         const parsedList = programNameParsed(next, 'title');
+         const parsedList = parseProgramList(next, 'title');
 
          setReservations(parsedList);
       } catch (error) {
@@ -214,7 +197,8 @@ function Mypage() {
       setReviewsLoading(true);
       const result = await getMyReviews();
       if (result.success) {
-         setMyReviews(result.data || []);
+         const parsedList = parseProgramList(result.data, 'programName');
+         setMyReviews(parsedList);
       }
       setReviewsLoading(false);
    };
@@ -240,7 +224,7 @@ function Mypage() {
          const res = await getMyBookmarks();
          if (res?.success) {
             const bookmarkList = Array.isArray(res.data?.bookmarks) ? res.data.bookmarks : [];
-            const newBookmarkList = programNameParsed(bookmarkList, 'program_nm');
+            const newBookmarkList = parseProgramList(bookmarkList, 'program_nm');
             setBookmarks(newBookmarkList);
          } else {
             setBookmarks([]);
