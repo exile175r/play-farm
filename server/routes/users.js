@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const { authenticateToken } = require('../middleware/auth');
+const { uploadProfileImage } = require('../middleware/upload');
 
 // 회원가입
 router.post('/signup', userController.signup);
@@ -16,7 +17,7 @@ router.post('/refresh-token', userController.refreshToken);
 router.get('/me', authenticateToken, userController.getMyProfile);
 
 // 마이페이지 - 내 정보 수정
-router.put('/me', authenticateToken, userController.updateMyProfile);
+router.put('/me', authenticateToken, uploadProfileImage, userController.updateMyProfile);
 
 // 비밀번호 변경
 router.put('/change-password', authenticateToken, userController.changePassword);

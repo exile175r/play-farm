@@ -25,6 +25,7 @@
       transform: translateY(12px);
       opacity: 0;
    }
+
    to {
       transform: translateY(0);
       opacity: 1;
@@ -73,10 +74,22 @@
    gap: 10px;
 }
 
+.pf-modal-label-group {
+   display: flex;
+   flex-direction: column;
+   gap: 2px;
+}
+
 .pf-modal-label {
    font-size: 13px;
    font-weight: 900;
    color: var(--color-list-sub);
+}
+
+.pf-modal-info {
+   font-size: 10px;
+   color: #999;
+   font-weight: 700;
 }
 
 .pf-modal-value {

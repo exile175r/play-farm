@@ -11,6 +11,7 @@ import { getMyOrders } from '../../services/orderApi';
 import { getMyPoints } from '../../services/pointApi';
 import { getMyCart, updateCartItem, removeCartItem, clearCart as clearCartApi } from '../../services/cartApi';
 import { changePassword, deleteAccount, updateMyProfile, getMyProfile } from '../../services/userApi';
+import { getApiBaseUrl } from '../../utils/apiConfig';
 
 function Mypage() {
    const navigate = useNavigate();
@@ -66,17 +67,33 @@ function Mypage() {
    const baseDisplayName = user?.nickname || user?.name || user?.user_id || '회원';
    const userId = user?.user_id || user?.id || user?.email || '';
 
+   // 프로필 이미지 URL 변환 헬퍼
+   const getFullPhotoUrl = (photoPath) => {
+      if (!photoPath) return null;
+      if (photoPath.startsWith('data:') || photoPath.startsWith('http')) return photoPath;
+      const baseUrl = getApiBaseUrl().replace('/api', '');
+      return `${baseUrl}${photoPath}`;
+   };
+
    // Fetch User Profile
    useEffect(() => {
       if (!isLoggedIn) return;
 
       getMyProfile().then(res => {
          if (res.success && res.data) {
-            // res.data는 { user: {...}, token: ... } 형태일 수 있으므로 user 필드 확인
-            // 만약 res.data가 바로 user 객체라면 그대로 사용, {user: ...}라면 user만 추출
             const userData = res.data.user || res.data;
             setUser(userData);
-            // Keep localStorage in sync for persistence across reloads
+
+            // 폼 데이터 초기화
+            setAccountForm({
+               photo: userData.profile_image || '',
+               nickname: userData.nickname || userData.name || userData.user_id || '',
+               phone: userData.phone || '',
+               email: userData.email || '',
+               loginProvider: userData.loginProvider || 'LOCAL',
+               lastLoginAt: userData.lastLoginAt || '',
+            });
+
             localStorage.setItem('user', JSON.stringify(userData));
          }
       });
@@ -286,6 +303,8 @@ function Mypage() {
       lastLoginAt: user?.lastLoginAt || '',
    }));
 
+   const [selectedFile, setSelectedFile] = useState(null);
+
    const onChangeAccount = (e) => {
       const { name, value } = e.target;
       setAccountForm((prev) => ({ ...prev, [name]: value }));
@@ -300,6 +319,7 @@ function Mypage() {
          return;
       }
 
+      setSelectedFile(file);
       const reader = new FileReader();
       reader.onload = () => {
          setAccountForm((prev) => ({ ...prev, photo: String(reader.result) }));
@@ -308,33 +328,40 @@ function Mypage() {
    };
 
    const saveAccount = async () => {
-      // ✅ API 호출로 백엔드 업데이트 확인
-      const result = await updateMyProfile({
-         nickname: accountForm.nickname.trim(),
-         phone: accountForm.phone.trim(),
-         email: accountForm.email.trim(),
-         // photo, loginProvider 등은 필요 시 추가
-      });
+      const formData = new FormData();
+      formData.append('nickname', accountForm.nickname.trim());
+      formData.append('phone', accountForm.phone.trim());
+      formData.append('email', accountForm.email.trim());
+
+      if (selectedFile) {
+         formData.append('profile_image', selectedFile);
+      }
+
+      const result = await updateMyProfile(formData);
 
       if (!result.success) {
          alert(result.error || '정보 수정에 실패했습니다.');
          return;
       }
 
-      const nextUser = {
-         ...(user || {}),
-         photo: accountForm.photo,
-         nickname: accountForm.nickname.trim(),
-         phone: accountForm.phone.trim(),
-         email: accountForm.email.trim(),
-         loginProvider: accountForm.loginProvider,
-         lastLoginAt: accountForm.lastLoginAt,
-      };
+      // 성공 후 최신 정보 다시 불러오기
+      const updated = await getMyProfile();
+      if (updated.success) {
+         const userData = updated.data.user || updated.data;
+         setUser(userData);
+         setAccountForm((prev) => ({
+            ...prev,
+            photo: userData.profile_image || '',
+            nickname: userData.nickname || userData.name || userData.user_id || '',
+            phone: userData.phone || '',
+            email: userData.email || '',
+         }));
+         localStorage.setItem('user', JSON.stringify(userData));
+      }
 
-      localStorage.setItem('user', JSON.stringify(nextUser));
+      setSelectedFile(null);
       setIsEditingAccount(false);
       alert('회원 정보가 수정되었습니다.');
-      // window.location.reload(); // 리로드 대신 상태 유지 (필요하면 리로드)
    };
 
    // ===== security (password change / delete account) =====
@@ -749,7 +776,7 @@ function Mypage() {
             <div className="pf-grid">
                <aside className="pf-left">
                   <div className="pf-profile">
-                     <div className="pf-avatar">{accountForm.photo ? <img src={accountForm.photo} alt="profile" /> : <span>{String(baseDisplayName).slice(0, 1)}</span>}</div>
+                     <div className="pf-avatar">{accountForm.photo ? <img src={getFullPhotoUrl(accountForm.photo)} alt="profile" /> : <span>{String(baseDisplayName).slice(0, 1)}</span>}</div>
                      <div className="pf-profile-meta">
                         <p className="pf-profile-name">{baseDisplayName}</p>
                         {/* 
@@ -826,7 +853,7 @@ function Mypage() {
                            <div className="pf-photo">
                               <div className="pf-photo-box">
                                  {accountForm.photo ? (
-                                    <img src={accountForm.photo} alt="profile" />
+                                    <img src={getFullPhotoUrl(accountForm.photo)} alt="profile" />
                                  ) : (
                                     <span className="pf-photo-placeholder">{String(baseDisplayName).slice(0, 1)}</span>
                                  )}

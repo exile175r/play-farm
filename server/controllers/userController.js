@@ -123,7 +123,7 @@ exports.getMyProfile = async (req, res) => {
 
     // 사용자 정보 조회
     const [users] = await db.query(
-      'SELECT id, user_id, name, email, phone, region, marketing_agree, created_at, last_login_at FROM users WHERE id = ?',
+      'SELECT id, user_id, name, email, phone, nickname, profile_image, region, marketing_agree, created_at, last_login_at FROM users WHERE id = ?',
       [userId]
     );
 
@@ -145,6 +145,8 @@ exports.getMyProfile = async (req, res) => {
           name: user.name,
           email: user.email,
           phone: user.phone,
+          nickname: user.nickname,
+          profile_image: user.profile_image,
           region: user.region,
           marketing_agree: user.marketing_agree,
           created_at: user.created_at,
@@ -200,8 +202,17 @@ exports.updateMyProfile = async (req, res) => {
       updateValues.push(region);
     }
     if (marketing_agree !== undefined) {
+      // marketing_agree가 문자열 'true'/'false'로 올 수 있으므로 변환
+      const agree = marketing_agree === 'true' || marketing_agree === true;
       updateFields.push('marketing_agree = ?');
-      updateValues.push(marketing_agree);
+      updateValues.push(agree);
+    }
+
+    // 프로필 이미지 처리
+    if (req.file) {
+      const imagePath = `/images/user/${req.file.filename}`;
+      updateFields.push('profile_image = ?');
+      updateValues.push(imagePath);
     }
 
     if (updateFields.length === 0) {

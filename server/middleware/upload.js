@@ -93,6 +93,14 @@ const eventUpload = multer({
 });
 const uploadEventImage = eventUpload.single("image");
 
+// 마이페이지 프로필 이미지 업로드 추가
+const userUpload = multer({
+  storage: createStorage("user", "profile"),
+  limits: { fileSize: 2 * 1024 * 1024, files: 1 }, // 2MB 제한
+  fileFilter,
+});
+const uploadProfileImage = userUpload.single("profile_image");
+
 module.exports = {
   uploadReviewImages,
   uploadProductImage,
@@ -100,4 +108,5 @@ module.exports = {
   uploadProgramImage,
   uploadProgramImages, // ✅ 대표 이미지 + 상세 이미지 여러 개
   uploadEventImage, // ✅ 꼭 export
+  uploadProfileImage, // 마이페이지 프로필 이미지
 };

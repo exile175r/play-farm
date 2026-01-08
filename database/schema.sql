@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `email` VARCHAR(255) NOT NULL UNIQUE COMMENT '이메일',
   `phone` VARCHAR(20) COMMENT '전화번호',
   `nickname` VARCHAR(50) COMMENT '닉네임',
+  `profile_image` VARCHAR(500) COMMENT '프로필 이미지 경로',
   `region` VARCHAR(100) COMMENT '지역',
   `marketing_agree` BOOLEAN DEFAULT FALSE COMMENT '마케팅 동의 여부',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '가입일시',

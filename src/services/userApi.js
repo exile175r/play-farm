@@ -43,7 +43,7 @@ export const updateMyProfile = async (profileData) => {
     try {
         const response = await fetchWithAuthAndRetry(`${API_Base_URL}/users/me`, {
             method: 'PUT',
-            body: JSON.stringify(profileData),
+            body: profileData instanceof FormData ? profileData : JSON.stringify(profileData),
         });
         const data = await response.json();
         if (!response.ok) {

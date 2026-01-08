@@ -24,6 +24,10 @@ function ListDetail() {
   // ✅ 예약 모달
   const [isReserveOpen, setIsReserveOpen] = useState(false);
 
+  // ✅ 이미지 상세 보기 모달
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [currentImageIdx, setCurrentImageIdx] = useState(0);
+
   // kakao map
   const mapContainer = useRef(null);
   const mapInstance = useRef(null);
@@ -352,6 +356,30 @@ function ListDetail() {
 
               <button
                 type="button"
+                className="detail-zoom-btn"
+                aria-label="상세 이미지 보기"
+                onClick={() => {
+                  setCurrentImageIdx(0);
+                  setIsImageModalOpen(true);
+                }}
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </button>
+
+              <button
+                type="button"
                 className={`detail-heart-btn ${isBookmarked(id) ? "is-on" : ""}`}
                 aria-label={isBookmarked(id) ? "찜 해제" : "찜하기"}
                 onClick={(e) => {
@@ -661,6 +689,53 @@ function ListDetail() {
           navigate("/mypage", { state: { openTab: "reservations" } });
         }}
       />
+      {/* ✅ 이미지 상세 보기 슬라이드 모달 */}
+      {isImageModalOpen && data?.images && data.images.length > 0 && (
+        <div className="image-modal-overlay" onClick={() => setIsImageModalOpen(false)}>
+          <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={() => setIsImageModalOpen(false)}>
+              ✕
+            </button>
+
+            <div className="modal-slider-wrap">
+              {data.images.length > 1 && (
+                <button
+                  className="modal-arrow modal-arrow-left"
+                  onClick={() =>
+                    setCurrentImageIdx((prev) => (prev === 0 ? data.images.length - 1 : prev - 1))
+                  }
+                >
+                  ‹
+                </button>
+              )}
+
+              <div className="modal-image-container">
+                <img
+                  src={getImagePath(data.images[currentImageIdx])}
+                  alt={`${data.program_nm} detail ${currentImageIdx + 1}`}
+                />
+              </div>
+
+              {data.images.length > 1 && (
+                <button
+                  className="modal-arrow modal-arrow-right"
+                  onClick={() =>
+                    setCurrentImageIdx((prev) => (prev === data.images.length - 1 ? 0 : prev + 1))
+                  }
+                >
+                  ›
+                </button>
+              )}
+            </div>
+
+            {data.images.length > 1 && (
+              <div className="modal-indicator">
+                {currentImageIdx + 1} / {data.images.length}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

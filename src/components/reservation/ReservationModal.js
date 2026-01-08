@@ -11,8 +11,18 @@ function ReservationModal({ open, onClose, program, isLoggedIn, user, onSuccess 
   const myUserId = useMemo(() => user?.user_id || user?.id || user?.email || null, [user]);
   const displayName = useMemo(() => user?.nickname || user?.name || user?.user_id || "익명", [user]);
 
+  const minPersonnel = useMemo(() => {
+    const m = Number(program?.min_personnel || 0);
+    return m > 0 ? m : 1;
+  }, [program]);
+
+  const maxPersonnel = useMemo(() => {
+    const m = Number(program?.max_personnel || 0);
+    return m > 0 ? m : 999;
+  }, [program]);
+
   const [date, setDate] = useState(() => dayjs().add(1, "day").format("YYYY-MM-DD"));
-  const [people, setPeople] = useState(1);
+  const [people, setPeople] = useState(minPersonnel);
 
   const timeOptions = useMemo(() => ["10:00", "13:00", "16:00"], []);
   const [time, setTime] = useState(timeOptions[0]);
@@ -27,10 +37,10 @@ function ReservationModal({ open, onClose, program, isLoggedIn, user, onSuccess 
 
   useEffect(() => {
     if (!open) return;
-    setPeople(1);
+    setPeople(minPersonnel);
     setDate(dayjs().add(1, "day").format("YYYY-MM-DD"));
     setTime(timeOptions[0]);
-  }, [open, timeOptions]);
+  }, [open, timeOptions, minPersonnel]);
 
   if (!open) return null;
 
@@ -49,14 +59,13 @@ function ReservationModal({ open, onClose, program, isLoggedIn, user, onSuccess 
     }
 
     const nPeople = Number(people);
-    if (!Number.isFinite(nPeople) || nPeople < 1) {
-      alert("인원은 1명 이상으로 선택해 주세요.");
+    if (!Number.isFinite(nPeople) || nPeople < minPersonnel) {
+      alert(`최소 인원은 ${minPersonnel}명입니다.`);
       return;
     }
 
-    const max = Number(program?.max_personnel || 0);
-    if (max > 0 && nPeople > max) {
-      alert(`최대 인원은 ${max}명입니다.`);
+    if (maxPersonnel > 0 && nPeople > maxPersonnel) {
+      alert(`최대 인원은 ${maxPersonnel}명입니다.`);
       return;
     }
 
@@ -120,22 +129,36 @@ function ReservationModal({ open, onClose, program, isLoggedIn, user, onSuccess 
           </div>
 
           <div className="pf-modal-row">
-            <span className="pf-modal-label">인원</span>
+            <div className="pf-modal-label-group">
+              <span className="pf-modal-label">인원</span>
+              <span className="pf-modal-info">
+                (최소 {minPersonnel}명 / 최대 {maxPersonnel}명)
+              </span>
+            </div>
             <div className="pf-modal-people">
               <button
                 type="button"
                 className="pf-modal-people-btn"
-                onClick={() => setPeople((p) => Math.max(1, p - 1))}
+                onClick={() => setPeople((p) => Math.max(minPersonnel, p - 1))}
                 aria-label="인원 감소"
               >
                 -
               </button>
               <input
                 className="pf-modal-people-input"
+                type="number"
+                min={minPersonnel}
+                max={maxPersonnel}
                 value={people}
                 onChange={(e) => {
-                  const v = Number(String(e.target.value).replace(/[^\d]/g, "")) || 1;
-                  setPeople(Math.max(1, v));
+                  const v = Number(e.target.value);
+                  if (isNaN(v)) return;
+                  setPeople(v);
+                }}
+                onBlur={(e) => {
+                  const v = Number(e.target.value);
+                  if (v < minPersonnel) setPeople(minPersonnel);
+                  if (v > maxPersonnel) setPeople(maxPersonnel);
                 }}
                 inputMode="numeric"
                 aria-label="인원"
@@ -143,7 +166,7 @@ function ReservationModal({ open, onClose, program, isLoggedIn, user, onSuccess 
               <button
                 type="button"
                 className="pf-modal-people-btn"
-                onClick={() => setPeople((p) => p + 1)}
+                onClick={() => setPeople((p) => Math.min(maxPersonnel, p + 1))}
                 aria-label="인원 증가"
               >
                 +
