@@ -40,6 +40,19 @@ exports.createReview = async (req, res) => {
       });
     }
 
+    // 중복 후기 확인 (동일 사용자가 동일 프로그램에 한 번만 작성 가능)
+    const [existingReviews] = await connection.query(
+      'SELECT id FROM reviews WHERE user_id = ? AND program_id = ?',
+      [userId, program_id]
+    );
+
+    if (existingReviews.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: '이미 이 프로그램에 대한 후기를 작성하셨습니다.'
+      });
+    }
+
     // 후기 저장
     const [result] = await connection.query(
       `INSERT INTO reviews (user_id, program_id, rating, content)
@@ -77,12 +90,16 @@ exports.createReview = async (req, res) => {
         r.created_at,
         r.updated_at,
         u.name as user_name,
+        u.nickname as user_nickname,
         u.user_id as user_user_id,
         JSON_ARRAYAGG(
-          JSON_OBJECT(
-            'id', ri.id,
-            'image_path', ri.image_path,
-            'display_order', ri.display_order
+          IF(ri.id IS NOT NULL,
+            JSON_OBJECT(
+              'id', ri.id,
+              'image_path', ri.image_path,
+              'display_order', ri.display_order
+            ),
+            NULL
           )
         ) as images
       FROM reviews r
@@ -94,10 +111,20 @@ exports.createReview = async (req, res) => {
     );
 
     const review = reviews[0];
-    if (review && review.images && review.images[0] && review.images[0].id === null) {
-      review.images = [];
-    } else if (review && review.images) {
-      review.images = JSON.parse(review.images).sort((a, b) => a.display_order - b.display_order);
+    if (review) {
+      // 이미지 처리: [null] 이거나 null인 경우 빈 배열로 처리
+      let images = [];
+      try {
+        const rawImages = typeof review.images === 'string' ? JSON.parse(review.images) : review.images;
+        images = Array.isArray(rawImages)
+          ? rawImages.filter(img => img !== null).sort((a, b) => a.display_order - b.display_order)
+          : [];
+      } catch (e) {
+        console.error('이미지 파싱 오류:', e);
+      }
+
+      review.images = images;
+      review.user = review.user_nickname || review.user_name || review.user_user_id || '익명';
     }
 
     res.status(201).json({
@@ -131,20 +158,17 @@ exports.getReviewsByProgram = async (req, res) => {
         r.created_at,
         r.updated_at,
         u.name as user_name,
+        u.nickname as user_nickname,
         u.user_id as user_user_id,
-        COALESCE(
-          JSON_ARRAYAGG(
-            CASE 
-              WHEN ri.id IS NOT NULL THEN
-                JSON_OBJECT(
-                  'id', ri.id,
-                  'image_path', ri.image_path,
-                  'display_order', ri.display_order
-                )
-              ELSE NULL
-            END
-          ),
-          JSON_ARRAY()
+        JSON_ARRAYAGG(
+          IF(ri.id IS NOT NULL,
+            JSON_OBJECT(
+              'id', ri.id,
+              'image_path', ri.image_path,
+              'display_order', ri.display_order
+            ),
+            NULL
+          )
         ) as images
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
@@ -156,9 +180,15 @@ exports.getReviewsByProgram = async (req, res) => {
     );
 
     const formattedReviews = reviews.map(review => {
-      const images = review.images && review.images[0] && review.images[0].id !== null
-        ? JSON.parse(review.images).filter(img => img.id !== null).sort((a, b) => a.display_order - b.display_order)
-        : [];
+      let images = [];
+      try {
+        const rawImages = typeof review.images === 'string' ? JSON.parse(review.images) : review.images;
+        images = Array.isArray(rawImages)
+          ? rawImages.filter(img => img !== null).sort((a, b) => a.display_order - b.display_order)
+          : [];
+      } catch (e) {
+        console.error('이미지 파싱 오류:', e);
+      }
 
       return {
         id: review.id,
@@ -168,7 +198,7 @@ exports.getReviewsByProgram = async (req, res) => {
         content: review.content,
         date: review.created_at,
         editedAt: review.updated_at !== review.created_at ? review.updated_at : null,
-        user: review.user_name || review.user_user_id || '익명',
+        user: review.user_nickname || review.user_name || review.user_user_id || '익명',
         images: images.map(img => img.image_path)
       };
     });
@@ -202,19 +232,15 @@ exports.getMyReviews = async (req, res) => {
         r.updated_at,
         p.program_nm,
         p.village_nm,
-        COALESCE(
-          JSON_ARRAYAGG(
-            CASE 
-              WHEN ri.id IS NOT NULL THEN
-                JSON_OBJECT(
-                  'id', ri.id,
-                  'image_path', ri.image_path,
-                  'display_order', ri.display_order
-                )
-              ELSE NULL
-            END
-          ),
-          JSON_ARRAY()
+        JSON_ARRAYAGG(
+          IF(ri.id IS NOT NULL,
+            JSON_OBJECT(
+              'id', ri.id,
+              'image_path', ri.image_path,
+              'display_order', ri.display_order
+            ),
+            NULL
+          )
         ) as images
       FROM reviews r
       LEFT JOIN programs p ON r.program_id = p.id
@@ -226,9 +252,15 @@ exports.getMyReviews = async (req, res) => {
     );
 
     const formattedReviews = reviews.map(review => {
-      const images = review.images && review.images[0] && review.images[0].id !== null
-        ? JSON.parse(review.images).filter(img => img.id !== null).sort((a, b) => a.display_order - b.display_order)
-        : [];
+      let images = [];
+      try {
+        const rawImages = typeof review.images === 'string' ? JSON.parse(review.images) : review.images;
+        images = Array.isArray(rawImages)
+          ? rawImages.filter(img => img !== null).sort((a, b) => a.display_order - b.display_order)
+          : [];
+      } catch (e) {
+        console.error('이미지 파싱 오류:', e);
+      }
 
       return {
         id: review.id,
@@ -302,32 +334,59 @@ exports.updateReview = async (req, res) => {
       [rating, content, id]
     );
 
-    // 기존 이미지 삭제 (새 이미지가 있는 경우)
-    if (files.length > 0) {
-      const [existingImages] = await connection.query(
-        'SELECT image_path FROM review_images WHERE review_id = ?',
-        [id]
-      );
+    // 이미지 수정 로직 보강
+    let existingImagesToKeep = [];
+    if (req.body.existingImages) {
+      existingImagesToKeep = Array.isArray(req.body.existingImages)
+        ? req.body.existingImages
+        : JSON.parse(req.body.existingImages || '[]');
+    }
 
-      // 파일 시스템에서 이미지 삭제
-      existingImages.forEach(img => {
+    // 1. 현재 DB에 등록된 이미지 목록 조회
+    const [currentImages] = await connection.query(
+      'SELECT id, image_path FROM review_images WHERE review_id = ?',
+      [id]
+    );
+
+    // 2. 삭제할 이미지 필터링 (DB에 있지만 existingImagesToKeep에 없는 것)
+    const imagesToDelete = currentImages.filter(img => !existingImagesToKeep.includes(img.image_path));
+
+    // 3. 파일 시스템 및 DB에서 삭제
+    if (imagesToDelete.length > 0) {
+      for (const img of imagesToDelete) {
         const filePath = path.join(__dirname, '../../public', img.image_path);
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
         }
-      });
-
-      // DB에서 이미지 삭제
+      }
       await connection.query(
-        'DELETE FROM review_images WHERE review_id = ?',
-        [id]
+        'DELETE FROM review_images WHERE id IN (?)',
+        [imagesToDelete.map(img => img.id)]
       );
+    }
 
-      // 새 이미지 저장
-      const imageValues = files.map((file, index) => [
+    // 4. 새 이미지 저장 및 순서(display_order) 재정렬
+    // 유지된 이미지들의 순서를 먼저 확보
+    const [keptImages] = await connection.query(
+      'SELECT id, image_path FROM review_images WHERE review_id = ? ORDER BY display_order ASC',
+      [id]
+    );
+
+    let currentOrder = 0;
+    // 기존 이미지 순서 업데이트
+    for (const img of keptImages) {
+      await connection.query(
+        'UPDATE review_images SET display_order = ? WHERE id = ?',
+        [currentOrder++, img.id]
+      );
+    }
+
+    // 새 이미지 추가
+    if (files.length > 0) {
+      const imageValues = files.map((file) => [
         id,
         `/images/reviews/${file.filename}`,
-        index
+        currentOrder++
       ]);
 
       await connection.query(
@@ -350,20 +409,17 @@ exports.updateReview = async (req, res) => {
         r.created_at,
         r.updated_at,
         u.name as user_name,
+        u.nickname as user_nickname,
         u.user_id as user_user_id,
-        COALESCE(
-          JSON_ARRAYAGG(
-            CASE 
-              WHEN ri.id IS NOT NULL THEN
-                JSON_OBJECT(
-                  'id', ri.id,
-                  'image_path', ri.image_path,
-                  'display_order', ri.display_order
-                )
-              ELSE NULL
-            END
-          ),
-          JSON_ARRAY()
+        JSON_ARRAYAGG(
+          IF(ri.id IS NOT NULL,
+            JSON_OBJECT(
+              'id', ri.id,
+              'image_path', ri.image_path,
+              'display_order', ri.display_order
+            ),
+            NULL
+          )
         ) as images
       FROM reviews r
       LEFT JOIN users u ON r.user_id = u.id
@@ -374,10 +430,19 @@ exports.updateReview = async (req, res) => {
     );
 
     const review = updatedReviews[0];
-    if (review && review.images && review.images[0] && review.images[0].id === null) {
-      review.images = [];
-    } else if (review && review.images) {
-      review.images = JSON.parse(review.images).sort((a, b) => a.display_order - b.display_order);
+    if (review) {
+      let images = [];
+      try {
+        const rawImages = typeof review.images === 'string' ? JSON.parse(review.images) : review.images;
+        images = Array.isArray(rawImages)
+          ? rawImages.filter(img => img !== null).sort((a, b) => a.display_order - b.display_order)
+          : [];
+      } catch (e) {
+        console.error('이미지 파싱 오류:', e);
+      }
+
+      review.images = images;
+      review.user = review.user_nickname || review.user_name || review.user_user_id || '익명';
     }
 
     res.json({

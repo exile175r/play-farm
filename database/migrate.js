@@ -76,6 +76,35 @@ function extractStoreData() {
   }
 }
 
+// --- 마이그레이션 초기화 로직 ---
+
+/**
+ * 0. 기존 데이터 초기화
+ */
+async function resetDatabase(connection) {
+  console.log("\n--- 기존 데이터 초기화 시작 ---");
+  await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+
+  const tables = [
+    "program_program_types",
+    "program_images",
+    "program_types",
+    "programs",
+    "events",
+    "faqs",
+    "notices",
+    "product_options",
+    "products"
+  ];
+
+  for (const table of tables) {
+    await connection.query(`TRUNCATE TABLE ${table}`);
+  }
+
+  await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+  console.log("기존 데이터 초기화 완료");
+}
+
 // --- 각 마이그레이션 로직 ---
 
 /**
@@ -245,11 +274,31 @@ async function migrateFaqs(connection) {
 async function migrateNotices(connection) {
   console.log("\n--- 공지사항 데이터 마이그레이션 시작 ---");
   const noticesData = [
-    { title: "[안내] 플레이팜 시스템 정기 점검 안내", content: "...(점검 안내)...", is_important: 1 },
-    { title: "신규 체험 마을 '해피팜' 오픈 기념 이벤트 안내", content: "...(오픈 기념)...", is_important: 0 },
-    { title: "동절기 체험 시 주의사항 및 운영 시간 변경 안내", content: "...(운영 변경)...", is_important: 1 },
-    { title: "[공지] 개인정보처리방침 개정 안내", content: "...(방침 개정)...", is_important: 0 },
-    { title: "플레이팜 앱(APP) 출시 안내", content: "...(앱 출시)...", is_important: 0 }
+    {
+      title: "[안내] 플레이팜 시스템 정기 점검 안내",
+      content: "안녕하세요, 플레이팜입니다.\n보다 안정적인 서비스 제공을 위해 시스템 정기 점검이 진행될 예정입니다.\n\n점검 시간 동안에는 서비스 이용이 일시 중단되오니 이용에 참고하시기 바랍니다.\n\n■ 점검 일시: 2026년 1월 15일(목) 02:00 ~ 06:00 (약 4시간)\n■ 점검 영향: 플레이팜 모바일 앱 및 웹 서비스 전체 이용 불가\n\n더 나은 서비스를 제공하기 위해 최선을 다하겠습니다.\n감사합니다.",
+      is_important: 1
+    },
+    {
+      title: "신규 체험 마을 '해피팜' 오픈 기념 이벤트 안내",
+      content: "새로운 체험 마을 '해피팜'이 플레이팜에 합류하게 되었습니다!\n\n오픈을 기념하여 해피팜의 모든 체험 프로그램을 20% 할인된 가격으로 만나보실 수 있는 특별 이벤트를 진행합니다.\n\n■ 이벤트 기간: 2026년 1월 10일 ~ 2월 9일\n■ 대상: 해피팜 예약 고객 전체\n■ 혜택: 체험 비용 20% 즉시 할인\n\n푸른 자연 속 꿈같은 휴식을 제공하는 해피팜에서 즐거운 추억을 만들어보세요.\n많은 관심과 참여 부탁드립니다.",
+      is_important: 0
+    },
+    {
+      title: "동절기 체험 시 주의사항 및 운영 시간 변경 안내",
+      content: "겨울철 기온 하강에 따른 체험 프로그램 운영 시간 변경 및 주의사항을 안내해 드립니다.\n\n일부 야외 체험의 경우 안전을 위해 운영 시간이 단축되거나 실내 프로그램으로 대체될 수 있습니다.\n\n■ 변경 기간: 2025년 12월 ~ 2026년 2월\n■ 주의사항:\n- 체험 전 방한복 및 장갑을 꼭 착용해 주세요.\n- 야외 이동 시 빙판길에 주의하시기 바랍니다.\n- 체험 마을별 상세 운영 시간은 상세 페이지를 확인해 주세요.\n\n건강하고 안전한 겨울 체험 되시길 바랍니다.",
+      is_important: 1
+    },
+    {
+      title: "[공지] 개인정보처리방침 개정 안내",
+      content: "플레이팜을 이용해 주시는 회원 여러분께 감사드립니다.\n회원님의 소중한 개인정보를 보호하기 위해 개인정보처리방침이 다음과 같이 개정될 예정입니다.\n\n■ 개정 사유: 신규 서비스 추가에 따른 수입/이용 항목 변경\n■ 시행 일자: 2026년 2월 1일\n■ 주요 변경 내용:\n- 위치 기반 서비스 제공을 위한 수집 항목 추가\n- 제3자 제공 업체 정보 최신화\n\n개정된 내용은 시행일부터 효력이 발생하며, 거부 의사를 표시하지 않으실 경우 승인하신 것으로 간주됩니다.\n궁금하신 사항은 고객센터로 문의해 주세요.",
+      is_important: 0
+    },
+    {
+      title: "플레이팜 앱(APP) 출시 안내",
+      content: "드디어 플레이팜 공식 모바일 앱이 출시되었습니다!\n\n이제 언제 어디서나 편리하게 전국의 체험 마을을 예약하고 관리하세요.\n\n■ 주요 기능:\n- 위치 기반 내 주변 체험 마을 추천\n- 실시간 예약 확정 및 알림 알림\n- 앱 전용 특가 및 쿠폰 혜택\n\n지금 구글 플레이스토어와 애플 앱스토어에서 '플레이팜'을 검색해 다운로드 받으실 수 있습니다.\n\n앱 출시 기념 3,000원 할인 쿠폰 증정 이벤트도 진행 중이니 놓치지 마세요!",
+      is_important: 0
+    }
   ];
 
   for (const notice of noticesData) {
@@ -316,6 +365,9 @@ async function runAllMigrations() {
     console.log("=== 플레이팜 통합 마이그레이션 시작 ===");
     connection = await mysql.createConnection(config);
     console.log("데이터베이스 연결 성공");
+
+    // 초기화 실행
+    await resetDatabase(connection);
 
     // 순차적으로 마이그레이션 실행
     await migratePrograms(connection);

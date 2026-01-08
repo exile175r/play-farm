@@ -203,12 +203,12 @@ function Mypage() {
    const [myReviews, setMyReviews] = useState([]);
    const [reviewsLoading, setReviewsLoading] = useState(false);
 
-   // 내 후기 로드
+   // 내 후기 로드 (탭 진입 시 뿐만 아니라 예약 목록에서도 확인하기 위해 로그인 시 로드)
    useEffect(() => {
-      if (tab === 'reviews' && isLoggedIn) {
+      if (isLoggedIn) {
          loadMyReviews();
       }
-   }, [tab, isLoggedIn]);
+   }, [isLoggedIn]);
 
    const loadMyReviews = async () => {
       setReviewsLoading(true);
@@ -425,15 +425,54 @@ function Mypage() {
    // ===== review edit =====
    const [editingReviewId, setEditingReviewId] = useState(null);
    const [editingContent, setEditingContent] = useState('');
+   const [editingImages, setEditingImages] = useState([]); // 기존 이미지 중 유지할 목록
+   const [newReviewFiles, setNewReviewFiles] = useState([]); // 새로 업로드할 파일들
+   const [newReviewPreviews, setNewReviewPreviews] = useState([]); // 새 파일 미리보기
 
    const startEditReview = (review) => {
       setEditingReviewId(review.id);
       setEditingContent(review.content || '');
+      setEditingImages(review.images || []);
+      setNewReviewFiles([]);
+      setNewReviewPreviews([]);
    };
 
    const cancelEditReview = () => {
       setEditingReviewId(null);
       setEditingContent('');
+      setEditingImages([]);
+      setNewReviewFiles([]);
+      setNewReviewPreviews([]);
+   };
+
+   const removeEditImage = (idx, isNew = false) => {
+      if (isNew) {
+         setNewReviewFiles(prev => prev.filter((_, i) => i !== idx));
+         setNewReviewPreviews(prev => prev.filter((_, i) => i !== idx));
+      } else {
+         setEditingImages(prev => prev.filter((_, i) => i !== idx));
+      }
+   };
+
+   const onEditFileChange = (e) => {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+
+      if (editingImages.length + newReviewFiles.length + files.length > 6) {
+         alert('이미지는 최대 6개까지 등록 가능합니다.');
+         return;
+      }
+
+      const nextFiles = [...newReviewFiles, ...files];
+      setNewReviewFiles(nextFiles);
+
+      files.forEach(file => {
+         const reader = new FileReader();
+         reader.onload = () => {
+            setNewReviewPreviews(prev => [...prev, String(reader.result)]);
+         };
+         reader.readAsDataURL(file);
+      });
    };
 
    const saveEditReview = async (reviewId) => {
@@ -443,15 +482,19 @@ function Mypage() {
          return;
       }
 
-      // API로 수정 (이미지는 수정 시 재업로드 필요하지만, 여기서는 내용만 수정)
+      // API로 수정
       const review = myReviews.find((r) => r.id === reviewId);
       if (!review) return;
 
-      const result = await updateReview(reviewId, {
+      const payload = {
          rating: review.rating,
          content: nextContent,
-         images: [], // 이미지는 수정하지 않음
-      });
+         images: newReviewFiles,
+         existingImages: editingImages // 서버에 이 목록을 보내서 유지하게 할 수 있지만, 현재 백엔드는 전부 교체 로직일 수 있음
+         // 백엔드 확인 필요: server/controllers/reviewController.js의 updateReview 확인
+      };
+
+      const result = await updateReview(reviewId, payload);
 
       if (result.success) {
          await loadMyReviews();
@@ -946,7 +989,9 @@ function Mypage() {
                            <div className="pf-list">
                               {filteredReservations.map((it) => {
                                  // ✅ 1안: 결제 완료 + 체험 완료만 리뷰 작성 가능
-                                 const canWrite = it.status === 'COMPLETED' && it.paymentStatus === 'PAID';
+                                 // ✅ 추가 요구사항: 이미 작성한 경우 비활성화
+                                 const hasReviewed = myReviews.some(rev => Number(rev.programId) === Number(it.programId));
+                                 const canWrite = it.status === 'COMPLETED' && it.paymentStatus === 'PAID' && !hasReviewed;
 
                                  // ✅ BOOKED + 결제 전(UNPAID/FAILED)만 취소 가능
                                  const canCancel = it.status === 'BOOKED' && it.paymentStatus !== 'PAID';
@@ -962,6 +1007,16 @@ function Mypage() {
 
                                  // ✅ 결제 실패면 "재결제" 문구
                                  const payBtnText = it.paymentStatus === 'FAILED' ? '재결제' : '결제하기';
+
+                                 // ✅ 버튼 툴팁 메시지
+                                 let reviewBtnTitle = '';
+                                 if (!canWrite) {
+                                    if (hasReviewed) {
+                                       reviewBtnTitle = '이미 리뷰를 작성한 체험입니다.';
+                                    } else if (it.status !== 'COMPLETED' || it.paymentStatus !== 'PAID') {
+                                       reviewBtnTitle = '결제 완료 + 체험 완료 후 리뷰 작성이 가능합니다.';
+                                    }
+                                 }
 
                                  return (
                                     <div className="pf-item" key={it.bookingId}>
@@ -1006,8 +1061,8 @@ function Mypage() {
                                                 className={`pf-linkbtn ${canWrite ? '' : 'is-disabled'}`}
                                                 onClick={() => goWriteReview(it.programId)}
                                                 disabled={!canWrite}
-                                                title={!canWrite ? '결제 완료 + 체험 완료 후 리뷰 작성이 가능합니다.' : ''}>
-                                                리뷰 작성
+                                                title={reviewBtnTitle}>
+                                                {hasReviewed ? '작성 완료' : '리뷰 작성'}
                                              </button>
 
                                              {/* ✅ 미결제/실패만 예약 취소 가능 */}
@@ -1250,15 +1305,42 @@ function Mypage() {
                                        {!isEditing ? (
                                           <p className="pf-review-content">{r.content}</p>
                                        ) : (
-                                          <textarea
-                                             className="pf-review-editor"
-                                             value={editingContent}
-                                             onChange={(e) => setEditingContent(e.target.value)}
-                                             placeholder="리뷰 내용을 입력해 주세요"
-                                          />
+                                          <div className="pf-review-edit-form">
+                                             <textarea
+                                                className="pf-review-editor"
+                                                value={editingContent}
+                                                onChange={(e) => setEditingContent(e.target.value)}
+                                                placeholder="리뷰 내용을 입력해 주세요"
+                                             />
+                                             <div className="pf-review-edit-images">
+                                                <div className="pf-review-edit-imgs-grid">
+                                                   {/* 기존 이미지 */}
+                                                   {editingImages.map((src, idx) => (
+                                                      <div key={`old_${idx}`} className="pf-review-edit-img-wrap">
+                                                         <img src={`${process.env.REACT_APP_API_BASE || 'http://localhost:5000'}${src}`} alt="existing" />
+                                                         <button type="button" className="pf-img-del" onClick={() => removeEditImage(idx, false)}>×</button>
+                                                      </div>
+                                                   ))}
+                                                   {/* 새 이미지 미리보기 */}
+                                                   {newReviewPreviews.map((src, idx) => (
+                                                      <div key={`new_${idx}`} className="pf-review-edit-img-wrap">
+                                                         <img src={src} alt="new-preview" />
+                                                         <button type="button" className="pf-img-del" onClick={() => removeEditImage(idx, true)}>×</button>
+                                                      </div>
+                                                   ))}
+                                                   {/* 이미지 추가 버튼 */}
+                                                   {editingImages.length + newReviewFiles.length < 6 && (
+                                                      <label className="pf-review-img-add">
+                                                         <span>+</span>
+                                                         <input type="file" accept="image/*" multiple onChange={onEditFileChange} hidden />
+                                                      </label>
+                                                   )}
+                                                </div>
+                                             </div>
+                                          </div>
                                        )}
 
-                                       {Array.isArray(r.images) && r.images.length > 0 && (
+                                       {!isEditing && Array.isArray(r.images) && r.images.length > 0 && (
                                           <div className="pf-review-imgs">
                                              {r.images.map((src, idx) => (
                                                 <img key={`${r.id}_${idx}`} src={`${process.env.REACT_APP_API_BASE || 'http://localhost:5000'}${src}`} alt={`review-${idx}`} />
