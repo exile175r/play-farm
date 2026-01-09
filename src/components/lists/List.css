@@ -12,7 +12,27 @@
 .list-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .list-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .list-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .list-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
 }
 
 .list-card {
@@ -39,7 +59,7 @@
 .list-card-img {
   position: relative;
   width: 100%;
-  height: 200px;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   background: var(--color-list-bg);
   /* ✅ 이미지 영역도 GPU 가속 */
@@ -118,7 +138,8 @@
 
   /* ✅ 상세보기 버튼 오른쪽 하단 고정 기준 */
   position: relative;
-  padding-bottom: 46px; /* ✅ 버튼 자리 확보 */
+  padding-bottom: 46px;
+  /* ✅ 버튼 자리 확보 */
 }
 
 .list-item-title {
@@ -216,12 +237,14 @@
 }
 
 @keyframes dots-loader-bounce {
+
   0%,
   80%,
   100% {
     transform: scale(0);
     opacity: 0.5;
   }
+
   40% {
     transform: scale(1);
     opacity: 1;

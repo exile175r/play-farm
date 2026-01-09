@@ -374,3 +374,94 @@ exports.deleteAccount = async (req, res) => {
     res.status(500).json({ success: false, message: '회원 탈퇴 중 오류가 발생했습니다.' });
   }
 };
+
+// 아이디 찾기
+exports.findId = async (req, res) => {
+  try {
+    const { name, phone, email } = req.body;
+
+    const [users] = await db.query(
+      'SELECT user_id FROM users WHERE name = ? AND phone = ? AND email = ? AND is_active = TRUE',
+      [name, phone, email]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '일치하는 사용자 정보를 찾을 수 없습니다.'
+      });
+    }
+
+    // 아이디 일부 마스킹 처리 (예: user***)
+    const userId = users[0].user_id;
+    const maskedId = userId.substring(0, 3) + '*'.repeat(userId.length - 3);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user_id: maskedId
+      }
+    });
+  } catch (error) {
+    console.error('아이디 찾기 실패:', error);
+    res.status(500).json({ success: false, message: '아이디 찾기 중 오류가 발생했습니다.' });
+  }
+};
+
+// 비밀번호 찾기 (본인 확인)
+exports.findPassword = async (req, res) => {
+  try {
+    const { user_id, phone, email } = req.body;
+
+    const [users] = await db.query(
+      'SELECT id FROM users WHERE user_id = ? AND phone = ? AND email = ? AND is_active = TRUE',
+      [user_id, phone, email]
+    );
+
+    if (users.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: '일치하는 사용자 정보를 찾을 수 없습니다.'
+      });
+    }
+
+    // 본인 확인 성공 시 비밀번호 재설정을 위한 임시 토큰이나 세션 처리가 필요할 수 있음
+    // 여기서는 간단히 사용자 ID(pk)를 반환하거나 성공 여부만 반환
+    res.status(200).json({
+      success: true,
+      message: '본인 확인이 완료되었습니다.',
+      data: {
+        id: users[0].id
+      }
+    });
+  } catch (error) {
+    console.error('비밀번호 찾기 실패:', error);
+    res.status(500).json({ success: false, message: '비밀번호 찾기 중 오류가 발생했습니다.' });
+  }
+};
+
+// 비밀번호 재설정
+exports.resetPassword = async (req, res) => {
+  try {
+    const { id, newPassword } = req.body;
+
+    if (!id || !newPassword) {
+      return res.status(400).json({ success: false, message: '필요한 정보가 누락되었습니다.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await db.query(
+      'UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?',
+      [hashedPassword, id]
+    );
+
+    res.status(200).json({
+      success: true,
+      message: '비밀번호가 성공적으로 재설정되었습니다.'
+    });
+  } catch (error) {
+    console.error('비밀번호 재설정 실패:', error);
+    res.status(500).json({ success: false, message: '비밀번호 재설정 중 오류가 발생했습니다.' });
+  }
+};

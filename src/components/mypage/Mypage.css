@@ -160,7 +160,28 @@
    border-color: var(--color-border);
 }
 
+@media (max-width: 980px) {
+   .pf-tabs {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+   }
+
+   .pf-tab {
+      text-align: center;
+      padding: 8px 4px;
+      font-size: 13px;
+      font-weight: 900;
+   }
+}
+
+@media (max-width: 480px) {
+   .pf-tabs {
+      grid-template-columns: repeat(2, 1fr);
+   }
+}
+
 .pf-tabs-divider {
+   grid-column: 1 / -1;
    height: 1px;
    background: var(--color-border);
    margin: 6px 0;
@@ -772,6 +793,35 @@
    .pf-photo-box {
       width: 100%;
       height: 180px;
+   }
+
+   .pf-review-imgs {
+      grid-template-columns: repeat(4, 1fr);
+   }
+}
+
+@media (max-width: 480px) {
+   .pf-head {
+      text-align: center;
+   }
+
+   .pf-top-tabs {
+      width: 100%;
+      justify-content: center;
+   }
+
+   .pf-profile {
+      flex-direction: column;
+      text-align: center;
+      padding: 20px;
+   }
+
+   .pf-item {
+      grid-template-columns: 1fr;
+   }
+
+   .pf-item-actions {
+      justify-content: flex-end;
    }
 
    .pf-review-imgs {

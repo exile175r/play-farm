@@ -29,6 +29,33 @@
   min-height: 34px;
 }
 
+.store-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 24px;
+  margin-top: 20px;
+}
+
+@media (max-width: 1024px) {
+  .store-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .store-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .store-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+}
+
 .store-card-body {
   display: flex;
   flex-direction: column;
@@ -37,7 +64,8 @@
 
   /* ✅ 상세보기 버튼 오른쪽 하단 고정 기준 */
   position: relative;
-  padding-bottom: 44px; /* ✅ 버튼 자리 확보 */
+  padding-bottom: 44px;
+  /* ✅ 버튼 자리 확보 */
 }
 
 .store-price {

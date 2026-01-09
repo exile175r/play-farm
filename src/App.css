@@ -1,27 +1,43 @@
 /* src/App.css */
 :root {
    /* ===== Brand / Core ===== */
-   --brand-primary: #f3c200; /* 기존: --color-primary / 로고 */
-   --brand-orange: #f8a201; /* 기존: --color-orange */
-   --brand-teal: #3a8e87; /* 기존: --color-header-bg */
-   --brand-green-light: #007c60; /* 기존: --color-green-light */
-   --brand-green-dark: #00464a; /* 기존: --color-green-dark */
-   --brand-navy: #171d2f; /* 기존: --color-navy-deep */
-   --brand-danger: #d64550; /* 기존: trpcal-3 */
+   --brand-primary: #f3c200;
+   /* 기존: --color-primary / 로고 */
+   --brand-orange: #f8a201;
+   /* 기존: --color-orange */
+   --brand-teal: #3a8e87;
+   /* 기존: --color-header-bg */
+   --brand-green-light: #007c60;
+   /* 기존: --color-green-light */
+   --brand-green-dark: #00464a;
+   /* 기존: --color-green-dark */
+   --brand-navy: #171d2f;
+   /* 기존: --color-navy-deep */
+   --brand-danger: #d64550;
+   /* 기존: trpcal-3 */
 
    /* ===== Surface / Text ===== */
-   --bg: #ffffff; /* 기존: --color-bg */
+   --bg: #ffffff;
+   /* 기존: --color-bg */
    --surface: #ffffff;
-   --surface-soft: #f5f5f5; /* 기존: --color-list-bg */
-   --surface-tint: #effbf3; /* 기존: --color-list-card-bg */
-   --text: #333333; /* 기존: --color-list-title */
-   --text-sub: #555555; /* 기존: --color-list-sub */
-   --text-on-brand: #ffffff; /* 기존: --color-text */
+   --surface-soft: #f5f5f5;
+   /* 기존: --color-list-bg */
+   --surface-tint: #effbf3;
+   /* 기존: --color-list-card-bg */
+   --text: #333333;
+   /* 기존: --color-list-title */
+   --text-sub: #555555;
+   /* 기존: --color-list-sub */
+   --text-on-brand: #ffffff;
+   /* 기존: --color-text */
 
    /* ===== Border / Shadow ===== */
-   --border: #e8e2d0; /* 기존: --color-border */
-   --shadow-mid: 0 10px 24px rgba(0, 0, 0, 0.12); /* 공통 카드 */
-   --shadow-strong: 0 18px 40px rgba(0, 0, 0, 0.18); /* hover 카드 */
+   --border: #e8e2d0;
+   /* 기존: --color-border */
+   --shadow-mid: 0 10px 24px rgba(0, 0, 0, 0.12);
+   /* 공통 카드 */
+   --shadow-strong: 0 18px 40px rgba(0, 0, 0, 0.18);
+   /* hover 카드 */
 
    /* ===== Radius ===== */
    --r-sm: 10px;
@@ -31,23 +47,41 @@
    --r-pill: 999px;
 
    /* ===== Layout ===== */
-   --container: 1200px; /* 공통 컨테이너 폭 */
-   --px: 16px; /* 좌우 패딩 */
-   --section-pt: 56px; /* 페이지 상단 패딩 */
-   --section-pb: 80px; /* 페이지 하단 패딩 */
+   --container: 1200px;
+   /* 공통 컨테이너 폭 */
+   --px: 20px;
+   /* 좌우 패딩 */
+   --section-pt: 56px;
+   /* 페이지 상단 패딩 */
+   --section-pb: 80px;
+   /* 페이지 하단 패딩 */
+
+   /* ===== Breakpoints ===== */
+   --break-lg: 1200px;
+   --break-md: 992px;
+   --break-sm: 768px;
+   --break-xs: 480px;
 
    /* ===== Buttons ===== */
-   --btn-outline-bg: #ffffff; /* 기존: --color-list-btn-outline-bg */
-   --btn-outline-border: #cccccc; /* 기존: --color-list-btn-outline-border */
-   --btn-hover: #f7f7f7; /* 기존: --color-btn-hover */
+   --btn-outline-bg: #ffffff;
+   /* 기존: --color-list-btn-outline-bg */
+   --btn-outline-border: #cccccc;
+   /* 기존: --color-list-btn-outline-border */
+   --btn-hover: #f7f7f7;
+   /* 기존: --color-btn-hover */
 
-   --btn-primary-bg: #ff9f1c; /* 기존: --color-list-btn-primary-bg */
-   --btn-primary-hover: #f18f0c; /* 기존: --color-list-btn-primary-hover-bg */
-   --btn-primary-text: #ffffff; /* 기존: --color-list-btn-primary-text */
+   --btn-primary-bg: #ff9f1c;
+   /* 기존: --color-list-btn-primary-bg */
+   --btn-primary-hover: #f18f0c;
+   /* 기존: --color-list-btn-primary-hover-bg */
+   --btn-primary-text: #ffffff;
+   /* 기존: --color-list-btn-primary-text */
 
    /* ===== Etc ===== */
-   --arrow: #222222; /* 기존: --color-arrow */
-   --card-img-bg: #eaeaea; /* 기존: --color-card-bg */
+   --arrow: #222222;
+   /* 기존: --color-arrow */
+   --card-img-bg: #eaeaea;
+   /* 기존: --color-card-bg */
 
    /* ===== Compatibility (기존 변수 유지용 alias) ===== */
    --color-header-bg: var(--brand-teal);
@@ -59,8 +93,10 @@
    --color-btn-border-hover: #bbbbbb;
 
    --color-bg: var(--bg);
-   --color-shadow-mid: rgba(0, 0, 0, 0.25); /* 기존 값 유지(필요하면 삭제 가능) */
-   --color-shadow-strong: rgba(0, 0, 0, 0.3); /* 기존 값 유지(필요하면 삭제 가능) */
+   --color-shadow-mid: rgba(0, 0, 0, 0.25);
+   /* 기존 값 유지(필요하면 삭제 가능) */
+   --color-shadow-strong: rgba(0, 0, 0, 0.3);
+   /* 기존 값 유지(필요하면 삭제 가능) */
    --color-arrow: var(--arrow);
    --color-card-bg: var(--card-img-bg);
 
@@ -85,6 +121,14 @@
    --color-navy-deep: var(--brand-navy);
 }
 
+@media (max-width: 768px) {
+   :root {
+      --section-pt: 40px;
+      --section-pb: 60px;
+      --px: 16px;
+   }
+}
+
 /* Base */
 .App {
    margin: 0 auto;
@@ -97,8 +141,8 @@
 }
 
 .pf-container {
-   width: var(--container);
-   max-width: 100%;
+   width: 100%;
+   max-width: var(--container);
    margin: 0 auto;
    padding: 0 var(--px);
    box-sizing: border-box;
@@ -219,33 +263,43 @@
 .trpcal-1-hex {
    color: #f3c200;
 }
+
 .trpcal-2-hex {
    color: #f8a201;
 }
+
 .trpcal-3-hex {
    color: #d64550;
 }
+
 .trpcal-4-hex {
    color: #3a8e87;
 }
+
 .trpcal-5-hex {
    color: #00464a;
 }
+
 .trpcal-6-hex {
    color: #e8e2d0;
 }
+
 .trpcal-7-hex {
    color: #b9d8c2;
 }
+
 .trpcal-8-hex {
    color: #ffffff;
 }
+
 .trpcal-9-hex {
    color: #2a2a2a;
 }
+
 .trpcal-10-hex {
    color: #808080;
 }
+
 .trpcal-11-hex {
    color: #f4f4f4;
 }

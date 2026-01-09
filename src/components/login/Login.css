@@ -90,6 +90,82 @@
    cursor: pointer;
 }
 
+/* Find ID/PW Styles */
+.find-desc {
+   margin-bottom: 20px;
+   font-size: 14px;
+   color: #666;
+   line-height: 1.5;
+}
+
+.find-footer {
+   margin-top: 20px;
+   text-align: center;
+}
+
+.find-footer a {
+   font-size: 14px;
+   color: #888;
+   text-decoration: underline;
+}
+
+.find-result {
+   text-align: center;
+   padding: 20px 0;
+}
+
+.result-box {
+   background-color: #f8f9fa;
+   padding: 20px;
+   border-radius: 8px;
+   margin: 20px 0;
+   border: 1px solid #eee;
+}
+
+.result-box strong {
+   font-size: 24px;
+   color: #2c3e50;
+   background: linear-gradient(120deg, #6c5ce7 0%, #a29bfe 100%);
+   -webkit-background-clip: text;
+   -webkit-text-fill-color: transparent;
+}
+
+.find-result-btns {
+   display: flex;
+   flex-direction: column;
+   gap: 10px;
+   margin-top: 20px;
+}
+
+.login-link-btn,
+.pw-link-btn {
+   display: block;
+   width: 100%;
+   padding: 12px;
+   border-radius: 5px;
+   text-decoration: none;
+   font-weight: 600;
+   transition: all 0.3s;
+}
+
+.login-link-btn {
+   background-color: #6c5ce7;
+   color: white;
+}
+
+.pw-link-btn {
+   background-color: #f1f2f6;
+   color: #2c3e50;
+}
+
+.error-msg {
+   color: #e74c3c;
+   font-size: 13px;
+   margin-top: -10px;
+   margin-bottom: 10px;
+   text-align: left;
+}
+
 .login-find-btns button a {
    text-decoration: none;
    color: var(--color-list-sub);

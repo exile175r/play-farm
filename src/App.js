@@ -11,6 +11,8 @@ import ListDetail from './components/lists/ListDetail';
 
 import Login from './components/login/Login';
 import Signup from './components/login/Signup';
+import FindId from './components/login/FindId';
+import FindPw from './components/login/FindPw';
 
 import EventPage from './components/events/EventPage';
 import EventDetail from './components/events/EventDetail';
@@ -87,6 +89,8 @@ function App() {
             <Route path="/login/google/callback" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
             <Route path="/login/naver/callback" element={<Login setIsLoggedIn={setIsLoggedIn} />} />
             <Route path="/user/signup" element={<Signup />} />
+            <Route path="/find-id" element={<FindId />} />
+            <Route path="/find-pw" element={<FindPw />} />
 
             {/* event */}
             <Route path="/events" element={<EventPage />} />

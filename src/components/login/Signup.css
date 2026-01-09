@@ -3,7 +3,7 @@
   min-height: calc(100vh - 70px);
   margin: 0 auto;
   max-width: 1100px;
-  padding: 60px 16px 80px;
+  padding: 60px var(--px) 80px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -18,7 +18,7 @@
   text-align: center;
 }
 
-.signup-container > p {
+.signup-container>p {
   margin: 0 0 32px;
   font-size: 14px;
   color: var(--color-list-sub);
@@ -383,7 +383,26 @@
     font-size: 24px;
   }
 
-  .signup-container > p {
+  .signup-container>p {
+    margin-bottom: 24px;
+  }
+
+  .signup-container .signup-form {
+    padding: 20px 16px;
+  }
+
+  .signup-container .submit-btn {
+    width: 100%;
+    padding: 14px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .signup-container h2 {
+    font-size: 24px;
+  }
+
+  .signup-container>p {
     margin-bottom: 24px;
   }
 }

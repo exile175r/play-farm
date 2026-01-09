@@ -50,7 +50,6 @@ function EventPage() {
             >
               이벤트
             </button>
-            <span className="pf-event-sep">|</span>
             <button
               type="button"
               className={`pf-event-tab-btn ${activeTab === "notice" ? "is-active" : ""}`}

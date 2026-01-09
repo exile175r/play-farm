@@ -46,14 +46,24 @@ const SupportPage = () => {
             </header>
 
             {/* 상단 탭 메뉴 */}
-            <nav className="support-tabs">
-               <button type="button" className={`support-tab-btn ${activeTab === 'faq' ? 'active' : ''}`} onClick={() => setActiveTab('faq')}>
-                  자주 묻는 질문
-               </button>
-               <button type="button" className={`support-tab-btn ${activeTab === 'contact' ? 'active' : ''}`} onClick={() => setActiveTab('contact')}>
-                  1:1 문의
-               </button>
-            </nav>
+            <div className="support-tabs">
+               <div className="support-tab-left">
+                  <button
+                     type="button"
+                     className={`support-tab-btn ${activeTab === 'faq' ? 'is-active' : ''}`}
+                     onClick={() => setActiveTab('faq')}
+                  >
+                     자주 묻는 질문
+                  </button>
+                  <button
+                     type="button"
+                     className={`support-tab-btn ${activeTab === 'contact' ? 'is-active' : ''}`}
+                     onClick={() => setActiveTab('contact')}
+                  >
+                     1:1 문의
+                  </button>
+               </div>
+            </div>
 
             {/* 탭별 컨텐츠 영역 */}
             <div className="support-tab-panel">

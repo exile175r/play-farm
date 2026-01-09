@@ -25,5 +25,10 @@ router.put('/change-password', authenticateToken, userController.changePassword)
 // 회원 탈퇴
 router.delete('/me', authenticateToken, userController.deleteAccount);
 
+// 아이디/비밀번호 찾기
+router.post('/find-id', userController.findId);
+router.post('/find-pw', userController.findPassword);
+router.post('/reset-pw', userController.resetPassword);
+
 
 module.exports = router;

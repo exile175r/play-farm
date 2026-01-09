@@ -276,3 +276,11 @@
   color: var(--color-list-sub, #555);
   white-space: pre-wrap;
 }
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .pf-event-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
