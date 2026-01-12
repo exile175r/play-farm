@@ -1272,7 +1272,7 @@ exports.getAllProducts = async (req, res) => {
         FROM product_images pi2
         WHERE pi2.product_id = p.id ORDER BY pi2.display_order) as images
       ${baseQuery}
-      ORDER BY p.created_at DESC
+      ORDER BY p.id DESC
       LIMIT ? OFFSET ?
     `;
     params.push(Number(limit), offset);
@@ -1377,9 +1377,15 @@ exports.createProduct = async (req, res) => {
     // 이미지 저장
     if (mainImage) {
       const imageUrl = `/images/store/${mainImage.filename}`;
+      // product_images 테이블에 저장
       await connection.query(
         `INSERT INTO product_images (product_id, image_url, display_order) VALUES (?, ?, ?)`,
         [productId, imageUrl, 0]
+      );
+      // products 테이블의 image_url 컬럼도 업데이트 (호환성 및 간편 조회를 위해)
+      await connection.query(
+        `UPDATE products SET image_url = ? WHERE id = ?`,
+        [imageUrl, productId]
       );
     }
 
@@ -1495,6 +1501,11 @@ exports.updateProduct = async (req, res) => {
         await connection.query(
           `INSERT INTO product_images (product_id, image_url, display_order) VALUES (?, ?, ?)`,
           [productId, imageUrl, 0]
+        );
+        // products 테이블의 image_url 컬럼 업데이트
+        await connection.query(
+          `UPDATE products SET image_url = ? WHERE id = ?`,
+          [imageUrl, productId]
         );
       }
 

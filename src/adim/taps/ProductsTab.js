@@ -12,6 +12,7 @@ import { getApiBaseUrl } from "../../utils/apiConfig";
 
 const emptyForm = {
   name: "",
+  category: "", // ✅ 추가
   stock: "",
   price: "",
   description: "",
@@ -119,6 +120,7 @@ function ProductsTab() {
     setEditingProduct(product);
     setForm({
       name: product.name || "",
+      category: product.category || "", // ✅ 추가
       stock: String(product.stock ?? ""),
       price: String(product.price ?? ""),
       description: product.description || "",
@@ -239,6 +241,7 @@ function ProductsTab() {
     try {
       const formData = new FormData();
       formData.append("name", form.name.trim());
+      formData.append("category", form.category.trim()); // ✅ 추가
       formData.append("stock", stockNumber);
       formData.append("price", priceNumber);
       formData.append("description", form.description);
@@ -458,7 +461,17 @@ function ProductsTab() {
               />
             </div>
 
-            {/* ✅ 카테고리 입력 제거됨 */}
+            <div className="admin-form-row">
+              <label className="admin-form-label">카테고리</label>
+              <select name="category" value={form.category} onChange={handleChange}>
+                <option value="">카테고리 선택</option>
+                <option value="채소">채소</option>
+                <option value="과일">과일</option>
+                <option value="곡물">곡물</option>
+                <option value="가공식품">가공식품</option>
+                <option value="기타">기타</option>
+              </select>
+            </div>
 
             <div className="admin-form-row admin-form-row-inline">
               <div>

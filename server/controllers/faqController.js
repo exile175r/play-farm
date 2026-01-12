@@ -13,7 +13,7 @@ exports.getAllFaqs = async (req, res) => {
             params.push(category);
         }
 
-        query += ` ORDER BY display_order ASC, created_at DESC`;
+        query += ` ORDER BY id DESC`;
 
         const [faqs] = await db.query(query, params);
 
