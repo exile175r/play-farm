@@ -63,7 +63,7 @@ const handleSocialLogin = async (req, res, socialType, userInfo) => {
 
     if (!user) {
       // 신규 사용자 - 자동 회원가입
-      const bcrypt = require('bcrypt');
+      const bcrypt = require('bcryptjs');
       const randomPassword = Math.random().toString(36).slice(-8);
       const hashedPassword = await bcrypt.hash(randomPassword, 10);
 

@@ -1,5 +1,5 @@
 const db = require('../config/db');
-const bcrypt = require('bcrypt'); // 비밀번호 해시화
+const bcrypt = require('bcryptjs'); // 비밀번호 해시화
 const jwt = require('jsonwebtoken'); // 토큰 생성
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';

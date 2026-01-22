@@ -1,6 +1,6 @@
 const db = require('../config/db');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
 const { addressToCoordinates } = require('../utils/geocoding');
