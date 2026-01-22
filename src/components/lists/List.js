@@ -8,6 +8,7 @@ import { getAllPrograms } from "../../services/programApi";
 import { getImagePath } from "../../utils/imagePath";
 import ListSearchBar from "./ListSearchBar";
 import { useProgramParsing } from "../../hooks/useProgramParsing";
+import Loading from "../layout/Loading";
 
 function List({ searchData, setSearchData }) {
   const navigate = useNavigate();
@@ -210,14 +211,6 @@ function List({ searchData, setSearchData }) {
     }));
   }, [programs]);
 
-  // ✅ Dots Loader 컴포넌트
-  const DotsLoader = () => (
-    <div className="dots-loader">
-      <div className="dots-loader-dot"></div>
-      <div className="dots-loader-dot"></div>
-      <div className="dots-loader-dot"></div>
-    </div>
-  );
 
   return (
     <section className="pf-page list-wrap">
@@ -277,7 +270,7 @@ function List({ searchData, setSearchData }) {
         {!searchData && (
           <>
             <div ref={observerTarget} className="observer-target" />
-            {loading && hasMore && <DotsLoader />}
+            {loading && hasMore && <Loading />}
           </>
         )}
       </div>

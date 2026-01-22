@@ -5,6 +5,7 @@ import "./Store.css";
 
 import { getProducts } from "../../services/productApi";
 import ShopSearchBar from "./ShopSearchBar";
+import Loading from "../layout/Loading";
 
 function Store() {
   const navigate = useNavigate();
@@ -106,7 +107,7 @@ function Store() {
 
         <div className="list-grid store-grid">
           {loading ? (
-            <div className="store-empty">상품을 불러오는 중...</div>
+            <Loading />
           ) : filteredProducts.length === 0 ? (
             <div className="store-empty">검색 결과가 없습니다.</div>
           ) : (

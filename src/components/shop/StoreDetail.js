@@ -8,6 +8,7 @@ import { addToCart as addToCartApi } from "../../services/cartApi";
 import { getMyOrders } from "../../services/orderApi";
 import { createReview, getReviewsByProduct, deleteReview } from "../../services/reviewApi";
 import CheckoutModal from "../checkout/CheckoutModal";
+import Loading from "../layout/Loading";
 
 function StoreDetail() {
   const { id } = useParams();
@@ -375,7 +376,7 @@ function StoreDetail() {
     return (
       <section className="sd-wrap">
         <div className="sd-inner">
-          <p className="sd-muted">상품 정보를 불러오는 중...</p>
+          <Loading />
         </div>
       </section>
     );

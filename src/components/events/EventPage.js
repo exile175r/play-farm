@@ -4,6 +4,7 @@ import "./EventPage.css";
 import { getImagePath } from "../../utils/imagePath";
 import { getAllEvents } from "../../services/eventApi";
 import { getAllNotices } from "../../services/noticeApi";
+import Loading from "../layout/Loading";
 
 function EventPage() {
   const [activeTab, setActiveTab] = useState("event");
@@ -69,7 +70,7 @@ function EventPage() {
 
         <section className="pf-event-content">
           {loading ? (
-            <p style={{ textAlign: 'center', padding: '50px' }}>로딩 중...</p>
+            <Loading />
           ) : (
             activeTab === "event" ? <EventList events={events} /> : <NoticeList notices={notices} />
           )}
