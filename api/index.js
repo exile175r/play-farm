@@ -33,22 +33,30 @@ app.use((req, res, next) => {
 // 정적 파일 서빙 (이미지 파일)
 app.use('/images', express.static(path.join(__dirname, '../public/images')));
 
-// 라우트 (api_server 폴더로 경로 변경)
-const serverPath = '../api_server';
-const programRouter = require(`${serverPath}/routes/programs`);
-const userRouter = require(`${serverPath}/routes/users`);
-const socialAuthRouter = require(`${serverPath}/routes/socialAuth`);
-const bookmarksRouter = require(`${serverPath}/routes/bookmarks`);
-const reviewsRouter = require(`${serverPath}/routes/reviews`);
-const reservationRouter = require(`${serverPath}/routes/reservations`);
-const productRouter = require(`${serverPath}/routes/products`);
-const cartRouter = require(`${serverPath}/routes/cart`);
-const orderRouter = require(`${serverPath}/routes/orders`);
-const pointRouter = require(`${serverPath}/routes/points`);
-const adminRouter = require(`${serverPath}/routes/admin`);
-const eventRouter = require(`${serverPath}/routes/events`);
-const noticeRouter = require(`${serverPath}/routes/notices`);
-const faqRouter = require(`${serverPath}/routes/faqs`);
+// 라우트 (정적 require로 변경 - Vercel 빌드 최적화)
+const programRouter = require('../api_server/routes/programs');
+const userRouter = require('../api_server/routes/users');
+const socialAuthRouter = require('../api_server/routes/socialAuth');
+const bookmarksRouter = require('../api_server/routes/bookmarks');
+const reviewsRouter = require('../api_server/routes/reviews');
+const reservationRouter = require('../api_server/routes/reservations');
+const productRouter = require('../api_server/routes/products');
+const cartRouter = require('../api_server/routes/cart');
+const orderRouter = require('../api_server/routes/orders');
+const pointRouter = require('../api_server/routes/points');
+const adminRouter = require('../api_server/routes/admin');
+const eventRouter = require('../api_server/routes/events');
+const noticeRouter = require('../api_server/routes/notices');
+const faqRouter = require('../api_server/routes/faqs');
+
+// 진단용 헬스체크 (DB 없이 동작)
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV
+  });
+});
 
 app.use('/api/programs', programRouter);
 app.use('/api/users', userRouter);
