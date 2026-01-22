@@ -621,9 +621,13 @@ exports.createProgram = async (req, res) => {
     }
 
     // 이미지 파일 이동 및 저장 (경로: public/images/item/item_{programId}/img_{index}.jpg)
+    const isProd = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
     const itemDir = path.join(__dirname, `../../public/images/item/item_${programId}`);
-    if (!fs.existsSync(itemDir)) {
-      fs.mkdirSync(itemDir, { recursive: true });
+
+    if (!isProd) {
+      if (!fs.existsSync(itemDir)) {
+        fs.mkdirSync(itemDir, { recursive: true });
+      }
     }
 
     // 대표 이미지 저장 (display_order = 0)

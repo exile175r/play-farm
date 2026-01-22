@@ -3,7 +3,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-const isProd = process.env.NODE_ENV === "production";
+const isProd = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 
 const ensureDir = (dir) => {
   // Vercel 생산 환경(서버리스)에서는 파일 시스템 생성이 불가능하므로 건너뜀
