@@ -893,10 +893,7 @@ exports.updateProgram = async (req, res) => {
         [programId]
       );
 
-      // 새 이미지 디렉토리 생성
-      if (!fs.existsSync(itemDir)) {
-        fs.mkdirSync(itemDir, { recursive: true });
-      }
+      // 새 이미지 디렉토리 생성 (Vercel 환경 제약으로 폴더 생성 로직 제거)
 
       // 대표 이미지 저장 (display_order = 0)
       if (mainImage) {
