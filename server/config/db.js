@@ -5,6 +5,10 @@ const pool = mysql.createPool({
   user: process.env.DB_USER || '',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || '',
+  port: process.env.DB_PORT || '',
+  ssl: {
+    rejectUnauthorized: true // TiDB Cloud 연결을 위해 필수입니다!
+  },
   charset: 'utf8mb4',
   waitForConnections: true, // 연결 풀에 사용 가능한 연결이 없을 때 대기 여부
   connectionLimit: 3, // 풀에서 동시에 유지할 최대 연결 수
