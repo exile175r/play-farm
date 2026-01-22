@@ -3,13 +3,23 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
+const isProd = process.env.NODE_ENV === "production";
+
 const ensureDir = (dir) => {
+  // Vercel 생산 환경(서버리스)에서는 파일 시스템 생성이 불가능하므로 건너뜀
+  if (isProd) return;
+
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 };
 
 const createStorage = (subDir, prefix) => {
+  if (isProd) {
+    // Vercel 환경에서는 메모리 저장소 사용 (서버 기동 실패 방지)
+    return multer.memoryStorage();
+  }
+
   const uploadDir = path.join(__dirname, `../../public/images/${subDir}`);
   ensureDir(uploadDir);
 
