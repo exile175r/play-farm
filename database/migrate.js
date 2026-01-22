@@ -23,6 +23,10 @@ const config = {
   user: process.env.DB_USER || "root",
   password: process.env.DB_PASSWORD || "",
   database: process.env.DB_NAME || "play_farm",
+  port: process.env.DB_PORT || 4000,
+  ssl: {
+    rejectUnauthorized: true,
+  },
   charset: "utf8mb4",
 };
 
