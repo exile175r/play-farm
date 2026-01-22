@@ -4,8 +4,8 @@ import './index.css';
 import App from './App';
 import { BrowserRouter } from 'react-router-dom';
 
-// 개발 환경에서는 basename을 사용하지 않고, 프로덕션(GitHub Pages)에서만 사용
-const basename = process.env.NODE_ENV === 'production' ? '/play-farm' : '';
+// Vercel은 루트(/) 경로를 사용하므로 basename이 필요하지 않습니다.
+const basename = '';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
