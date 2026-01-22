@@ -7,7 +7,7 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME || '',
   charset: 'utf8mb4',
   waitForConnections: true, // 연결 풀에 사용 가능한 연결이 없을 때 대기 여부
-  connectionLimit: 10, // 풀에서 동시에 유지할 최대 연결 수
+  connectionLimit: 3, // 풀에서 동시에 유지할 최대 연결 수
   queueLimit: 0 // 대기 큐에 허용할 최대 요청 수 (0: 무제한, 양수: 해당 수만큼만 대기, 초과 시 에러)
 });
 
