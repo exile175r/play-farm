@@ -743,8 +743,20 @@ function CheckoutPage() {
                   className="pf-pay-btn"
                   onClick={handlePay}
                   disabled={payDisabled}
+                  style={{ position: 'relative' }}
                   title={!isBooked ? '진행 중 예약만 결제가 가능합니다.' : isPaid ? '이미 결제가 완료된 예약입니다.' : ''}>
-                  {submitting ? '결제 진행 중입니다…' : `${finalAmount.toLocaleString()}원 결제하기`}
+                  {submitting ? (
+                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                        <div className="dots-loader" style={{ padding: 0, minHeight: 'auto', width: 'auto' }}>
+                           <div className="dots-loader-dot" style={{ width: '6px', height: '6px', backgroundColor: '#fff' }}></div>
+                           <div className="dots-loader-dot" style={{ width: '6px', height: '6px', backgroundColor: '#fff', animationDelay: '0.2s' }}></div>
+                           <div className="dots-loader-dot" style={{ width: '6px', height: '6px', backgroundColor: '#fff', animationDelay: '0.4s' }}></div>
+                        </div>
+                        <span>결제 진행 중입니다…</span>
+                     </div>
+                  ) : (
+                     `${finalAmount.toLocaleString()}원 결제하기`
+                  )}
                </button>
             </div>
             <button type="button" className="pf-btn ghost" onClick={goBack} disabled={submitting}>

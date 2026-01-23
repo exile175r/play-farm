@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 import EventSection from './layout/EventSection';
 import { getImagePath } from '../utils/imagePath';
+import Loading from './layout/Loading';
 
 // 실제 데이터
 import { getAllPrograms } from '../services/programApi';
@@ -43,6 +44,7 @@ function Main() {
   const navigate = useNavigate();
 
   const [programs, setPrograms] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // 가로 스크롤 DOM 참조
   const expRowRef = useRef(null);
@@ -56,15 +58,13 @@ function Main() {
     let mounted = true;
 
     (async () => {
+      setLoading(true);
       try {
-        // List.js 기준: getAllPrograms(page, limit)
+        // ...
         const result = await getAllPrograms(1, 12);
-
         if (!mounted) return;
-
         const raw = Array.isArray(result.data) ? result.data : [];
         const processed = parseProgramList(raw);
-
         if (processed.length === 0) {
           setPrograms(parseProgramList(DEFAULT_PROGRAMS));
         } else {
@@ -73,6 +73,8 @@ function Main() {
       } catch (err) {
         console.error('메인: 체험 데이터 불러오는 중 오류', err);
         if (mounted) setPrograms(parseProgramList(DEFAULT_PROGRAMS));
+      } finally {
+        if (mounted) setLoading(false);
       }
     })();
 
@@ -169,34 +171,36 @@ function Main() {
               </button>
 
               <div className="home-row-scroll" ref={expRowRef}>
-                {featuredPrograms.map((program, index) => {
-                  const title = program.program_nm || program.title || '이름 없는 체험';
+                {loading ? (
+                  <Loading />
+                ) : (
+                  <>
+                    {featuredPrograms.map((program, index) => {
+                      const title = program.program_nm || program.title || '이름 없는 체험';
+                      const metaText = program.side_activities || program.formattedDate || '상세 정보는 상세 페이지에서 확인해 주세요.';
+                      const hasImage = Array.isArray(program.images) && program.images.length > 0;
+                      const fallbackClass =
+                        index % 3 === 0 ? 'home-row-thumb-fallback--spring' : index % 3 === 1 ? 'home-row-thumb-fallback--family' : 'home-row-thumb-fallback--night';
 
-                  const metaText = program.side_activities || program.formattedDate || '상세 정보는 상세 페이지에서 확인해 주세요.';
-
-                  const hasImage = Array.isArray(program.images) && program.images.length > 0;
-
-                  const fallbackClass =
-                    index % 3 === 0 ? 'home-row-thumb-fallback--spring' : index % 3 === 1 ? 'home-row-thumb-fallback--family' : 'home-row-thumb-fallback--night';
-
-                  return (
-                    <article key={program.id || index} className="home-row-card pf-card pf-card-hover" onClick={() => program.id && goProgramDetail(program.id)}>
-                      <div className="home-row-thumb">
-                        {hasImage ? (
-                          <img src={getImagePath(program.images[0])} alt={title} loading="lazy" />
-                        ) : (
-                          <div className={`home-row-thumb-fallback ${fallbackClass}`} />
-                        )}
-                      </div>
-                      <div className="home-row-body">
-                        <p className="home-row-card-title">{title}</p>
-                        <p className="home-row-card-meta">{metaText}</p>
-                      </div>
-                    </article>
-                  );
-                })}
-
-                {featuredPrograms.length === 0 && <div className="home-row-empty">등록된 농촌 체험이 없습니다. 나중에 다시 확인해 주세요.</div>}
+                      return (
+                        <article key={program.id || index} className="home-row-card pf-card pf-card-hover" onClick={() => program.id && goProgramDetail(program.id)}>
+                          <div className="home-row-thumb">
+                            {hasImage ? (
+                              <img src={getImagePath(program.images[0])} alt={title} loading="lazy" />
+                            ) : (
+                              <div className={`home-row-thumb-fallback ${fallbackClass}`} />
+                            )}
+                          </div>
+                          <div className="home-row-body">
+                            <p className="home-row-card-title">{title}</p>
+                            <p className="home-row-card-meta">{metaText}</p>
+                          </div>
+                        </article>
+                      );
+                    })}
+                    {featuredPrograms.length === 0 && <div className="home-row-empty">등록된 농촌 체험이 없습니다. 나중에 다시 확인해 주세요.</div>}
+                  </>
+                )}
               </div>
 
               <button type="button" className="home-row-arrow home-row-arrow--right" onClick={() => scrollRow(expRowRef, 'right')}>

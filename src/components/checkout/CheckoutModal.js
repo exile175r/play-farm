@@ -1,6 +1,7 @@
 // src/components/checkout/CheckoutModal.js
 import React, { useEffect, useMemo, useState } from 'react';
 import './CheckoutModal.css';
+import Loading from '../layout/Loading';
 import { createOrder, payOrder, cancelOrder } from '../../services/orderApi';
 import { getMyPoints } from '../../services/pointApi';
 
@@ -439,8 +440,19 @@ function CheckoutModal({ open, onClose, items, onSuccess }) {
           <button type="button" className="pf-modal-btn ghost" onClick={close} disabled={submitting}>
             취소
           </button>
-          <button type="button" className="pf-modal-btn primary" onClick={handlePay} disabled={submitting}>
-            {submitting ? '결제 진행 중...' : `${finalAmount.toLocaleString()}원 결제하기`}
+          <button type="button" className="pf-modal-btn primary" onClick={handlePay} disabled={submitting} style={{ position: 'relative' }}>
+            {submitting ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <div className="dots-loader" style={{ padding: 0, minHeight: 'auto', width: 'auto' }}>
+                  <div className="dots-loader-dot" style={{ width: '6px', height: '6px', backgroundColor: '#fff' }}></div>
+                  <div className="dots-loader-dot" style={{ width: '6px', height: '6px', backgroundColor: '#fff', animationDelay: '0.2s' }}></div>
+                  <div className="dots-loader-dot" style={{ width: '6px', height: '6px', backgroundColor: '#fff', animationDelay: '0.4s' }}></div>
+                </div>
+                <span>결제 진행 중...</span>
+              </div>
+            ) : (
+              `${finalAmount.toLocaleString()}원 결제하기`
+            )}
           </button>
         </div>
       </div>

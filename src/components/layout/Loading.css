@@ -6,6 +6,10 @@
   gap: 8px;
   padding: 40px 20px;
   width: 100%;
+  grid-column: 1 / -1;
+  /* Grid 컨테이너에서 전체 너비 차지 */
+  min-height: 150px;
+  /* 로딩 공간 확보 */
 }
 
 .dots-loader-dot {
