@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
 const { addressToCoordinates } = require('../utils/geocoding');
+const { uploadFromBuffer, deleteImage } = require('../utils/cloudinaryHelper');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
@@ -620,80 +621,42 @@ exports.createProgram = async (req, res) => {
       }
     }
 
-    // 이미지 파일 이동 및 저장 (경로: public/images/item/item_{programId}/img_{index}.jpg)
-    const itemDir = path.join(__dirname, `../../public/images/item/item_${programId}`);
-
-    // 대표 이미지 저장 (display_order = 0)
-
-    // 대표 이미지 저장 (display_order = 0)
+    // 이미지 Cloudinary 업로드 및 DB 저장
+    // 대표 이미지 업로드
     if (mainImage) {
       try {
-        const oldPath = mainImage.path;
-        console.log('[createProgram] 대표 이미지 파일 정보:', {
-          path: oldPath,
-          filename: mainImage.filename,
-          originalname: mainImage.originalname
-        });
+        console.log('[createProgram] 대표 이미지 Cloudinary 업로드 시작');
+        const uploadResult = await uploadFromBuffer(mainImage.buffer, 'programs');
+        const imageUrl = uploadResult.secure_url;
 
-        if (!fs.existsSync(oldPath)) {
-          console.error('[createProgram] 파일이 존재하지 않습니다:', oldPath);
-          throw new Error(`대표 이미지 파일을 찾을 수 없습니다: ${oldPath}`);
-        }
-
-        const ext = path.extname(mainImage.originalname);
-        const newFilename = `img_0${ext}`;
-        const newPath = path.join(itemDir, newFilename);
-
-        // 파일 이동
-        fs.renameSync(oldPath, newPath);
-        console.log('[createProgram] 파일 이동 완료:', oldPath, '->', newPath);
-
-        const imageUrl = `/images/item/item_${programId}/${newFilename}`;
-        console.log('[createProgram] 대표 이미지 저장:', imageUrl);
+        console.log('[createProgram] 대표 이미지 업로드 완료:', imageUrl);
         await connection.query(
           `INSERT INTO program_images (program_id, image_url, display_order) VALUES (?, ?, ?)`,
           [programId, imageUrl, 0]
         );
-      } catch (fileError) {
-        console.error('[createProgram] 대표 이미지 저장 실패:', fileError);
-        throw fileError;
+      } catch (uploadError) {
+        console.error('[createProgram] 대표 이미지 업로드 실패:', uploadError);
+        throw uploadError;
       }
     }
 
-    // 상세 이미지들 저장 (display_order = 1, 2, 3, ...)
+    // 상세 이미지들 업로드 (display_order = 1, 2, 3, ...)
     if (detailImages && detailImages.length > 0) {
       for (let index = 0; index < detailImages.length; index++) {
         const file = detailImages[index];
         try {
-          const oldPath = file.path;
-          console.log(`[createProgram] 상세 이미지 ${index + 1} 파일 정보:`, {
-            path: oldPath,
-            filename: file.filename,
-            originalname: file.originalname
-          });
+          console.log(`[createProgram] 상세 이미지 ${index + 1} Cloudinary 업로드 시작`);
+          const uploadResult = await uploadFromBuffer(file.buffer, 'programs');
+          const imageUrl = uploadResult.secure_url;
 
-          if (!fs.existsSync(oldPath)) {
-            console.error('[createProgram] 파일이 존재하지 않습니다:', oldPath);
-            throw new Error(`상세 이미지 파일을 찾을 수 없습니다: ${oldPath}`);
-          }
-
-          const ext = path.extname(file.originalname);
-          const newFilename = `img_${index + 1}${ext}`;
-          const newPath = path.join(itemDir, newFilename);
-
-          // 파일 이동
-          fs.renameSync(oldPath, newPath);
-          console.log(`[createProgram] 파일 이동 완료:`, oldPath, '->', newPath);
-
-          const imageUrl = `/images/item/item_${programId}/${newFilename}`;
-          console.log('[createProgram] 상세 이미지 저장:', imageUrl);
+          console.log(`[createProgram] 상세 이미지 ${index + 1} 업로드 완료:`, imageUrl);
           await connection.query(
             `INSERT INTO program_images (program_id, image_url, display_order) VALUES (?, ?, ?)`,
             [programId, imageUrl, index + 1]
           );
-        } catch (fileError) {
-          console.error(`[createProgram] 상세 이미지 ${index + 1} 저장 실패:`, fileError);
-          throw fileError;
+        } catch (uploadError) {
+          console.error(`[createProgram] 상세 이미지 ${index + 1} 업로드 실패:`, uploadError);
+          throw uploadError;
         }
       }
     }
@@ -857,33 +820,10 @@ exports.updateProgram = async (req, res) => {
 
     // 새 이미지가 있으면 기존 이미지 삭제 후 새 이미지 추가
     if (mainImage || (detailImages && detailImages.length > 0)) {
-      // 기존 이미지 파일 삭제
-      const [existingImages] = await connection.query(
-        `SELECT image_url FROM program_images WHERE program_id = ?`,
-        [programId]
-      );
-
-      // 기존 이미지 파일 삭제
+      // 기존 이미지 파일 삭제 (로컬 또는 Cloudinary)
       for (const img of existingImages) {
         if (img.image_url) {
-          const imagePath = path.join(__dirname, `../../public${img.image_url}`);
-          if (fs.existsSync(imagePath)) {
-            fs.unlinkSync(imagePath);
-            console.log('[updateProgram] 기존 이미지 삭제:', imagePath);
-          }
-        }
-      }
-
-      // 기존 이미지 디렉토리 삭제 (비어있으면)
-      const itemDir = path.join(__dirname, `../../public/images/item/item_${programId}`);
-      if (fs.existsSync(itemDir)) {
-        try {
-          const files = fs.readdirSync(itemDir);
-          if (files.length === 0) {
-            fs.rmdirSync(itemDir);
-          }
-        } catch (err) {
-          console.warn('[updateProgram] 디렉토리 삭제 실패:', err);
+          await deleteImage(img.image_url);
         }
       }
 
@@ -893,77 +833,41 @@ exports.updateProgram = async (req, res) => {
         [programId]
       );
 
-      // 새 이미지 디렉토리 생성 (Vercel 환경 제약으로 폴더 생성 로직 제거)
-
-      // 대표 이미지 저장 (display_order = 0)
+      // 대표 이미지 Cloudinary 업로드
       if (mainImage) {
         try {
-          const oldPath = mainImage.path;
-          console.log('[updateProgram] 대표 이미지 파일 정보:', {
-            path: oldPath,
-            filename: mainImage.filename,
-            originalname: mainImage.originalname
-          });
+          console.log('[updateProgram] 대표 이미지 Cloudinary 업로드 시작');
+          const uploadResult = await uploadFromBuffer(mainImage.buffer, 'programs');
+          const imageUrl = uploadResult.secure_url;
 
-          if (!fs.existsSync(oldPath)) {
-            console.error('[updateProgram] 파일이 존재하지 않습니다:', oldPath);
-            throw new Error(`대표 이미지 파일을 찾을 수 없습니다: ${oldPath}`);
-          }
-
-          const ext = path.extname(mainImage.originalname);
-          const newFilename = `img_0${ext}`;
-          const newPath = path.join(itemDir, newFilename);
-
-          // 파일 이동
-          fs.renameSync(oldPath, newPath);
-          console.log('[updateProgram] 파일 이동 완료:', oldPath, '->', newPath);
-
-          const imageUrl = `/images/item/item_${programId}/${newFilename}`;
-          console.log('[updateProgram] 대표 이미지 저장:', imageUrl);
+          console.log('[updateProgram] 대표 이미지 업로드 완료:', imageUrl);
           await connection.query(
             `INSERT INTO program_images (program_id, image_url, display_order) VALUES (?, ?, ?)`,
             [programId, imageUrl, 0]
           );
-        } catch (fileError) {
-          console.error('[updateProgram] 대표 이미지 저장 실패:', fileError);
-          throw fileError;
+        } catch (uploadError) {
+          console.error('[updateProgram] 대표 이미지 업로드 실패:', uploadError);
+          throw uploadError;
         }
       }
 
-      // 상세 이미지들 저장 (display_order = 1, 2, 3, ...)
+      // 상세 이미지들 Cloudinary 업로드
       if (detailImages && detailImages.length > 0) {
         for (let index = 0; index < detailImages.length; index++) {
           const file = detailImages[index];
           try {
-            const oldPath = file.path;
-            console.log(`[updateProgram] 상세 이미지 ${index + 1} 파일 정보:`, {
-              path: oldPath,
-              filename: file.filename,
-              originalname: file.originalname
-            });
+            console.log(`[updateProgram] 상세 이미지 ${index + 1} Cloudinary 업로드 시작`);
+            const uploadResult = await uploadFromBuffer(file.buffer, 'programs');
+            const imageUrl = uploadResult.secure_url;
 
-            if (!fs.existsSync(oldPath)) {
-              console.error('[updateProgram] 파일이 존재하지 않습니다:', oldPath);
-              throw new Error(`상세 이미지 파일을 찾을 수 없습니다: ${oldPath}`);
-            }
-
-            const ext = path.extname(file.originalname);
-            const newFilename = `img_${index + 1}${ext}`;
-            const newPath = path.join(itemDir, newFilename);
-
-            // 파일 이동
-            fs.renameSync(oldPath, newPath);
-            console.log(`[updateProgram] 파일 이동 완료:`, oldPath, '->', newPath);
-
-            const imageUrl = `/images/item/item_${programId}/${newFilename}`;
-            console.log('[updateProgram] 상세 이미지 저장:', imageUrl);
+            console.log(`[updateProgram] 상세 이미지 ${index + 1} 업로드 완료:`, imageUrl);
             await connection.query(
               `INSERT INTO program_images (program_id, image_url, display_order) VALUES (?, ?, ?)`,
               [programId, imageUrl, index + 1]
             );
-          } catch (fileError) {
-            console.error(`[updateProgram] 상세 이미지 ${index + 1} 저장 실패:`, fileError);
-            throw fileError;
+          } catch (uploadError) {
+            console.error(`[updateProgram] 상세 이미지 ${index + 1} 업로드 실패:`, uploadError);
+            throw uploadError;
           }
         }
       }
@@ -1370,26 +1274,30 @@ exports.createProduct = async (req, res) => {
     const productId = result.insertId;
     console.log('[createProduct] 상품 생성 완료 - ID:', productId);
 
-    // 이미지 저장
+    // 이미지 Cloudinary 업로드 및 저장
     if (mainImage) {
-      const imageUrl = `/images/store/${mainImage.filename}`;
+      const uploadResult = await uploadFromBuffer(mainImage.buffer, 'store');
+      const imageUrl = uploadResult.secure_url;
+
       // product_images 테이블에 저장
       await connection.query(
         `INSERT INTO product_images (product_id, image_url, display_order) VALUES (?, ?, ?)`,
         [productId, imageUrl, 0]
       );
-      // products 테이블의 image_url 컬럼도 업데이트 (호환성 및 간편 조회를 위해)
+      // products 테이블의 image_url 컬럼도 업데이트
       await connection.query(
         `UPDATE products SET image_url = ? WHERE id = ?`,
         [imageUrl, productId]
       );
     }
 
-    // 상세 이미지들 저장 (display_order = 1, 2, 3, ...)
+    // 상세 이미지들 업로드
     if (detailImages && detailImages.length > 0) {
       for (let index = 0; index < detailImages.length; index++) {
         const file = detailImages[index];
-        const imageUrl = `/images/store/${file.filename}`;
+        const uploadResult = await uploadFromBuffer(file.buffer, 'store');
+        const imageUrl = uploadResult.secure_url;
+
         await connection.query(
           `INSERT INTO product_images (product_id, image_url, display_order) VALUES (?, ?, ?)`,
           [productId, imageUrl, index + 1]
@@ -1485,15 +1393,29 @@ exports.updateProduct = async (req, res) => {
 
     // 새 이미지가 있으면 기존 이미지 삭제 후 새 이미지 추가
     if (mainImage || (detailImages && detailImages.length > 0)) {
-      // 기존 이미지 삭제
+      // 기존 이미지 조회 및 삭제
+      const [existingImages] = await connection.query(
+        `SELECT image_url FROM product_images WHERE product_id = ?`,
+        [productId]
+      );
+
+      for (const img of existingImages) {
+        if (img.image_url) {
+          await deleteImage(img.image_url);
+        }
+      }
+
+      // DB에서 기존 이미지 레코드 삭제
       await connection.query(
         `DELETE FROM product_images WHERE product_id = ?`,
         [productId]
       );
 
-      // 대표 이미지 저장 (display_order = 0)
+      // 대표 이미지 업로드 (display_order = 0)
       if (mainImage) {
-        const imageUrl = `/images/store/${mainImage.filename}`;
+        const uploadResult = await uploadFromBuffer(mainImage.buffer, 'store');
+        const imageUrl = uploadResult.secure_url;
+
         await connection.query(
           `INSERT INTO product_images (product_id, image_url, display_order) VALUES (?, ?, ?)`,
           [productId, imageUrl, 0]
@@ -1505,11 +1427,13 @@ exports.updateProduct = async (req, res) => {
         );
       }
 
-      // 상세 이미지들 저장 (display_order = 1, 2, 3, ...)
+      // 상세 이미지들 업로드 (display_order = 1, 2, 3, ...)
       if (detailImages && detailImages.length > 0) {
         for (let index = 0; index < detailImages.length; index++) {
           const file = detailImages[index];
-          const imageUrl = `/images/store/${file.filename}`;
+          const uploadResult = await uploadFromBuffer(file.buffer, 'store');
+          const imageUrl = uploadResult.secure_url;
+
           await connection.query(
             `INSERT INTO product_images (product_id, image_url, display_order) VALUES (?, ?, ?)`,
             [productId, imageUrl, index + 1]

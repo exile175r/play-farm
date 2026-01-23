@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const bcrypt = require('bcryptjs'); // 비밀번호 해시화
 const jwt = require('jsonwebtoken'); // 토큰 생성
+const { uploadFromBuffer, deleteImage } = require('../utils/cloudinaryHelper');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
@@ -208,9 +209,17 @@ exports.updateMyProfile = async (req, res) => {
       updateValues.push(agree);
     }
 
-    // 프로필 이미지 처리
+    // 프로필 이미지 처리 (Cloudinary)
     if (req.file) {
-      const imagePath = `/images/user/${req.file.filename}`;
+      // 1. 기존 이미지 삭제를 위한 조회
+      const [user] = await db.query('SELECT profile_image FROM users WHERE id = ?', [userId]);
+      if (user.length > 0 && user[0].profile_image) {
+        await deleteImage(user[0].profile_image);
+      }
+
+      // 2. 새 이미지 업로드
+      const uploadResult = await uploadFromBuffer(req.file.buffer, 'user');
+      const imagePath = uploadResult.secure_url;
       updateFields.push('profile_image = ?');
       updateValues.push(imagePath);
     }

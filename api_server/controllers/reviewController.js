@@ -1,6 +1,6 @@
-const db = require('../config/db');
 const path = require('path');
 const fs = require('fs');
+const { uploadFromBuffer, deleteImage } = require('../utils/cloudinaryHelper');
 
 // 후기 작성
 exports.createReview = async (req, res) => {
@@ -62,11 +62,14 @@ exports.createReview = async (req, res) => {
 
     const reviewId = result.insertId;
 
-    // 이미지 저장
+    // 이미지 Cloudinary 업로드 및 저장
     if (files.length > 0) {
-      const imageValues = files.map((file, index) => [
+      const uploadPromises = files.map(file => uploadFromBuffer(file.buffer, 'reviews'));
+      const uploadResults = await Promise.all(uploadPromises);
+
+      const imageValues = uploadResults.map((result, index) => [
         reviewId,
-        `/images/reviews/${file.filename}`,
+        result.secure_url,
         index
       ]);
 
@@ -361,16 +364,12 @@ exports.updateReview = async (req, res) => {
       [id]
     );
 
-    // 2. 삭제할 이미지 필터링 (DB에 있지만 existingImagesToKeep에 없는 것)
+    // 삭제할 이미지 필터링 및 실제 삭제 (로컬/Cloudinary 통합)
     const imagesToDelete = currentImages.filter(img => !existingImagesToKeep.includes(img.image_path));
 
-    // 3. 파일 시스템 및 DB에서 삭제
     if (imagesToDelete.length > 0) {
       for (const img of imagesToDelete) {
-        const filePath = path.join(__dirname, '../../public', img.image_path);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
+        await deleteImage(img.image_path);
       }
       await connection.query(
         'DELETE FROM review_images WHERE id IN (?)',
@@ -394,11 +393,14 @@ exports.updateReview = async (req, res) => {
       );
     }
 
-    // 새 이미지 추가
+    // 새 이미지 Cloudinary 업로드 및 추가
     if (files.length > 0) {
-      const imageValues = files.map((file) => [
+      const uploadPromises = files.map(file => uploadFromBuffer(file.buffer, 'reviews'));
+      const uploadResults = await Promise.all(uploadPromises);
+
+      const imageValues = uploadResults.map((result) => [
         id,
-        `/images/reviews/${file.filename}`,
+        result.secure_url,
         currentOrder++
       ]);
 
@@ -479,18 +481,10 @@ exports.deleteReview = async (req, res) => {
       });
     }
 
-    // 이미지 파일 삭제
-    const [images] = await connection.query(
-      'SELECT image_path FROM review_images WHERE review_id = ?',
-      [id]
-    );
-
-    images.forEach(img => {
-      const filePath = path.join(__dirname, '../../public', img.image_path);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-    });
+    // 이미지 파일 삭제 (로컬 또는 Cloudinary)
+    for (const img of images) {
+      await deleteImage(img.image_path);
+    }
 
     // DB에서 삭제 (CASCADE로 자동 삭제되지만 명시적으로)
     await connection.query('DELETE FROM review_images WHERE review_id = ?', [id]);

@@ -1,6 +1,6 @@
-const db = require('../config/db');
 const path = require('path');
 const fs = require('fs');
+const { uploadFromBuffer, deleteImage } = require('../utils/cloudinaryHelper');
 
 // 전체 이벤트 목록 조회 (검색/필터링 + 페이지네이션)
 exports.getAllEvents = async (req, res) => {
@@ -264,10 +264,13 @@ exports.createEvent = async (req, res) => {
       validStatus = 'SCHEDULED';
     }
 
-    // 이미지 URL 설정
+    // 이미지 URL 설정 (Cloudinary 업로드)
     let imageUrl = null;
     if (imageFile) {
-      imageUrl = `/images/events/${imageFile.filename}`;
+      console.log('[createEvent] 이미지 Cloudinary 업로드 시작');
+      const uploadResult = await uploadFromBuffer(imageFile.buffer, 'events');
+      imageUrl = uploadResult.secure_url;
+      console.log('[createEvent] 이미지 업로드 완료:', imageUrl);
     }
 
     // 이벤트 데이터 삽입
@@ -357,25 +360,21 @@ exports.updateEvent = async (req, res) => {
       });
     }
 
-    // 이미지 처리
+    // 이미지 처리 (Cloudinary)
     let imageUrl = existing[0].image_url; // 기존 이미지 유지
     if (imageFile) {
-      // 새 이미지가 업로드된 경우
-      imageUrl = `/images/events/${imageFile.filename}`;
+      // 새 이미지가 업로드된 경우 Cloudinary 업로드
+      console.log('[updateEvent] 새 이미지 Cloudinary 업로드 시작');
+      const uploadResult = await uploadFromBuffer(imageFile.buffer, 'events');
+      const newImageUrl = uploadResult.secure_url;
 
-      // 기존 이미지 파일 삭제
+      // 기존 이미지 파일 삭제 (로컬 또는 Cloudinary)
       if (existing[0].image_url) {
-        const imagePath = path.join(__dirname, `../../public${existing[0].image_url}`);
-        if (fs.existsSync(imagePath)) {
-          try {
-            fs.unlinkSync(imagePath);
-            console.log('[updateEvent] 기존 이미지 파일 삭제:', imagePath);
-          } catch (fileError) {
-            console.warn('[updateEvent] 기존 이미지 파일 삭제 실패:', fileError);
-            // 파일 삭제 실패해도 계속 진행
-          }
-        }
+        await deleteImage(existing[0].image_url);
       }
+
+      imageUrl = newImageUrl;
+      console.log('[updateEvent] 이미지 교체 완료:', imageUrl);
     }
 
     // 상태 값 검증 및 변환

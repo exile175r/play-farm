@@ -5,25 +5,10 @@ const fs = require("fs");
 
 const isProd = process.env.NODE_ENV === "production" || process.env.VERCEL === "1";
 
-// 런타임에 폴더 자동 생성을 하지 않음 (사용자 요청 및 Vercel 읽기 전용 제약 대응)
+// 런타임에 폴더 자동 생성을 하지 않음 (Cloudinary 클라우드 프로젝트로 전환)
 const createStorage = (subDir, prefix) => {
-  if (isProd) {
-    // Vercel 환경에서는 메모리 저장소 사용 (서버 기동 실패 방지)
-    return multer.memoryStorage();
-  }
-
-  const uploadDir = path.join(__dirname, `../../public/images/${subDir}`);
-
-  return multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      const ext = path.extname(file.originalname);
-      cb(null, `${prefix}_${uniqueSuffix}${ext}`);
-    },
-  });
+  // Cloudinary로 업로드하기 위해 모든 환경에서 메모리 저장소 사용
+  return multer.memoryStorage();
 };
 
 const fileFilter = (req, file, cb) => {
