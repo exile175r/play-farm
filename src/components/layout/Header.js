@@ -46,6 +46,9 @@ function Header({ isLoggedIn, onLogout }) {
 
             <div className={`pf-nav-wrap ${isMenuOpen ? 'is-active' : ''}`}>
                <nav className="pf-nav">
+                  <Link to="https://github.com/exile175r/play-farm" target="_blank" rel="noopener noreferrer">
+                     GitHub
+                  </Link>
                   <Link to="/" onClick={closeMenu}>
                      홈
                   </Link>
